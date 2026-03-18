@@ -1018,7 +1018,7 @@ a:hover {
   border-radius: 999px;
   background: var(--red);
   color: #fff;
-  border: 2px solid #fff;
+  border: 2px solid var(--c-card, var(--ui-surface-1));
   font-size: 10px;
   display: inline-flex;
   align-items: center;
@@ -1036,7 +1036,7 @@ a:hover {
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border-radius: 999px;
   padding: 4px 10px 4px 6px;
   cursor: pointer;
@@ -1053,7 +1053,7 @@ a:hover {
   top: calc(100% + 8px);
   left: 0;
   min-width: 240px;
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow-md);
@@ -1137,7 +1137,7 @@ a:hover {
   height: 9px;
   background: var(--green);
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid var(--c-card, var(--ui-surface-1));
 }
 
 /* ───────── Badges + Buttons ───────── */
@@ -1217,7 +1217,7 @@ a:hover {
 }
 
 .btn-outline {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   color: var(--ocean);
   border-color: var(--border2);
 }
@@ -1227,7 +1227,7 @@ a:hover {
 }
 
 .btn-secondary {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   color: var(--slate);
   border-color: var(--border2);
 }
@@ -1358,7 +1358,7 @@ a:hover {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   color: var(--ink);
   font: inherit;
   padding: 10px 12px;
@@ -1387,7 +1387,7 @@ a:hover {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
 }
 
 .data-table th,
@@ -1442,7 +1442,7 @@ a:hover {
 }
 
 .toast {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
@@ -1469,7 +1469,7 @@ a:hover {
 }
 
 .filters {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 15px;
@@ -1515,7 +1515,7 @@ a:hover {
   border-radius: 6px;
   font: inherit;
   color: var(--ink);
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
 }
 
 .price-range input:focus {
@@ -1711,7 +1711,7 @@ a:hover {
 }
 
 .trust-item {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 12px;
@@ -1733,7 +1733,7 @@ a:hover {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
 }
 
 .checkout-step,
@@ -1864,7 +1864,7 @@ a:hover {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid #fff;
+  border: 2px solid var(--c-card, var(--ui-surface-1));
   background: var(--border2);
 }
 
@@ -1891,7 +1891,7 @@ a:hover {
 
 .auth-card,
 .welcome-form-card {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 22px;
@@ -1932,7 +1932,7 @@ a:hover {
 }
 
 .welcome-hero {
-  background: linear-gradient(135deg, #fff, var(--foam));
+  background: linear-gradient(135deg, var(--c-card, var(--ui-surface-1)), var(--foam));
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 24px;
@@ -1961,7 +1961,7 @@ a:hover {
 .profile-stat {
   min-width: 90px;
   text-align: center;
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px;
@@ -1986,7 +1986,7 @@ a:hover {
 }
 
 .whale-hero-card {
-  background: linear-gradient(135deg, #FFFFFF, #F4FAFF);
+  background: linear-gradient(135deg, var(--c-card, var(--ui-surface-1)), var(--c-card2, var(--ui-surface-2)));
 }
 
 .welcome-sub {
@@ -2003,7 +2003,7 @@ a:hover {
 }
 
 .benefit-card {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 14px;
@@ -2045,7 +2045,7 @@ a:hover {
 }
 
 .plan-card {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border: 2px solid var(--border);
   border-radius: var(--radius-md);
   padding: 16px;
@@ -2057,7 +2057,7 @@ a:hover {
 
 .plan-card.selected-pro {
   border-color: var(--amber);
-  background: linear-gradient(135deg, #fff, #fff8e9);
+  background: linear-gradient(135deg, var(--c-card, var(--ui-surface-1)), var(--c-amber-lt, var(--ui-warning-soft)));
 }
 
 .plan-name {
@@ -2098,7 +2098,7 @@ a:hover {
 
 /* ───────── Footer + mobile nav ───────── */
 .whale-footer {
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border-top: 1px solid var(--border);
   margin-top: 24px;
 }
@@ -2163,7 +2163,7 @@ a:hover {
   right: 0;
   left: 0;
   z-index: 160;
-  background: #fff;
+  background: var(--c-card, var(--ui-surface-1));
   border-top: 1px solid var(--border);
 }
 
