@@ -16,4 +16,4 @@ ENV PORT=3000
 
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node start.js"]
+CMD ["node", "entrypoint.js"]
