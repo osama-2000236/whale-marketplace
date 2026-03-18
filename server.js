@@ -231,8 +231,8 @@ app.use(async (req, res, next) => {
   }
 });
 
-// Health check at root level — Railway uses this to know if the app is alive
-app.get('/health', (_req, res) => res.redirect('/api/health'));
+// Health check at root level — Railway expects 200, not a redirect
+app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 
 // Whale-first routing
 app.get('/', (_req, res) => res.redirect('/whale'));
