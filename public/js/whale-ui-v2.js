@@ -52,14 +52,16 @@
       const nextTheme = nextThemeInput?.value === 'dark' ? 'dark' : 'light';
 
       if (!reducedMotion && document.startViewTransition) {
+        body.classList.add('whale-theme-transitioning');
         await document.startViewTransition(async () => {
           setTheme(nextTheme);
           await nextFrame();
         }).finished.catch(() => {});
+        window.setTimeout(() => body.classList.remove('whale-theme-transitioning'), 350);
       } else {
-        body.classList.add('whale-theme-fade');
+        body.classList.add('whale-theme-transitioning');
         setTheme(nextTheme);
-        window.setTimeout(() => body.classList.remove('whale-theme-fade'), 220);
+        window.setTimeout(() => body.classList.remove('whale-theme-transitioning'), 350);
       }
 
       await persistTheme(nextTheme);
