@@ -1,0 +1,122 @@
+<%- include('../partials/header') %>
+
+<section class="page-section whale-page">
+  <div class="container">
+    <h1 class="page-title"><%= t('home.cta_sell') %></h1>
+    <p class="muted"><%= t('app.trust_promise') %></p>
+
+    <form method="POST" action="/whale/sell" enctype="multipart/form-data" class="panel-card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'العنوان' : 'Title' %></label>
+          <input type="text" name="title" minlength="3" required>
+        </div>
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'العنوان بالعربي' : 'Arabic title' %></label>
+          <input type="text" name="titleAr">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label><%= t('listing.description') %></label>
+          <textarea name="description" rows="4" required></textarea>
+        </div>
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'الوصف بالعربي' : 'Arabic description' %></label>
+          <textarea name="descriptionAr" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'الفئة' : 'Category' %></label>
+          <select name="categoryId" id="sellCategory" required>
+            <option value=""><%= lang === 'ar' ? 'اختر الفئة' : 'Select category' %></option>
+            <% categories.forEach((cat) => { %>
+              <option value="<%= cat.id %>"><%= lang === 'ar' ? cat.nameAr : cat.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'الفئة الفرعية' : 'Subcategory' %></label>
+          <select name="subcategoryId" id="sellSubcategory"></select>
+        </div>
+        <div class="form-group">
+          <label><%= t('market.city') %></label>
+          <select name="city" required>
+            <% cities.forEach((city) => { %><option value="<%= city.value %>"><%= city.name %></option><% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'السعر (₪)' : 'Price (₪)' %></label>
+          <input type="number" name="price" min="1" required>
+        </div>
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'الكمية' : 'Quantity' %></label>
+          <input type="number" name="quantity" min="1" value="1" required>
+        </div>
+        <div class="form-group">
+          <label><%= t('market.condition') %></label>
+          <select name="condition" required>
+            <% ['NEW','LIKE_NEW','USED','GOOD','FAIR','FOR_PARTS'].forEach((c) => { %>
+              <option value="<%= c %>"><%= t('cond.' + c) %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label><%= lang === 'ar' ? 'وسوم' : 'Tags' %></label>
+          <input type="text" name="tags" placeholder="gpu, gaming, monitor">
+        </div>
+        <div class="form-group">
+          <label>Specifications JSON</label>
+          <input type="text" name="specs" placeholder='{"brand":"ASUS","ram":"16GB"}'>
+        </div>
+        <div class="form-group" style="align-self:end;">
+          <label><input type="checkbox" name="negotiable" value="true"> <%= t('listing.negotiable') %></label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label><%= lang === 'ar' ? 'الصور (حتى 6)' : 'Images (up to 6)' %></label>
+        <input type="file" name="images" accept="image/*" multiple required>
+      </div>
+
+      <button type="submit" class="btn btn-primary"><%= lang === 'ar' ? 'نشر الإعلان' : 'Publish listing' %></button>
+    </form>
+  </div>
+</section>
+
+<script>
+  (function () {
+    const categories = <%- JSON.stringify(categories) %>;
+    const categorySel = document.getElementById('sellCategory');
+    const subSel = document.getElementById('sellSubcategory');
+
+    function renderSubs() {
+      const id = categorySel.value;
+      const category = categories.find((c) => c.id === id);
+      subSel.innerHTML = '<option value=""><%= lang === "ar" ? "بدون فئة فرعية" : "No subcategory" %></option>';
+      if (!category || !category.subcategories) return;
+      category.subcategories.forEach((sub) => {
+        const opt = document.createElement('option');
+        opt.value = sub.id;
+        opt.textContent = '<%= lang %>' === 'ar' ? (sub.nameAr || sub.name) : sub.name;
+        subSel.appendChild(opt);
+      });
+    }
+
+    categorySel.addEventListener('change', renderSubs);
+    renderSubs();
+  })();
+</script>
+
+<%- include('../partials/footer') %>

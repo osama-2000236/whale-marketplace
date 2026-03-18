@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<section class="section page-section">
+  <div class="container">
+    <div class="section-header"><h2>اتصل بنا</h2><div class="section-line"></div><p>نحن هنا لمساعدتك</p></div>
+    <div class="contact-grid">
+      <div class="contact-card"><div class="contact-icon">📞</div><h4>الهاتف</h4><a href="tel:<%= config.contact.phone %>"><%= config.contact.phone %></a></div>
+      <div class="contact-card"><div class="contact-icon">💬</div><h4>واتساب</h4><a href="https://wa.me/<%= whatsappNumber %>" target="_blank">تواصل الآن</a></div>
+      <div class="contact-card"><div class="contact-icon">📧</div><h4>البريد الإلكتروني</h4><a href="mailto:<%= config.contact.email %>"><%= config.contact.email %></a></div>
+      <div class="contact-card"><div class="contact-icon">📍</div><h4>الموقع</h4><span><%= config.location.fullAddress %></span></div>
+      <div class="contact-card"><div class="contact-icon">📘</div><h4>فيسبوك</h4><a href="<%= config.social.facebook %>" target="_blank">صفحتنا على فيسبوك</a></div>
+      <div class="contact-card"><div class="contact-icon">🕐</div><h4>ساعات العمل</h4><span>السبت - الخميس: 9 صباحاً - 9 مساءً</span></div>
+    </div>
+    <div class="cta-box" style="margin-top:3rem">
+      <h3>أسرع طريقة للتواصل</h3>
+      <p>راسلنا على واتساب وسنرد عليك فوراً</p>
+      <a href="https://wa.me/<%= whatsappNumber %>" target="_blank" class="btn btn-primary btn-lg">💬 واتساب الآن</a>
+    </div>
+  </div>
+</section>
+<%- include('partials/footer') %>

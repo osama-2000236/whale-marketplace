@@ -1,0 +1,12 @@
+<%- include('partials/header') %>
+<section class="page-section whale-page" style="display:flex;align-items:center">
+  <div class="container" style="text-align:center;max-width:700px;">
+    <div class="panel-card">
+      <div style="font-size:4rem;margin-bottom:8px">⚠️</div>
+      <h1 style="margin:0;color:var(--deep);">حدث خطأ | Something went wrong</h1>
+      <p class="muted" style="margin:12px 0 18px"><%= typeof message !== 'undefined' ? message : 'حدث خطأ ما' %></p>
+      <a href="/whale" class="btn btn-primary">العودة إلى Whale</a>
+    </div>
+  </div>
+</section>
+<%- include('partials/footer') %>

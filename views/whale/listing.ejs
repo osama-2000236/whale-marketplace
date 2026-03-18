@@ -1,0 +1,587 @@
+<%- include('../partials/header', { title: (listing.titleAr || listing.title) + ' — Whale', jsonLd }) %>
+
+<%
+  const sellerProfile = listing.seller?.sellerProfile || {};
+  const whatsapp = sellerProfile.whatsapp || '';
+  const waLink = whatsapp
+    ? `https://wa.me/970${String(whatsapp).replace(/^0/, '')}?text=${encodeURIComponent(`Whale inquiry about: ${listing.title}`)}`
+    : null;
+  const reviewCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  (listing.reviews || []).forEach((r) => {
+    if (reviewCounts[r.rating] !== undefined) reviewCounts[r.rating] += 1;
+  });
+  const totalReviews = (listing.reviews || []).length;
+  const responseHours = sellerProfile.responseTimeHours || 24;
+  const savedLabel = isSaved ? t('listing.saved') : t('listing.save');
+  const lastSeenAt = listing.seller?.lastSeenAt ? new Date(listing.seller.lastSeenAt) : null;
+  const now = new Date();
+  const minutesSinceSeen = lastSeenAt ? Math.max(0, Math.round((now - lastSeenAt) / 60000)) : null;
+  const lastSeenText = minutesSinceSeen !== null && minutesSinceSeen < 30
+    ? t('seller.online_now')
+    : (lastSeenAt ? t('seller.last_seen', { time: timeAgo(lastSeenAt) }) : null);
+  const responseRate = responseHours <= 1 ? 98 : (responseHours <= 4 ? 95 : 92);
+  const salesProgress = Math.min(100, Math.round(((sellerProfile.totalSales || 0) / 200) * 100));
+  const galleryImages = (listing.images && listing.images.length ? listing.images : [null]).slice(0, 6);
+%>
+
+<section class="page-section whale-page">
+  <div class="product-layout whale-product-layout">
+    <div class="product-main">
+      <div class="panel-card whale-gallery-card">
+        <div class="whale-gallery-main-shell">
+          <button type="button" class="whale-gallery-main-btn" id="whaleMainImageButton" aria-label="<%= listing.title %>">
+            <% const mainImage = imageSet(galleryImages[0], {
+              widths: [500, 800, 1000],
+              aspectRatio: '5:4',
+              sizes: '(max-width: 768px) 100vw, 500px'
+            }); %>
+            <picture class="whale-picture-shell">
+              <% if (mainImage.webpSrcset) { %>
+                <source type="image/webp" srcset="<%= mainImage.webpSrcset %>" sizes="<%= mainImage.sizes %>">
+              <% } %>
+              <img
+                id="whaleMainImage"
+                src="<%= mainImage.src %>"
+                srcset="<%= mainImage.srcset %>"
+                sizes="<%= mainImage.sizes %>"
+                width="<%= mainImage.width %>"
+                height="<%= mainImage.height %>"
+                alt="<%= listing.title %>"
+                class="listing-main-image"
+                fetchpriority="high"
+              >
+            </picture>
+          </button>
+          <div class="whale-zoom-panel" id="whaleZoomPanel" aria-hidden="true"></div>
+        </div>
+        <% if (galleryImages.length > 1) { %>
+          <div class="whale-gallery-rail" id="whaleGalleryRail">
+            <% galleryImages.forEach((img, index) => { %>
+              <% const railImage = imageSet(img, {
+                widths: [500, 800, 1000],
+                aspectRatio: '5:4',
+                sizes: '100vw'
+              }); %>
+              <figure class="whale-gallery-slide" data-gallery-slide="<%= index %>">
+                <picture class="whale-picture-shell">
+                  <% if (railImage.webpSrcset) { %>
+                    <source type="image/webp" srcset="<%= railImage.webpSrcset %>" sizes="<%= railImage.sizes %>">
+                  <% } %>
+                  <img
+                    src="<%= railImage.src %>"
+                    srcset="<%= railImage.srcset %>"
+                    sizes="<%= railImage.sizes %>"
+                    width="<%= railImage.width %>"
+                    height="<%= railImage.height %>"
+                    alt="<%= listing.title %>"
+                    class="listing-main-image"
+                    loading="<%= index === 0 ? 'eager' : 'lazy' %>"
+                  >
+                </picture>
+              </figure>
+            <% }) %>
+          </div>
+          <div class="whale-gallery-dots" aria-hidden="true">
+            <% galleryImages.forEach((_img, index) => { %>
+              <span class="whale-gallery-dot <%= index === 0 ? 'is-active' : '' %>" data-gallery-dot="<%= index %>"></span>
+            <% }) %>
+          </div>
+          <div class="image-preview-grid whale-thumb-grid">
+            <% galleryImages.slice(0, 5).forEach((img, index) => { %>
+              <% const thumbImage = imageSet(img, {
+                widths: [68, 136, 272],
+                aspectRatio: '4:3',
+                sizes: '68px'
+              }); %>
+              <button type="button" class="whale-thumb-btn <%= index === 0 ? 'active' : '' %>" data-image="<%= thumbImage.src %>" aria-label="<%= `${listing.title} ${index + 1}` %>">
+                <img
+                  src="<%= thumbImage.src %>"
+                  srcset="<%= thumbImage.srcset %>"
+                  sizes="<%= thumbImage.sizes %>"
+                  width="<%= thumbImage.width %>"
+                  height="<%= thumbImage.height %>"
+                  alt="<%= listing.title %>"
+                  class="whale-thumb"
+                  loading="lazy"
+                >
+              </button>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="panel-card whale-detail-tabs" style="margin-top:12px;">
+        <div class="tabs-row whale-tab-row">
+          <button type="button" class="btn btn-ghost whale-tab-btn active" data-tab="desc"><%= t('listing.description') %></button>
+          <button type="button" class="btn btn-ghost whale-tab-btn" data-tab="specs"><%= t('listing.specs') %></button>
+          <button type="button" class="btn btn-ghost whale-tab-btn" data-tab="reviews"><%= t('listing.reviews') %> (<%= listing._count.reviews %>)</button>
+        </div>
+
+        <div class="whale-tab whale-tab-desc">
+          <div dir="auto" class="whale-description-copy"><%= listing.descriptionAr || listing.description %></div>
+        </div>
+
+        <div class="whale-tab whale-tab-specs" style="display:none;">
+          <% if (listing.specs && Object.keys(listing.specs).length) { %>
+            <table class="data-table">
+              <tbody>
+                <% Object.keys(listing.specs).forEach((key) => { %>
+                  <tr>
+                    <td><strong><%= key %></strong></td>
+                    <td dir="auto"><%= listing.specs[key] %></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          <% } else { %>
+            <p class="muted"><%= t('listing.no_specs') %></p>
+          <% } %>
+        </div>
+
+        <div class="whale-tab whale-tab-reviews" id="reviews" style="display:none;">
+          <% if (totalReviews > 0) { %>
+            <div class="whale-rating-breakdown">
+              <% [5, 4, 3, 2, 1].forEach((star) => { const count = reviewCounts[star] || 0; const ratio = Math.round((count / totalReviews) * 100); %>
+                <div class="whale-rating-row">
+                  <span><%= star %>★</span>
+                  <div class="whale-rating-bar"><div class="whale-rating-bar-fill" style="width:<%= ratio %>%;"></div></div>
+                  <span><%= ratio %>%</span>
+                </div>
+              <% }) %>
+            </div>
+
+            <div class="whale-review-toolbar">
+              <div class="whale-review-filter-group" role="group" aria-label="<%= t('listing.reviews') %>">
+                <button type="button" class="whale-chip-btn active" data-review-filter="all"><%= t('reviews.filter_all') %></button>
+                <% [5, 4, 3, 2, 1].forEach((star) => { %>
+                  <button type="button" class="whale-chip-btn" data-review-filter="<%= star %>"><%= star %>★</button>
+                <% }) %>
+              </div>
+              <select class="search-input whale-review-sort" aria-label="<%= t('ui.sort') %>">
+                <option value="recent"><%= t('reviews.sort_recent') %></option>
+                <option value="helpful"><%= t('reviews.sort_helpful') %></option>
+                <option value="lowest"><%= t('reviews.sort_lowest') %></option>
+              </select>
+            </div>
+
+            <div class="whale-review-list">
+            <% listing.reviews.forEach((review, index) => { %>
+              <article class="panel-card whale-review-card" data-review-item data-rating="<%= review.rating %>" data-order="<%= index %>">
+                <div class="whale-review-head">
+                  <div style="display:flex; gap:8px; align-items:flex-start;">
+                    <%- include('../partials/avatar', { user: review.reviewer, size: 'sm' }) %>
+                    <div>
+                      <strong><%= review.reviewer.username %></strong>
+                      <div class="stars"><%- '★'.repeat(review.rating) %><%- '☆'.repeat(5 - review.rating) %></div>
+                    </div>
+                  </div>
+                  <small><%= new Date(review.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></small>
+                </div>
+                <% if (review.isVerified) { %>
+                  <div style="margin-top:6px;"><span class="verified-seller"><%= t('listing.verified_p') %></span></div>
+                <% } %>
+                <% if (review.title) { %><h4 dir="auto" style="margin-top:8px;"><%= review.title %></h4><% } %>
+                <% if (review.body) { %><p dir="auto" style="margin-top:4px;"><%= review.body %></p><% } %>
+                <div class="whale-review-actions">
+                  <span><%= t('reviews.helpful') %></span>
+                  <button type="button" class="whale-inline-vote" data-review-vote="yes"><%= t('reviews.yes') %></button>
+                  <button type="button" class="whale-inline-vote" data-review-vote="no"><%= t('reviews.no') %></button>
+                </div>
+              </article>
+            <% }) %>
+            </div>
+            <% if (listing.reviews.length > 5) { %>
+              <button type="button" class="btn btn-ghost whale-more-reviews" data-step="5"><%= t('reviews.show_more') %></button>
+            <% } %>
+          <% } else { %>
+            <p class="muted"><%= t('seller.no_reviews') %></p>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="panel-card" style="margin-top:12px;">
+        <h3><%= t('listing.similar') %></h3>
+        <div class="listing-grid" style="margin-top:10px;">
+          <% similar.forEach((item) => { %>
+            <% const similarImage = imageSet((item.images && item.images[0]) || null, {
+              widths: [210, 420, 630],
+              aspectRatio: '4:3',
+              sizes: '(max-width: 479px) 80px, (max-width: 719px) calc(100vw - 48px), 33vw'
+            }); %>
+            <a href="/whale/listing/<%= item.slug || item.id %>" class="listing-card whale-similar-card" style="text-decoration:none;">
+              <picture class="whale-card-picture">
+                <% if (similarImage.webpSrcset) { %>
+                  <source type="image/webp" srcset="<%= similarImage.webpSrcset %>" sizes="<%= similarImage.sizes %>">
+                <% } %>
+                <img
+                  src="<%= similarImage.src %>"
+                  srcset="<%= similarImage.srcset %>"
+                  sizes="<%= similarImage.sizes %>"
+                  width="<%= similarImage.width %>"
+                  height="<%= similarImage.height %>"
+                  alt="<%= item.title %>"
+                  class="listing-img"
+                  loading="lazy"
+                >
+              </picture>
+              <div class="listing-body">
+                <div class="listing-price"><%= item.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</div>
+                <div class="listing-title" dir="auto"><%= item.title %></div>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="trust-row">
+        <div class="trust-item">🔒 <strong><%= t('trust.secure') %></strong><br><%= t('trust.card_sub') %></div>
+        <div class="trust-item">🚚 <strong><%= t('trust.shipping') %></strong><br><%= t('trust.shipping_sub') %></div>
+        <div class="trust-item">✅ <strong><%= t('trust.protection') %></strong><br><%= t('app.trust_promise') %></div>
+        <div class="trust-item">⭐ <strong><%= t('trust.reviews') %></strong><br><%= t('trust.real_buyers_sub') %></div>
+      </div>
+
+      <a href="/contact" class="muted whale-report-link"><%= t('listing.report') %></a>
+    </div>
+
+    <aside class="product-sidebar whale-product-sidebar">
+      <div class="panel-card">
+        <h1 dir="auto" class="whale-product-title"><%= listing.titleAr || listing.title %></h1>
+
+        <% if (sellerProfile.averageRating > 0) { %>
+          <div class="whale-product-rating">
+            <span class="stars"><%- '★'.repeat(Math.round(sellerProfile.averageRating)) %><%- '☆'.repeat(5 - Math.round(sellerProfile.averageRating)) %></span>
+            <a href="#reviews"><%= listing._count.reviews %> <%= t('listing.reviews') %></a>
+          </div>
+        <% } %>
+
+        <div class="listing-price whale-product-price"><%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</div>
+
+        <div class="whale-product-badges">
+          <span class="status-badge status-SELLER_CONFIRMED"><%= t('cond.' + listing.condition) %></span>
+          <% if (listing.negotiable) { %><span class="negotiable-badge"><%= t('listing.negotiable') %></span><% } %>
+          <% if (listing.quantity <= 3) { %><span class="status-badge status-CANCELLED"><%= t('listing.only_left', { n: listing.quantity }) %></span><% } %>
+        </div>
+
+        <div class="whale-product-signal-list">
+          <p class="muted">👁️ <%= listing.views %> <%= t('listing.views_count') %></p>
+          <p class="muted">❤️ <%= t('listing.saved_count', { n: listing._count.savedBy }) %></p>
+          <% if (listing._count.orders > 0) { %>
+            <p class="muted">🛒 <%= t('listing.sales_signal', { n: listing._count.orders }) %></p>
+          <% } %>
+        </div>
+
+        <p class="muted whale-escrow-copy">🐳 <%= t('listing.escrow') %></p>
+
+        <hr class="whale-divider">
+        <details open>
+          <summary><strong><%= t('checkout.shipping') %></strong></summary>
+          <div class="whale-shipping-list">
+            <% shippingCos.forEach((co) => { %>
+              <div class="panel-card whale-shipping-option">
+                <strong><%= lang === 'ar' ? co.nameAr : co.name %></strong><br>
+                <small><%= co.basePrice %> ₪ · <%= co.estimatedDays %> <%= t('ui.days') %></small>
+              </div>
+            <% }) %>
+            <small class="muted"><%= t('listing.arrange_wa') %></small>
+          </div>
+        </details>
+
+        <hr class="whale-divider">
+
+        <% if (currentUser && currentUser.id !== listing.sellerId) { %>
+          <div class="btn-stack">
+            <button type="button" class="btn btn-primary btn-full" id="add-cart-btn" onclick="addToCart('<%= listing.id %>')">🛒 <%= t('listing.add_to_cart') %></button>
+            <a href="/whale/listing/<%= listing.slug || listing.id %>/buy" class="btn btn-ghost btn-full">⚡ <%= t('listing.buy_now') %></a>
+          </div>
+        <% } else if (!currentUser) { %>
+          <a href="/auth/register?reason=buy" class="btn btn-primary btn-full"><%= t('listing.register_buy') %></a>
+        <% } %>
+
+        <% if (currentUser && waLink) { %>
+          <a href="<%= waLink %>" target="_blank" rel="noopener" class="btn btn-wa btn-full whale-wa-btn" style="margin-top:8px;" data-id="<%= listing.id %>">💬 <%= t('listing.whatsapp') %></a>
+        <% } else if (!currentUser) { %>
+          <a href="/auth/register?reason=contact" class="btn btn-ghost btn-full" style="margin-top:8px;"><%= t('listing.register_contact') %></a>
+        <% } %>
+
+        <% if (currentUser) { %>
+          <button type="button" class="btn btn-ghost btn-full whale-save-detail" data-id="<%= listing.id %>" data-saved="<%= isSaved ? '1' : '0' %>" style="margin-top:8px;"> <%= isSaved ? '♥' : '♡' %> <span><%= savedLabel %></span></button>
+        <% } %>
+        <button type="button" class="btn btn-ghost btn-full whale-share-btn" style="margin-top:8px;">🔗 <%= t('ui.share') %></button>
+
+        <div class="seller-card">
+          <div class="whale-seller-head">
+            <%- include('../partials/avatar', { user: listing.seller, size: 'md' }) %>
+            <div>
+              <strong dir="auto"><%= listing.seller.username %></strong><br>
+              <% if (sellerProfile.isVerified) { %><span class="verified-seller"><%= t('seller.verified') %></span><% } %>
+            </div>
+          </div>
+          <div class="whale-seller-metrics">
+            <div class="whale-seller-metric">
+              <span class="whale-seller-label"><%= t('seller.response_rate', { n: responseRate }) %></span>
+              <strong><%= responseRate %>%</strong>
+            </div>
+            <div class="whale-seller-metric">
+              <span class="whale-seller-label"><%= t('seller.responds', { n: responseHours }) %></span>
+              <strong><%= responseHours.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %></strong>
+            </div>
+            <div class="whale-seller-metric">
+              <span class="whale-seller-label"><%= t('seller.since') %></span>
+              <strong><%= new Date(listing.seller.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></strong>
+            </div>
+            <div class="whale-seller-metric">
+              <span class="whale-seller-label"><%= t('seller.completed_sales') %></span>
+              <strong><%= sellerProfile.totalSales || 0 %></strong>
+            </div>
+          </div>
+          <p class="muted">⭐ <%= Number(sellerProfile.averageRating || 0).toFixed(1) %> (<%= sellerProfile.reviewCount || 0 %> <%= t('seller.rating') %>)</p>
+          <% if (lastSeenText) { %>
+            <p class="muted whale-last-seen <%= minutesSinceSeen !== null && minutesSinceSeen < 30 ? 'is-online' : '' %>"><%= lastSeenText %></p>
+          <% } %>
+          <div class="whale-sales-progress" aria-label="<%= t('seller.completed_sales') %>">
+            <div class="whale-sales-progress-bar"><span style="width:<%= salesProgress %>%"></span></div>
+            <div class="whale-sales-progress-legend"><span>0</span><span>50</span><span>100</span><span>200+</span></div>
+          </div>
+          <p class="muted"><%= t('seller.completed_sales') %>: <%= sellerProfile.totalSales || 0 %></p>
+          <% if (waLink) { %>
+            <a href="<%= waLink %>" target="_blank" rel="noopener" class="btn btn-wa btn-full"><%= t('seller.contact') %></a>
+          <% } %>
+          <a href="/whale/seller/<%= listing.seller.username %>"><%= t('seller.all') %></a>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<div class="whale-lightbox" id="whaleLightbox" hidden>
+  <button type="button" class="whale-lightbox-close" aria-label="<%= t('ui.close') %>">✕</button>
+  <img src="<%= imageSet(galleryImages[0], { widths: [1000], aspectRatio: '5:4', sizes: '100vw' }).src %>" alt="<%= listing.title %>" id="whaleLightboxImage">
+</div>
+
+<div class="whale-mobile-buybar" id="whaleMobileBuybar">
+  <div>
+    <strong><%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</strong>
+    <small><%= t('app.trust_promise') %></small>
+  </div>
+  <% if (currentUser && currentUser.id !== listing.sellerId) { %>
+    <a href="/whale/listing/<%= listing.slug || listing.id %>/buy" class="btn btn-primary"><%= t('listing.buy_now') %></a>
+  <% } else if (!currentUser) { %>
+    <a href="/auth/register?reason=buy" class="btn btn-primary"><%= t('listing.register_buy') %></a>
+  <% } %>
+</div>
+
+<script>
+  (function () {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const main = document.getElementById('whaleMainImage');
+    const mainButton = document.getElementById('whaleMainImageButton');
+    const zoomPanel = document.getElementById('whaleZoomPanel');
+    const lightbox = document.getElementById('whaleLightbox');
+    const lightboxImg = document.getElementById('whaleLightboxImage');
+    const mobileBuybar = document.getElementById('whaleMobileBuybar');
+    const sidebar = document.querySelector('.whale-product-sidebar');
+    const galleryRail = document.getElementById('whaleGalleryRail');
+    const galleryDots = Array.from(document.querySelectorAll('[data-gallery-dot]'));
+
+    function syncGalleryDot(activeIndex) {
+      galleryDots.forEach((dot, index) => {
+        dot.classList.toggle('is-active', index === activeIndex);
+      });
+    }
+
+    document.querySelectorAll('.whale-thumb-btn').forEach((button) => {
+      button.addEventListener('click', () => {
+        const img = button.querySelector('img');
+        const src = button.dataset.image || img?.src;
+        if (main && src) main.src = src;
+        if (lightboxImg && src) lightboxImg.src = src;
+        document.querySelectorAll('.whale-thumb-btn').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        const nextIndex = document.querySelectorAll('.whale-thumb-btn').length
+          ? Array.from(document.querySelectorAll('.whale-thumb-btn')).indexOf(button)
+          : 0;
+        syncGalleryDot(nextIndex);
+        galleryRail?.querySelector(`[data-gallery-slide="${nextIndex}"]`)?.scrollIntoView({
+          behavior: 'smooth',
+          inline: 'start',
+          block: 'nearest'
+        });
+      });
+    });
+
+    if (galleryRail) {
+      galleryRail.addEventListener('scroll', () => {
+        const railBounds = galleryRail.getBoundingClientRect();
+        const activeIndex = Array.from(galleryRail.querySelectorAll('[data-gallery-slide]')).reduce((bestIndex, slide, index, allSlides) => {
+          const current = slide.getBoundingClientRect();
+          const currentDelta = Math.abs(current.left - railBounds.left);
+          const bestSlide = allSlides[bestIndex];
+          const bestDelta = bestSlide ? Math.abs(bestSlide.getBoundingClientRect().left - railBounds.left) : Number.POSITIVE_INFINITY;
+          return currentDelta < bestDelta ? index : bestIndex;
+        }, 0);
+        syncGalleryDot(activeIndex);
+      }, { passive: true });
+    }
+
+    if (mainButton && main && zoomPanel) {
+      const updateZoom = (event) => {
+        const rect = main.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 100;
+        const y = ((event.clientY - rect.top) / rect.height) * 100;
+        zoomPanel.style.backgroundImage = 'url("' + main.src + '")';
+        zoomPanel.style.backgroundPosition = x + '% ' + y + '%';
+      };
+      mainButton.addEventListener('mousemove', updateZoom);
+      mainButton.addEventListener('mouseenter', () => zoomPanel.classList.add('is-visible'));
+      mainButton.addEventListener('mouseleave', () => zoomPanel.classList.remove('is-visible'));
+      mainButton.addEventListener('click', () => {
+        if (!lightbox || !lightboxImg) return;
+        lightbox.hidden = false;
+        lightboxImg.src = main.src;
+      });
+    }
+
+    lightbox?.querySelector('.whale-lightbox-close')?.addEventListener('click', () => {
+      lightbox.hidden = true;
+    });
+    lightbox?.addEventListener('click', (event) => {
+      if (event.target === lightbox) lightbox.hidden = true;
+    });
+
+    document.querySelectorAll('.whale-tab-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.whale-tab-btn').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.querySelectorAll('.whale-tab').forEach((pane) => { pane.style.display = 'none'; });
+        const target = document.querySelector('.whale-tab-' + tab);
+        if (target) target.style.display = 'block';
+      });
+    });
+
+    const saveBtn = document.querySelector('.whale-save-detail');
+    if (saveBtn) {
+      saveBtn.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/whale/listing/' + saveBtn.dataset.id + '/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf || '' }
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          saveBtn.dataset.saved = data.saved ? '1' : '0';
+          saveBtn.innerHTML = (data.saved ? '♥' : '♡') + ' <span>' + (data.saved ? '<%= t("listing.saved") %>' : '<%= t("listing.save") %>') + '</span>';
+          if (window.showToast) {
+            window.showToast(data.saved ? '<%= t("listing.track_saved") %>' : '<%= t("listing.unsaved") %>', 'success');
+          }
+        } catch (_error) {
+          if (window.showToast) window.showToast('<%= t("ui.error") %>', 'error');
+        }
+      });
+    }
+
+    document.querySelector('.whale-share-btn')?.addEventListener('click', () => {
+      if (window.copyText) {
+        window.copyText(window.location.href);
+      }
+    });
+
+    document.querySelector('.whale-wa-btn')?.addEventListener('click', async (ev) => {
+      try {
+        await fetch('/whale/listing/' + ev.currentTarget.dataset.id + '/wa-click', {
+          method: 'POST',
+          headers: { 'x-csrf-token': csrf || '' }
+        });
+      } catch (_error) {
+        // ignore tracker failure
+      }
+    });
+
+    const reviewItems = Array.from(document.querySelectorAll('[data-review-item]'));
+    const showMoreButton = document.querySelector('.whale-more-reviews');
+    const sortSelect = document.querySelector('.whale-review-sort');
+    const filterButtons = Array.from(document.querySelectorAll('[data-review-filter]'));
+
+    function renderReviews() {
+      const activeFilter = document.querySelector('[data-review-filter].active')?.dataset.reviewFilter || 'all';
+      const sortBy = sortSelect?.value || 'recent';
+      let visibleCount = Number(showMoreButton?.dataset.visible || 5);
+
+      reviewItems.sort((a, b) => {
+        if (sortBy === 'lowest') return Number(a.dataset.rating) - Number(b.dataset.rating);
+        if (sortBy === 'helpful') return Number(b.dataset.rating) - Number(a.dataset.rating);
+        return Number(a.dataset.order) - Number(b.dataset.order);
+      });
+
+      reviewItems.forEach((item) => item.parentElement.appendChild(item));
+
+      let shown = 0;
+      reviewItems.forEach((item) => {
+        const matches = activeFilter === 'all' || item.dataset.rating === activeFilter;
+        const shouldShow = matches && shown < visibleCount;
+        item.hidden = !shouldShow;
+        if (matches && shouldShow) shown += 1;
+      });
+
+      const totalMatching = reviewItems.filter((item) => activeFilter === 'all' || item.dataset.rating === activeFilter).length;
+      if (showMoreButton) {
+        showMoreButton.hidden = totalMatching <= visibleCount;
+      }
+    }
+
+    filterButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        filterButtons.forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        if (showMoreButton) showMoreButton.dataset.visible = '5';
+        renderReviews();
+      });
+    });
+    sortSelect?.addEventListener('change', renderReviews);
+    showMoreButton?.addEventListener('click', () => {
+      const currentVisible = Number(showMoreButton.dataset.visible || 5);
+      showMoreButton.dataset.visible = String(currentVisible + Number(showMoreButton.dataset.step || 5));
+      renderReviews();
+    });
+    document.querySelectorAll('[data-review-vote]').forEach((button) => {
+      button.addEventListener('click', () => {
+        if (window.showToast) window.showToast('<%= t("reviews.response_saved") %>', 'success', 2200);
+      });
+    });
+    renderReviews();
+
+    const onScroll = () => {
+      if (!mobileBuybar || !sidebar) return;
+      const triggerPoint = window.innerWidth > 768 ? false : window.scrollY > 240;
+      const sidebarRect = sidebar.getBoundingClientRect();
+      const regularVisible = sidebarRect.top < window.innerHeight && sidebarRect.bottom > 120;
+      mobileBuybar.classList.toggle('is-visible', Boolean(triggerPoint && !regularVisible));
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+  })();
+
+  async function addToCart(listingId) {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    try {
+      const res = await fetch('/whale/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrf
+        },
+        body: JSON.stringify({ listingId, quantity: 1, _csrf: csrf })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        if (window.showToast) window.showToast((data && data.message) || '<%= t("ui.error") %>', 'error');
+        return;
+      }
+      if (window.showToast) window.showToast('<%= t("cart.added") %>', 'success');
+    } catch (_error) {
+      if (window.showToast) window.showToast('<%= t("ui.error") %>', 'error');
+    }
+  }
+</script>
+
+<%- include('../partials/footer') %>

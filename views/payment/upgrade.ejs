@@ -1,0 +1,78 @@
+<%- include('../partials/header') %>
+
+<section class="page-section">
+  <div class="container upgrade-page">
+    <h1 class="page-title">PRO UPGRADE | ترقية برو</h1>
+
+    <% if (reason === 'feature') { %>
+      <div class="alert alert-info">هذه الميزة تتطلب اشتراك Pro | This feature requires Pro access</div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-error">حدث خطأ بالدفع | Payment error, try again</div>
+    <% } %>
+
+    <% if (cancelled) { %>
+      <div class="alert alert-warning">تم إلغاء عملية الدفع | Payment was cancelled</div>
+    <% } %>
+
+    <div class="plans-row">
+      <div class="plan-card selected-free">
+        <div class="plan-name">FREE</div>
+        <div class="plan-price">₪0</div>
+        <p>تصفح المجتمع والمحتوى | Browse community content</p>
+      </div>
+
+      <div class="plan-card selected-pro">
+        <div class="plan-name">PRO</div>
+        <div class="plan-price">₪<%= Number(process.env.SUBSCRIPTION_PRICE_NIS || 20) %></div>
+        <p>نشر إعلانات + مزايا متقدمة | Post listings + premium access</p>
+      </div>
+    </div>
+
+    <% if (sub) { %>
+      <div class="panel-card" style="margin-bottom:16px;">
+        <strong>الخطة الحالية | Current plan:</strong>
+        <%= sub.plan %>
+        <% if (daysLeft > 0) { %>
+          <span class="trial-badge" style="margin-inline-start:10px;">باقي <%= daysLeft %> يوم | <%= daysLeft %> days left</span>
+        <% } %>
+      </div>
+    <% } %>
+
+    <div class="panel-card">
+      <h3>ابدأ الدفع | Start payment</h3>
+      <form action="/payment/start" method="POST" class="auth-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <div class="form-group">
+          <label>مدة الاشتراك | Plan duration</label>
+          <select name="planMonths">
+            <option value="1">1 month / شهر واحد</option>
+            <option value="3">3 months / 3 أشهر</option>
+            <option value="6">6 months / 6 أشهر</option>
+            <option value="12">12 months / 12 شهر</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>مزود الدفع | Provider</label>
+          <select name="provider">
+            <option value="paymob">Paymob (موصى به | recommended)</option>
+            <option value="paypal">PayPal (بديل | fallback)</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-gold">⚡ فعّل Pro الآن / Activate Pro</button>
+      </form>
+
+      <% if (!currentUser) { %>
+        <p class="muted" style="margin-top:12px;">يجب تسجيل الدخول أولاً | Login required before checkout</p>
+      <% } else { %>
+        <a href="/payment/history" class="btn btn-secondary" style="margin-top:12px; display:inline-block;">سجل المدفوعات | Payment History</a>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,145 @@
+<%- include('partials/header') %>
+
+<section class="page-section feed-page">
+  <div class="container feed-layout">
+    <aside class="feed-sidebar feed-left">
+      <div class="panel-card feed-panel">
+        <h3>غرفك | Your Rooms</h3>
+        <% if (joinedRooms && joinedRooms.length) { %>
+          <ul class="simple-list">
+            <% joinedRooms.forEach((room) => { %>
+              <li><a href="/rooms/<%= room.slug %>"><%= room.icon || '🎮' %> <%= room.nameAr || room.name %></a></li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p class="muted">لم تنضم لأي غرفة بعد | You have not joined rooms yet</p>
+        <% } %>
+        <a href="/rooms" class="btn btn-outline btn-sm">استكشاف الغرف | Discover Rooms</a>
+      </div>
+
+      <div class="panel-card feed-panel">
+        <h3>نبض المجتمع | Community Pulse</h3>
+        <div class="pulse-grid">
+          <div class="pulse-item">
+            <span class="pulse-val"><%= posts ? posts.length : 0 %></span>
+            <span class="pulse-lbl">منشور اليوم | Feed</span>
+          </div>
+          <div class="pulse-item">
+            <span class="pulse-val"><%= joinedRooms ? joinedRooms.length : 0 %></span>
+            <span class="pulse-lbl">غرف منضم لها | Rooms</span>
+          </div>
+        </div>
+        <a href="/marketplace" class="btn btn-outline btn-sm">🛒 السوق الآن | Open Marketplace</a>
+      </div>
+    </aside>
+
+    <main class="feed-main">
+      <section class="feed-hero panel-card">
+        <div>
+          <h1>السوشال + السوق | Social + Marketplace</h1>
+          <p>تابع أخبار اللاعبين، وانشر جهازك للبيع في نفس المنصة.</p>
+        </div>
+        <div class="feed-hero-actions">
+          <a href="/marketplace/new" class="btn btn-primary">بيع قطعة | Sell Item</a>
+          <a href="/forum" class="btn btn-secondary">اسأل بالفوروم | Ask Forum</a>
+        </div>
+      </section>
+
+      <section class="composer-card">
+        <h2>منشور جديد | New Post</h2>
+        <form method="POST" action="/posts?_csrf=<%= encodeURIComponent(csrfToken || '') %>" enctype="multipart/form-data" class="composer-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="composer-dir-toggle">
+            <button type="button" class="btn btn-sm btn-outline" id="setRtl">RTL عربي</button>
+            <button type="button" class="btn btn-sm btn-outline" id="setLtr">LTR English</button>
+          </div>
+
+          <textarea id="postContent" name="content" rows="4" required placeholder="اكتب منشورك... | Share your update..."></textarea>
+
+          <div class="composer-controls">
+            <label>النوع | Type
+              <select name="type">
+                <option value="UPDATE">Update</option>
+                <option value="QUESTION">Question</option>
+                <option value="CLIP">Clip</option>
+                <option value="NEWS">News</option>
+                <option value="MEME">Meme</option>
+              </select>
+            </label>
+
+            <label>الغرفة | Room
+              <select name="roomId">
+                <option value="">الملف الشخصي | Profile</option>
+                <% joinedRooms.forEach((room) => { %>
+                  <option value="<%= room.id %>"><%= room.nameAr || room.name %></option>
+                <% }) %>
+              </select>
+            </label>
+
+            <label>الصور (حتى 4) | Images (max 4)
+              <input type="file" name="images" accept="image/*" multiple>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary">نشر | Publish</button>
+        </form>
+      </section>
+
+      <section class="feed-posts">
+        <% if (posts && posts.length) { %>
+          <% posts.forEach((post) => { %>
+            <%- include('partials/post-card', { post }) %>
+          <% }) %>
+
+          <% if (pageInfo && pageInfo.hasMore) { %>
+            <div class="load-more-row">
+              <a class="btn btn-outline" href="/?cursor=<%= pageInfo.nextCursor %>">تحميل المزيد | Load More</a>
+            </div>
+          <% } %>
+        <% } else { %>
+          <div class="empty-state">
+            <span class="empty-icon">📰</span>
+            <h3>لا يوجد منشورات بعد | No posts yet</h3>
+            <p>ابدأ بنشر أول مشاركة في المجتمع | Start the first post in the community</p>
+          </div>
+        <% } %>
+      </section>
+    </main>
+
+    <aside class="feed-sidebar feed-right">
+      <div class="panel-card feed-panel">
+        <h3>مزاد اللاعبين | Hot Listings</h3>
+        <% if (marketSnapshot && marketSnapshot.length) { %>
+          <ul class="simple-list hot-market-list">
+            <% marketSnapshot.slice(0, 6).forEach((item) => { %>
+              <li>
+                <a href="/marketplace/<%= item.id %>">
+                  <span class="hot-title" dir="auto"><%= item.titleAr || item.title %></span>
+                  <span class="hot-meta">₪ <%= Number(item.price || 0).toLocaleString() %> • <%= item.location %></span>
+                </a>
+              </li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p class="muted">لا يوجد إعلانات حالياً | No listings now</p>
+        <% } %>
+        <a href="/marketplace" class="btn btn-outline btn-sm">كل الإعلانات | All Listings</a>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<script>
+  (function () {
+    const textarea = document.getElementById('postContent');
+    const setRtl = document.getElementById('setRtl');
+    const setLtr = document.getElementById('setLtr');
+    if (!textarea || !setRtl || !setLtr) return;
+
+    setRtl.addEventListener('click', () => { textarea.dir = 'rtl'; });
+    setLtr.addEventListener('click', () => { textarea.dir = 'ltr'; });
+  })();
+</script>
+
+<%- include('partials/footer') %>

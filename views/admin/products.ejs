@@ -1,0 +1,56 @@
+<%- include('partials/admin-header') %>
+
+<div class="admin-header-bar">
+  <h1>📦 Products (<%= products.length %>)</h1>
+  <a href="/admin/products/add" class="btn btn-primary">+ Add Product</a>
+</div>
+
+<div class="filter-bar">
+  <a href="/admin/products" class="filter-tag <%= !activeCategory ? 'active' : '' %>">All</a>
+  <% categories.forEach(cat => { %>
+  <a href="/admin/products?category=<%= cat.id %>" class="filter-tag <%= activeCategory === cat.id ? 'active' : '' %>"><%= cat.icon %> <%= cat.nameAr %></a>
+  <% }) %>
+</div>
+
+<% if (products.length > 0) { %>
+<div class="admin-table-wrapper">
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>Image</th>
+        <th>Name (AR)</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Featured</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% products.forEach(p => { %>
+      <tr>
+        <td><img src="<%= p.image %>" alt="" width="50" height="50" style="border-radius:6px;object-fit:cover" onerror="this.src='/images/products/placeholder.svg'"></td>
+        <td><strong><%= p.nameAr %></strong><br><small style="color:#888"><%= p.name %></small></td>
+        <td><% const cat = categories.find(c => c.id === p.category); %><%= cat ? cat.icon + ' ' + cat.nameAr : p.category %></td>
+        <td><strong><%= config.currency %> <%= p.price.toLocaleString() %></strong><% if(p.oldPrice) { %><br><s style="color:#888"><%= config.currency %> <%= p.oldPrice.toLocaleString() %></s><% } %></td>
+        <td><button onclick="toggleField('<%= p.id %>','inStock')" class="toggle-btn <%= p.inStock ? 'on' : 'off' %>" id="stock-<%= p.id %>"><%= p.inStock ? '✅ Yes' : '❌ No' %></button></td>
+        <td><button onclick="toggleField('<%= p.id %>','featured')" class="toggle-btn <%= p.featured ? 'on' : 'off' %>" id="feat-<%= p.id %>"><%= p.featured ? '⭐ Yes' : '— No' %></button></td>
+        <td class="actions-cell">
+          <a href="/admin/products/edit/<%= p.id %>" class="btn btn-sm btn-outline">✏️ Edit</a>
+          <form method="POST" action="/admin/products/delete/<%= p.id %>" style="display:inline" onsubmit="return confirm('Delete this product?')">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-sm btn-danger">🗑️ Delete</button>
+          </form>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</div>
+<% } else { %>
+<div class="empty-state">
+  <p>No products found. <a href="/admin/products/add">Add one now →</a></p>
+</div>
+<% } %>
+
+<%- include('partials/admin-footer') %>

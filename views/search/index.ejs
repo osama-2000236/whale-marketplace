@@ -1,0 +1,73 @@
+<%- include('../partials/header') %>
+
+<section class="page-section search-page">
+  <div class="container">
+    <h1>نتائج البحث | Search Results</h1>
+
+    <form method="GET" action="/search" class="search-main-form">
+      <input type="text" name="q" value="<%= q %>" placeholder="ابحث في المنصة | Search platform" required>
+      <select name="type">
+        <option value="all" <%= type === 'all' ? 'selected' : '' %>>All</option>
+        <option value="users" <%= type === 'users' ? 'selected' : '' %>>Users</option>
+        <option value="posts" <%= type === 'posts' ? 'selected' : '' %>>Posts</option>
+        <option value="rooms" <%= type === 'rooms' ? 'selected' : '' %>>Rooms</option>
+        <option value="marketplace" <%= type === 'marketplace' ? 'selected' : '' %>>Marketplace</option>
+        <option value="products" <%= type === 'products' ? 'selected' : '' %>>Store Products</option>
+      </select>
+      <button class="btn btn-primary" type="submit">بحث | Search</button>
+    </form>
+
+    <div class="search-results panel-card">
+      <% if (!q) { %>
+        <p class="muted">اكتب كلمة للبحث | Enter a query</p>
+      <% } %>
+
+      <% if (results.users && results.users.length) { %>
+        <h2>Users</h2>
+        <ul class="simple-list">
+          <% results.users.forEach((u) => { %>
+            <li><a href="/u/<%= u.username %>"><%= u.username %></a></li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <% if (results.posts && results.posts.length) { %>
+        <h2>Posts</h2>
+        <ul class="simple-list">
+          <% results.posts.forEach((p) => { %>
+            <li><a href="/#post-<%= p.id %>"><%= (p.snippet || p.content || '').toString().replace(/<[^>]+>/g, '') %></a></li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <% if (results.rooms && results.rooms.length) { %>
+        <h2>Rooms</h2>
+        <ul class="simple-list">
+          <% results.rooms.forEach((room) => { %>
+            <li><a href="/rooms/<%= room.slug %>"><%= room.nameAr || room.name %></a></li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <% if (results.marketplace && results.marketplace.length) { %>
+        <h2>Marketplace</h2>
+        <ul class="simple-list">
+          <% results.marketplace.forEach((item) => { %>
+            <li><a href="/marketplace/<%= item.id %>"><%= item.titleAr || item.title %></a></li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <% if (results.products && results.products.length) { %>
+        <h2>Store Products</h2>
+        <ul class="simple-list">
+          <% results.products.forEach((product) => { %>
+            <li><a href="/product/<%= product.id %>"><%= product.nameAr || product.name %></a></li>
+          <% }) %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

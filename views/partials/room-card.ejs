@@ -1,0 +1,15 @@
+<article class="room-card">
+  <a href="/rooms/<%= room.slug %>" class="room-cover-wrap">
+    <img src="<%= room.coverImage || '/images/products/placeholder.svg' %>" alt="<%= room.nameAr || room.name %>" class="room-cover" loading="lazy">
+    <span class="room-icon"><%= room.icon || '🎮' %></span>
+  </a>
+  <div class="room-body">
+    <h3><a href="/rooms/<%= room.slug %>"><%= room.nameAr || room.name %></a></h3>
+    <p class="room-game"><%= room.game %></p>
+    <p class="room-desc"><%= room.descriptionAr || room.description || 'Gaming room' %></p>
+    <div class="room-card-footer">
+      <span>👥 <%= room.memberCount || 0 %> عضو | members</span>
+      <a href="/rooms/<%= room.slug %>" class="btn btn-sm <%= room.joined ? 'btn-primary' : 'btn-outline' %>"><%= room.joined ? 'تم الانضمام | Joined' : 'انضم | Join' %></a>
+    </div>
+  </div>
+</article>

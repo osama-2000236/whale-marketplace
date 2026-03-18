@@ -1,0 +1,52 @@
+<%- include('../partials/header') %>
+
+<section class="page-section rooms-page">
+  <div class="container rooms-layout">
+    <aside class="rooms-sidebar">
+      <div class="panel-card">
+        <h3>غرفك | Your Rooms</h3>
+        <% if (yourRooms && yourRooms.length) { %>
+          <ul class="simple-list">
+            <% yourRooms.forEach((room) => { %>
+              <li><a href="/rooms/<%= room.slug %>"><%= room.icon || '🎮' %> <%= room.nameAr || room.name %></a></li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p class="muted">لا توجد غرف منضمة | No joined rooms</p>
+        <% } %>
+      </div>
+    </aside>
+
+    <main class="rooms-main">
+      <div class="section-header section-header-inline">
+        <h1>غرف الألعاب | Game Rooms</h1>
+      </div>
+
+      <form method="GET" action="/rooms" class="rooms-search-form">
+        <input type="text" name="q" placeholder="ابحث عن غرفة... | Search rooms..." value="<%= searchQuery %>">
+        <button class="btn btn-primary" type="submit">بحث | Search</button>
+      </form>
+
+      <div class="rooms-grid">
+        <% if (rooms && rooms.length) { %>
+          <% rooms.forEach((room) => { %>
+            <%- include('../partials/room-card', { room }) %>
+          <% }) %>
+        <% } else { %>
+          <div class="empty-state">
+            <span class="empty-icon">🎮</span>
+            <h3>لا يوجد نتائج | No rooms found</h3>
+          </div>
+        <% } %>
+      </div>
+
+      <% if (pageInfo && pageInfo.hasMore) { %>
+        <div class="load-more-row">
+          <a href="/rooms?<%= searchQuery ? 'q=' + encodeURIComponent(searchQuery) + '&' : '' %>cursor=<%= pageInfo.nextCursor %>" class="btn btn-outline">تحميل المزيد | Load More</a>
+        </div>
+      <% } %>
+    </main>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

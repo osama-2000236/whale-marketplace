@@ -1,0 +1,14 @@
+<%
+  const typeMap = {
+    LIKE: '👍 إعجاب جديد | New like',
+    COMMENT: '💬 تعليق جديد | New comment',
+    FOLLOW: '👤 متابع جديد | New follower',
+    MENTION: '📣 تمت الإشارة إليك | You were mentioned',
+    SALE_INQUIRY: '🛒 استفسار بيع | Sale inquiry',
+    ANNOUNCEMENT: '📢 إعلان إداري | Admin announcement'
+  };
+%>
+<div class="notification-item <%= item.isRead ? '' : 'unread' %>">
+  <div class="notification-title"><%= typeMap[item.type] || item.type %></div>
+  <div class="notification-time"><%= new Date(item.createdAt).toLocaleString('ar-PS') %></div>
+</div>

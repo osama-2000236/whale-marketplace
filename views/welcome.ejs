@@ -1,0 +1,75 @@
+<%- include('partials/header') %>
+
+<section class="page-section whale-page">
+  <div class="container welcome-page">
+    <div class="welcome-hero">
+      <span class="welcome-badge">🐳 Whale · الحوت</span>
+      <h1>السوق الكبير في فلسطين<br><span style="font-size:0.72em;font-weight:700;">The Big Market in Palestine</span></h1>
+      <p class="welcome-sub">
+        بيع وشراء بسهولة مع حماية المشتري، والدفع المحفوظ حتى تأكيد الاستلام.
+        <br>
+        Buy and sell easily with buyer protection and escrow-style payment release.
+      </p>
+      <% if (ref) { %>
+        <div class="alert alert-success" style="margin-top:12px;">
+          🎁 كود الإحالة مفعل: <strong><%= ref %></strong> | Referral code applied
+        </div>
+      <% } %>
+    </div>
+
+    <div class="welcome-benefits">
+      <div class="benefit-card">
+        <div class="b-icon">🛒</div>
+        <div class="b-title">عرض وشراء سريع</div>
+        <div class="b-title-en">Fast Listing & Buying</div>
+        <p>اعرض منتجك خلال دقائق وتواصل مباشرة مع المشترين.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="b-icon">🐳</div>
+        <div class="b-title">حماية Whale</div>
+        <div class="b-title-en">Whale Protection</div>
+        <p>أموالك محفوظة حتى تؤكد الاستلام — Your money stays protected.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="b-icon">🚚</div>
+        <div class="b-title">شحن موثوق</div>
+        <div class="b-title-en">Trusted Shipping</div>
+        <p>شركات شحن محلية مع تغطية مدن فلسطين.</p>
+      </div>
+      <div class="benefit-card">
+        <div class="b-icon">⭐</div>
+        <div class="b-title">تقييمات حقيقية</div>
+        <div class="b-title-en">Verified Reviews</div>
+        <p>فقط المشترين المكتمل طلبهم يمكنهم التقييم.</p>
+      </div>
+    </div>
+
+    <div class="welcome-form-card">
+      <h2>أنشئ حسابك مجاناً | Create your free account</h2>
+      <form action="/auth/register" method="POST" class="auth-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <% if (ref) { %><input type="hidden" name="ref" value="<%= ref %>"><% } %>
+
+        <div class="form-group">
+          <label>اسم المستخدم / Username</label>
+          <input type="text" name="username" required minlength="3" placeholder="example_user">
+        </div>
+
+        <div class="form-group">
+          <label>البريد الإلكتروني / Email</label>
+          <input type="email" name="email" required placeholder="you@example.com">
+        </div>
+
+        <div class="form-group">
+          <label>كلمة المرور / Password</label>
+          <input type="password" name="password" required minlength="8" placeholder="••••••••">
+        </div>
+
+        <button type="submit" class="btn-primary-full">🐳 سجّل الآن مجاناً | Join for free</button>
+      </form>
+      <p class="already-have">عندك حساب؟ <a href="/auth/login">سجّل دخول | Login</a></p>
+    </div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

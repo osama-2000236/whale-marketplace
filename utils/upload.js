@@ -1,0 +1,99 @@
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
+
+const cloudinaryEnabled = Boolean(process.env.CLOUDINARY_URL);
+let cloudinary = null;
+
+if (cloudinaryEnabled) {
+  // استخدام Cloudinary عند وجود CLOUDINARY_URL
+  cloudinary = require('cloudinary').v2;
+  cloudinary.config({
+    cloudinary_url: process.env.CLOUDINARY_URL
+  });
+}
+
+const tmpDir = path.join(__dirname, '..', 'public', 'uploads', 'tmp');
+if (!fs.existsSync(tmpDir)) {
+  fs.mkdirSync(tmpDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, tmpDir),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
+    cb(null, `${Date.now()}-${uuidv4()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: Number(process.env.MAX_FILE_SIZE || 5 * 1024 * 1024)
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowed = /image\/(png|jpe?g|gif|webp|svg\+xml)/;
+    if (allowed.test(file.mimetype)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Only image uploads are allowed'));
+  }
+});
+
+function ensureDir(relativeDir) {
+  const absPath = path.join(__dirname, '..', 'public', relativeDir);
+  if (!fs.existsSync(absPath)) {
+    fs.mkdirSync(absPath, { recursive: true });
+  }
+  return absPath;
+}
+
+async function storeOneFile(file, targetDir = 'uploads') {
+  if (!file) return null;
+
+  if (cloudinaryEnabled && cloudinary) {
+    try {
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: `pc-gaming/${targetDir}`
+      });
+      fs.unlink(file.path, () => {});
+      return result.secure_url;
+    } catch (error) {
+      // fallback local storage when cloud upload fails
+      console.warn('Cloudinary upload failed, fallback to local:', error.message);
+    }
+  }
+
+  const destinationDir = ensureDir(targetDir);
+  const ext = path.extname(file.originalname || file.filename || '.jpg') || '.jpg';
+  const fileName = `${Date.now()}-${uuidv4()}${ext.toLowerCase()}`;
+  const destination = path.join(destinationDir, fileName);
+
+  await fs.promises.rename(file.path, destination);
+  return `/${targetDir.replace(/\\/g, '/')}/${fileName}`;
+}
+
+async function storeFiles(files, targetDir = 'uploads', max = 6) {
+  if (!Array.isArray(files) || files.length === 0) {
+    return [];
+  }
+
+  const limited = files.slice(0, max);
+  const urls = [];
+
+  for (const file of limited) {
+    // eslint-disable-next-line no-await-in-loop
+    const url = await storeOneFile(file, targetDir);
+    if (url) urls.push(url);
+  }
+
+  return urls;
+}
+
+module.exports = {
+  upload,
+  storeOneFile,
+  storeFiles,
+  cloudinaryEnabled
+};

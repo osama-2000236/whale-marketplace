@@ -1,0 +1,68 @@
+<%- include('../partials/header') %>
+
+<section class="page-section room-detail-page">
+  <div class="container">
+    <div class="room-hero">
+      <img src="<%= room.coverImage || '/images/products/placeholder.svg' %>" alt="<%= room.nameAr || room.name %>">
+      <div class="room-hero-info">
+        <h1><%= room.icon || '🎮' %> <%= room.nameAr || room.name %></h1>
+        <p><%= room.descriptionAr || room.description %></p>
+        <p>👥 <%= room.memberCount %> عضو | Members</p>
+
+        <% if (currentUser) { %>
+          <form method="POST" action="/rooms/<%= room.slug %>/join">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button class="btn <%= room.joined ? 'btn-outline' : 'btn-primary' %>" type="submit">
+              <%= room.joined ? 'مغادرة الغرفة | Leave Room' : 'انضم للغرفة | Join Room' %>
+            </button>
+          </form>
+        <% } else { %>
+          <a href="/auth/login" class="btn btn-primary">دخول للانضمام | Login to Join</a>
+        <% } %>
+      </div>
+    </div>
+
+    <div class="room-detail-layout">
+      <aside class="room-side-panel panel-card">
+        <h3>حول الغرفة | About</h3>
+        <p><%= room.descriptionAr || room.description || 'Gaming room for players.' %></p>
+        <h4>المشرفون | Moderators</h4>
+        <% if (room.moderators && room.moderators.length) { %>
+          <ul class="simple-list">
+            <% room.moderators.forEach((mod) => { %>
+              <li>
+                <a href="/u/<%= mod.username %>">
+                  <%- include('../partials/avatar', { user: mod, size: 'sm' }) %>
+                  <span><%= mod.username %></span>
+                </a>
+              </li>
+            <% }) %>
+          </ul>
+        <% } else { %>
+          <p class="muted">لا يوجد مشرفين مضافين | No listed moderators</p>
+        <% } %>
+      </aside>
+
+      <main class="room-feed-main">
+        <h2>المنشورات | Posts</h2>
+        <% if (posts && posts.length) { %>
+          <% posts.forEach((post) => { %>
+            <%- include('../partials/post-card', { post }) %>
+          <% }) %>
+
+          <% if (pageInfo && pageInfo.hasMore) { %>
+            <div class="load-more-row">
+              <a href="/rooms/<%= room.slug %>?cursor=<%= pageInfo.nextCursor %>" class="btn btn-outline">تحميل المزيد | Load More</a>
+            </div>
+          <% } %>
+        <% } else { %>
+          <div class="empty-state">
+            <h3>لا توجد منشورات بعد | No posts yet</h3>
+          </div>
+        <% } %>
+      </main>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

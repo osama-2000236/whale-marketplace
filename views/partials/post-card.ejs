@@ -1,0 +1,72 @@
+<%
+  const dir = getDirection ? getDirection(post.content) : 'rtl';
+  const canManage = currentUser && (currentUser.id === post.authorId || ['ADMIN', 'MODERATOR'].includes(currentUser.role));
+  const roomLabel = post.room ? (post.room.nameAr || post.room.name) : 'منشور شخصي | Profile Post';
+  const postTypeLabel = post.type ? String(post.type).toLowerCase() : 'update';
+%>
+<article class="post-card" id="post-<%= post.id %>">
+  <header class="post-card-head">
+    <div class="post-author">
+      <a href="/u/<%= post.author.username %>"><%- include('avatar', { user: post.author, size: 'sm' }) %></a>
+      <div>
+        <a href="/u/<%= post.author.username %>" class="post-username"><%= post.author.username %></a>
+        <div class="post-meta">
+          <span><%= new Date(post.createdAt).toLocaleString('ar-PS') %></span>
+          <span>•</span>
+          <% if (post.room) { %>
+            <a href="/rooms/<%= post.room.slug %>" class="room-tag"><%= roomLabel %></a>
+          <% } else { %>
+            <span class="room-tag"><%= roomLabel %></span>
+          <% } %>
+          <span class="pill post-type-pill">#<%= postTypeLabel %></span>
+          <% if (post.isPinned) { %><span class="pill">📌 مثبت | Pinned</span><% } %>
+          <% if (post.isAnnouncement) { %><span class="pill">📢 إعلان | Announcement</span><% } %>
+        </div>
+      </div>
+    </div>
+
+    <% if (canManage) { %>
+      <div class="post-admin-actions">
+        <form method="POST" action="/posts/<%= post.id %>/delete" onsubmit="return confirm('Delete post?')">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit">🗑️</button>
+        </form>
+      </div>
+    <% } %>
+  </header>
+
+  <div class="post-content" dir="<%= dir %>">
+    <p><%= post.content %></p>
+  </div>
+
+  <% if (Array.isArray(post.images) && post.images.length) { %>
+    <div class="post-images grid-<%= Math.min(post.images.length, 4) %>">
+      <% post.images.slice(0, 4).forEach((image) => { %>
+        <img src="<%= image %>" alt="Post image" loading="lazy">
+      <% }) %>
+    </div>
+  <% } %>
+
+  <footer class="post-actions">
+    <form method="POST" action="/posts/<%= post.id %>/like">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="action-btn <%= post.viewerLiked ? 'liked' : '' %>">👍 <%= post.likesCount %> إعجاب | Likes</button>
+    </form>
+    <a href="/api/posts/<%= post.id %>/comments" class="action-btn">💬 <%= post.commentsCount %> تعليق | Comments</a>
+    <button type="button" class="action-btn" onclick="navigator.clipboard.writeText(window.location.origin + '/#post-<%= post.id %>')">🔗 مشاركة | Share</button>
+    <button type="button" class="action-btn">🚩 تبليغ | Report</button>
+  </footer>
+
+  <% if (currentUser) { %>
+    <form method="POST" action="/comments" class="inline-comment-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="postId" value="<%= post.id %>">
+      <input type="text" name="content" required maxlength="500" placeholder="اكتب تعليق... | Write a comment">
+      <button type="submit" class="btn btn-sm btn-primary">تعليق | Comment</button>
+    </form>
+  <% } %>
+
+  <% if (post.commentsCount > 3) { %>
+    <a href="/api/posts/<%= post.id %>/comments" class="view-all-comments">عرض كل <%= post.commentsCount %> تعليق | View all comments</a>
+  <% } %>
+</article>

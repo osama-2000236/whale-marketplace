@@ -1,0 +1,48 @@
+<%- include('../partials/header', { title: t('nav.my_orders') + ' — Whale' }) %>
+
+<section class="page-section whale-page">
+  <div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+      <h1 class="page-title"><%= t('nav.my_orders') %></h1>
+      <div style="display:flex; gap:8px;">
+        <a href="/whale/orders?tab=buying" class="btn btn-sm <%= tab === 'buying' ? 'btn-primary' : 'btn-ghost' %>"><%= t('order.tab_buying') %></a>
+        <a href="/whale/orders?tab=selling" class="btn btn-sm <%= tab === 'selling' ? 'btn-primary' : 'btn-ghost' %>"><%= t('order.tab_selling') %></a>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <% if (orders.length) { %>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th><%= t('order.number') %></th>
+              <th><%= t('order.item') %></th>
+              <th><%= tab === 'selling' ? t('order.buyer') : t('order.seller') %></th>
+              <th><%= t('order.amount') %></th>
+              <th><%= t('order.status') %></th>
+              <th><%= t('order.created') %></th>
+              <th><%= t('order.actions') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% orders.forEach((order) => { %>
+              <tr>
+                <td><%= order.orderNumber %></td>
+                <td dir="auto"><%= order.listing.title %></td>
+                <td><%= tab === 'selling' ? order.buyer.username : order.seller.username %></td>
+                <td><%= order.amount.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</td>
+                <td><span class="status-badge status-<%= order.orderStatus %>"><%= t('status.' + order.orderStatus) %></span></td>
+                <td><%= new Date(order.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></td>
+                <td><a href="/whale/orders/<%= order.id %>"><%= t('ui.open') %></a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      <% } else { %>
+        <p class="muted"><%= t('order.no_orders') %></p>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

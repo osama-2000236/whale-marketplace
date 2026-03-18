@@ -1,0 +1,50 @@
+<div
+  id="toast-wrap"
+  role="alert"
+  aria-live="polite"
+  style="position:fixed;top:70px;z-index:9999;display:flex;flex-direction:column;gap:10px;<%= dir==='rtl' ? 'left:20px' : 'right:20px' %>"
+></div>
+
+<% if (locals.flash) { %>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      showToast('<%= String(flash.msg || "").replace(/'/g, "\\'") %>', '<%= flash.type || "info" %>');
+    });
+  </script>
+<% } %>
+
+<script>
+  function showToast(msg, type, ms) {
+    var kind = type || 'info';
+    var duration = ms || 4000;
+    var wrap = document.getElementById('toast-wrap');
+    if (!wrap) return;
+
+    var el = document.createElement('div');
+    el.className = 'toast ' + kind;
+    el.setAttribute('role', 'status');
+    el.textContent = msg;
+    wrap.appendChild(el);
+
+    setTimeout(function () {
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(<%= dir==="rtl" ? "-110%" : "110%" %>)';
+      el.style.transition = 'opacity .3s, transform .3s';
+      setTimeout(function () { el.remove(); }, 320);
+    }, duration);
+  }
+
+  function copyText(text) {
+    if (!navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(function () {
+      showToast('<%= t("ui.copied") %>', 'success');
+    });
+  }
+
+  window.showToast = showToast;
+  window.copyText = copyText;
+</script>
+<script src="/js/main.js"></script>
+<script src="/js/whale-ui-v2.js"></script>
+</body>
+</html>

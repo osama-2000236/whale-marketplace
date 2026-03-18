@@ -1,0 +1,49 @@
+<%- include('../partials/header') %>
+
+<section class="page-section">
+  <div class="container" style="max-width: 1000px;">
+    <h1 class="page-title">Payment History | سجل المدفوعات</h1>
+
+    <div class="admin-panel">
+      <h3>Current Subscription | الاشتراك الحالي</h3>
+      <% if (sub) { %>
+        <p>الخطة | Plan: <strong><%= sub.plan %></strong></p>
+        <p>نهاية التجربة | Trial Ends: <strong><%= sub.trialEndsAt ? new Date(sub.trialEndsAt).toLocaleDateString('en-GB') : '-' %></strong></p>
+        <p>مدفوع حتى | Paid Until: <strong><%= sub.paidUntil ? new Date(sub.paidUntil).toLocaleDateString('en-GB') : '-' %></strong></p>
+      <% } else { %>
+        <p>لا يوجد اشتراك بعد | No subscription yet.</p>
+      <% } %>
+    </div>
+
+    <div class="admin-panel">
+      <h3>آخر العمليات | Recent Payments</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>المزوّد | Provider</th>
+            <th>المبلغ | Amount</th>
+            <th>الحالة | Status</th>
+            <th>التاريخ | Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (payments.length === 0) { %>
+            <tr><td colspan="5">لا توجد عمليات | No payments yet</td></tr>
+          <% } %>
+          <% payments.forEach((payment) => { %>
+            <tr>
+              <td><code><%= payment.id.slice(0, 8) %></code></td>
+              <td><%= payment.provider %></td>
+              <td><%= payment.amount %> <%= payment.currency %></td>
+              <td><span class="status-pill <%= payment.status === 'success' ? 'active' : (payment.status === 'pending' ? 'trial' : 'expired') %>"><%= payment.status %></span></td>
+              <td><%= new Date(payment.createdAt).toLocaleString('en-GB') %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

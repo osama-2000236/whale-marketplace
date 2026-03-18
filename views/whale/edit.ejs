@@ -1,0 +1,132 @@
+<%- include('../partials/header') %>
+
+<section class="page-section whale-page">
+  <div class="container">
+    <h1 class="page-title">تعديل الإعلان | Edit Listing</h1>
+
+    <form method="POST" action="/whale/listing/<%= listing.slug || listing.id %>/edit" enctype="multipart/form-data" class="panel-card">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>العنوان | Title</label>
+          <input type="text" name="title" value="<%= listing.title %>" required>
+        </div>
+        <div class="form-group">
+          <label>العنوان بالعربي | Arabic Title</label>
+          <input type="text" name="titleAr" value="<%= listing.titleAr || '' %>">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>الوصف | Description</label>
+          <textarea name="description" rows="4" required><%= listing.description %></textarea>
+        </div>
+        <div class="form-group">
+          <label>الوصف بالعربي | Arabic Description</label>
+          <textarea name="descriptionAr" rows="4"><%= listing.descriptionAr || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>الفئة | Category</label>
+          <select name="categoryId" id="editCategory">
+            <option value="">No category</option>
+            <% categories.forEach((cat) => { %>
+              <option value="<%= cat.id %>" <%= listing.categoryId === cat.id ? 'selected' : '' %>>
+                <%= cat.nameAr %> / <%= cat.name %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>الفئة الفرعية | Subcategory</label>
+          <select name="subcategoryId" id="editSubcategory"></select>
+        </div>
+        <div class="form-group">
+          <label>المدينة | City</label>
+          <input type="text" name="city" value="<%= listing.city %>" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>السعر | Price</label>
+          <input type="number" name="price" value="<%= listing.price %>" min="1" required>
+        </div>
+        <div class="form-group">
+          <label>الكمية | Quantity</label>
+          <input type="number" name="quantity" value="<%= listing.quantity %>" min="1" required>
+        </div>
+        <div class="form-group">
+          <label>الحالة | Condition</label>
+          <select name="condition" required>
+            <% ['NEW','LIKE_NEW','USED','GOOD','FAIR','FOR_PARTS'].forEach((c) => { %>
+              <option value="<%= c %>" <%= listing.condition === c ? 'selected' : '' %>><%= c %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>وسوم | Tags</label>
+          <input type="text" name="tags" value="<%= listing.tags?.join(', ') || '' %>">
+        </div>
+        <div class="form-group">
+          <label>Specifications JSON</label>
+          <input type="text" name="specs" value="<%= listing.specs ? JSON.stringify(listing.specs) : '' %>">
+        </div>
+        <div class="form-group" style="align-self:end;">
+          <label><input type="checkbox" name="negotiable" value="true" <%= listing.negotiable ? 'checked' : '' %>> قابل للتفاوض | Negotiable</label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>صور جديدة (اختياري) | New images (optional)</label>
+        <input type="file" name="images" accept="image/*" multiple>
+      </div>
+
+      <% if (listing.images?.length) { %>
+        <div class="image-preview-grid">
+          <% listing.images.forEach((img) => { %><img src="<%= img %>" alt="listing image"><% }) %>
+        </div>
+      <% } %>
+
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button type="submit" class="btn btn-primary">حفظ التعديلات | Save Changes</button>
+        <a href="/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-outline">رجوع | Back</a>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+  (function () {
+    const categories = <%- JSON.stringify(categories) %>;
+    const categorySel = document.getElementById('editCategory');
+    const subSel = document.getElementById('editSubcategory');
+    const selectedSub = '<%= listing.subcategoryId || '' %>';
+
+    function renderSubs() {
+      const id = categorySel.value;
+      const category = categories.find((c) => c.id === id);
+      subSel.innerHTML = '<option value="">No subcategory</option>';
+      if (!category || !category.subcategories) return;
+      category.subcategories.forEach((sub) => {
+        const opt = document.createElement('option');
+        opt.value = sub.id;
+        opt.textContent = (sub.nameAr || sub.name) + ' / ' + sub.name;
+        if (sub.id === selectedSub) opt.selected = true;
+        subSel.appendChild(opt);
+      });
+    }
+
+    categorySel.addEventListener('change', renderSubs);
+    renderSubs();
+  })();
+</script>
+
+<%- include('../partials/footer') %>

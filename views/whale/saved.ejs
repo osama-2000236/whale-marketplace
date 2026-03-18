@@ -1,0 +1,29 @@
+<%- include('../partials/header') %>
+
+<section class="page-section whale-page">
+  <div class="container">
+    <h1 class="page-title">المحفوظات | Saved Listings</h1>
+
+    <div class="listing-grid">
+      <% if (saved.length) { %>
+        <% saved.forEach((entry) => { const listing = entry.listing; %>
+          <a class="listing-card" href="/whale/listing/<%= listing.slug || listing.id %>">
+            <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= listing.title %>" class="listing-img">
+            <div class="listing-body">
+              <div class="listing-price"><%= listing.price.toLocaleString('ar-PS') %> ₪</div>
+              <div class="listing-title" dir="auto"><%= listing.title %></div>
+              <div class="muted">📍 <%= listing.city %> · by <%= listing.seller.username %></div>
+            </div>
+          </a>
+        <% }) %>
+      <% } else { %>
+        <div class="panel-card">
+          <p class="muted">لا توجد عناصر محفوظة | No saved listings yet.</p>
+          <a href="/whale" class="btn btn-outline">تصفح السوق | Browse Whale</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,566 @@
+<%- include('../partials/header', { title: t('nav.marketplace') + ' — Whale' }) %>
+
+<%
+  const totalActiveListings = (cityStats || []).reduce((sum, row) => sum + (row._count?.city || 0), 0);
+  const featuredHeroCards = (listings || []).slice(0, 3);
+  const activeFilterChips = [];
+  if (filters.category) activeFilterChips.push({ key: 'category', label: filters.category });
+  if (filters.subcategory) activeFilterChips.push({ key: 'subcategory', label: filters.subcategory });
+  if (filters.city) activeFilterChips.push({ key: 'city', label: filters.city });
+  if (filters.condition) activeFilterChips.push({ key: 'condition', label: t('cond.' + filters.condition) });
+  if (filters.q) activeFilterChips.push({ key: 'q', label: filters.q });
+%>
+
+<main class="section whale-page whale-marketplace-page">
+  <div class="container">
+    <% if (currentUser) { %>
+      <section class="whale-hero-shell whale-hero-shell-auth card">
+        <div class="whale-hero-copyblock">
+          <div class="whale-hero-user">
+            <%- include('../partials/avatar', { user: currentUser, size: 'lg' }) %>
+            <div>
+              <p class="whale-eyebrow"><%= t('app.location') %></p>
+              <h1 class="page-title whale-hero-title"><%= t('home.personal_greeting', { name: currentUser.username }) %></h1>
+              <p class="whale-hero-copy"><%= t('home.personal_sub') %></p>
+            </div>
+          </div>
+
+          <div class="whale-stat-strip">
+            <div class="whale-stat-card">
+              <span class="whale-stat-number" data-counter="<%= heroStats.listings %>">0</span>
+              <span class="whale-stat-label"><%= t('nav.my_listings') %></span>
+            </div>
+            <div class="whale-stat-card">
+              <span class="whale-stat-number" data-counter="<%= heroStats.orders %>">0</span>
+              <span class="whale-stat-label"><%= t('nav.my_orders') %></span>
+            </div>
+            <div class="whale-stat-card">
+              <span class="whale-stat-number" data-counter="<%= heroStats.saved %>">0</span>
+              <span class="whale-stat-label"><%= t('nav.saved') %></span>
+            </div>
+          </div>
+
+          <div class="whale-quick-actions" aria-label="<%= t('home.how_title') %>">
+            <a href="/whale" class="whale-quick-action card">
+              <span class="whale-quick-icon">🔎</span>
+              <strong><%= t('home.quick_browse') %></strong>
+            </a>
+            <a href="/whale/sell" class="whale-quick-action card">
+              <span class="whale-quick-icon">＋</span>
+              <strong><%= t('home.quick_sell') %></strong>
+            </a>
+            <a href="/whale/orders" class="whale-quick-action card">
+              <span class="whale-quick-icon">📦</span>
+              <strong><%= t('home.quick_orders') %></strong>
+            </a>
+          </div>
+        </div>
+
+        <div class="whale-nearby-column">
+          <div class="whale-panel-heading">
+            <h2><%= t('home.near_city') %></h2>
+            <% if (personalCity) { %><span class="muted"><%= personalCity %></span><% } %>
+          </div>
+          <div class="whale-nearby-scroller">
+            <% (nearYouListings || []).forEach((item) => { %>
+              <% const nearbyImage = imageSet((item.images && item.images[0]) || null, {
+                widths: [160, 320, 480],
+                aspectRatio: '4:3',
+                sizes: '(max-width: 719px) 220px, 160px'
+              }); %>
+              <a href="/whale/listing/<%= item.slug || item.id %>" class="whale-mini-card card">
+                <picture class="whale-picture-shell">
+                  <% if (nearbyImage.webpSrcset) { %>
+                    <source type="image/webp" srcset="<%= nearbyImage.webpSrcset %>" sizes="<%= nearbyImage.sizes %>">
+                  <% } %>
+                  <img
+                    src="<%= nearbyImage.src %>"
+                    srcset="<%= nearbyImage.srcset %>"
+                    sizes="<%= nearbyImage.sizes %>"
+                    width="<%= nearbyImage.width %>"
+                    height="<%= nearbyImage.height %>"
+                    alt="<%= item.title %>"
+                    loading="lazy"
+                  >
+                </picture>
+                <div>
+                  <strong dir="auto"><%= item.title %></strong>
+                  <span><%= item.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</span>
+                </div>
+              </a>
+            <% }) %>
+          </div>
+        </div>
+      </section>
+    <% } else { %>
+      <section class="whale-hero-shell whale-hero-shell-guest card">
+        <div class="whale-hero-pattern" aria-hidden="true"></div>
+        <div class="whale-hero-copyblock">
+          <p class="whale-eyebrow"><%= t('app.location') %></p>
+          <h1 class="page-title whale-hero-title"><%= t('home.hero_title') %></h1>
+          <p class="whale-hero-copy"><%= t('home.hero_sub') %></p>
+          <div class="whale-trust-row">
+            <span class="whale-trust-pill">🔒 <%= t('trust.secure') %></span>
+            <span class="whale-trust-pill">🐳 <%= t('trust.protection') %></span>
+            <span class="whale-trust-pill">🚚 <%= t('trust.shipping') %></span>
+            <span class="whale-trust-pill">⭐ <%= t('trust.reviews') %></span>
+          </div>
+          <div class="whale-hero-actions">
+            <a href="/auth/register" class="btn btn-primary"><%= t('home.guest_cta') %></a>
+            <a href="/whale" class="btn btn-ghost"><%= t('home.cta_browse') %></a>
+          </div>
+          <div class="whale-counter-banner">
+            <strong class="whale-counter-number" data-counter="<%= totalActiveListings %>">0</strong>
+            <span><%= t('home.counter_active') %></span>
+          </div>
+        </div>
+        <div class="whale-hero-floats" aria-hidden="true">
+          <% featuredHeroCards.forEach((item, index) => { %>
+            <% const heroImage = imageSet((item.images && item.images[0]) || null, {
+              widths: [260, 520, 780],
+              aspectRatio: '4:3',
+              sizes: '(max-width: 719px) 78vw, 260px'
+            }); %>
+            <article class="whale-float-card card whale-float-card-<%= index + 1 %>">
+              <picture class="whale-picture-shell">
+                <% if (heroImage.webpSrcset) { %>
+                  <source type="image/webp" srcset="<%= heroImage.webpSrcset %>" sizes="<%= heroImage.sizes %>">
+                <% } %>
+                <img
+                  src="<%= heroImage.src %>"
+                  srcset="<%= heroImage.srcset %>"
+                  sizes="<%= heroImage.sizes %>"
+                  width="<%= heroImage.width %>"
+                  height="<%= heroImage.height %>"
+                  alt="<%= item.title %>"
+                  loading="<%= index === 0 ? 'eager' : 'lazy' %>"
+                  fetchpriority="<%= index === 0 ? 'high' : 'auto' %>"
+                >
+              </picture>
+              <div>
+                <strong dir="auto"><%= item.title %></strong>
+                <span><%= item.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</span>
+              </div>
+            </article>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <section class="whale-category-section">
+      <div class="whale-panel-heading">
+        <div>
+          <p class="whale-eyebrow"><%= t('home.popular_cats') %></p>
+          <h2 class="whale-section-title"><%= t('footer.marketplace') %></h2>
+        </div>
+        <a href="/whale" class="whale-inline-link"><%= t('home.see_all') %></a>
+      </div>
+      <div class="whale-category-grid">
+        <% categories.slice(0, 12).forEach((cat) => { %>
+          <a
+            href="/whale?category=<%= encodeURIComponent(cat.slug) %>"
+            class="card whale-category-card <%= filters.category === cat.slug ? 'is-active' : '' %>"
+          >
+            <span class="whale-category-emoji"><%= cat.icon %></span>
+            <strong><%= lang === 'ar' ? cat.nameAr : cat.name %></strong>
+            <span><%= lang === 'ar' ? cat.name : cat.nameAr %></span>
+            <small class="whale-category-count"><%= (categoryCounts[cat.slug] || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> <%= t('market.results') %></small>
+          </a>
+        <% }) %>
+      </div>
+    </section>
+
+    <section class="card whale-search-card">
+      <form method="GET" action="/whale" class="whale-search-form">
+        <button type="button" class="btn btn-ghost whale-filters-open" aria-label="<%= t('market.filters_open') %>">☰ <%= t('market.filters_open') %></button>
+        <input type="hidden" name="category" value="<%= filters.category || '' %>">
+        <input type="hidden" name="subcategory" value="<%= filters.subcategory || '' %>">
+        <input type="hidden" name="city" value="<%= filters.city || '' %>">
+        <input type="hidden" name="condition" value="<%= filters.condition || '' %>">
+        <input type="hidden" name="minPrice" value="<%= filters.minPrice || '' %>">
+        <input type="hidden" name="maxPrice" value="<%= filters.maxPrice || '' %>">
+        <input
+          type="search"
+          name="q"
+          value="<%= filters.q || '' %>"
+          placeholder="<%= t('market.search_ph') %>"
+          class="search-input whale-market-search"
+          aria-label="<%= t('market.search_ph') %>"
+          autocomplete="off"
+        >
+        <select name="sort" class="search-input whale-market-sort" aria-label="<%= t('ui.sort') %>">
+          <option value="newest" <%= (filters.sort || 'newest') === 'newest' ? 'selected' : '' %>><%= t('market.sort.newest') %></option>
+          <option value="cheapest" <%= filters.sort === 'cheapest' ? 'selected' : '' %>><%= t('market.sort.cheapest') %></option>
+          <option value="expensive" <%= filters.sort === 'expensive' ? 'selected' : '' %>><%= t('market.sort.expensive') %></option>
+          <option value="popular" <%= filters.sort === 'popular' ? 'selected' : '' %>><%= t('market.sort.popular') %></option>
+        </select>
+        <button class="btn btn-primary" type="submit"><%= t('home.search_btn') %></button>
+      </form>
+    </section>
+
+    <div class="market-layout whale-market-layout">
+      <aside class="market-left whale-filter-drawer" aria-label="<%= t('market.filters') %>">
+        <div class="whale-filter-sheet-backdrop" data-filter-close></div>
+        <div class="filters filters-panel card whale-filter-card">
+          <div class="whale-filter-sheet-head">
+            <span class="whale-sheet-handle" aria-hidden="true"></span>
+            <strong><%= t('market.filters') %></strong>
+            <button type="button" class="btn btn-ghost whale-filter-close" data-filter-close aria-label="<%= t('market.filters_close') %>">✕</button>
+          </div>
+
+          <form method="GET" action="/whale" data-market-filters>
+            <input type="hidden" name="q" value="<%= filters.q || '' %>">
+            <input type="hidden" name="sort" value="<%= filters.sort || 'newest' %>">
+
+            <div class="filter-section">
+              <h4><%= t('footer.marketplace') %></h4>
+              <label class="filter-option">
+                <input type="radio" name="category" value="" <%= !filters.category ? 'checked' : '' %>>
+                <span><%= t('market.all') %></span>
+              </label>
+              <% categories.forEach((cat) => { %>
+                <label class="filter-option whale-filter-choice">
+                  <input type="radio" name="category" value="<%= cat.slug %>" <%= filters.category === cat.slug ? 'checked' : '' %>>
+                  <span><%= cat.icon %> <%= lang === 'ar' ? cat.nameAr : cat.name %> (<%= (categoryCounts[cat.slug] || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %>)</span>
+                </label>
+                <% if (filters.category === cat.slug && cat.subcategories?.length) { %>
+                  <div class="whale-subfilter-list">
+                    <label class="filter-option whale-subfilter-option">
+                      <input type="radio" name="subcategory" value="" <%= !filters.subcategory ? 'checked' : '' %>>
+                      <span><%= t('market.all') %></span>
+                    </label>
+                    <% cat.subcategories.forEach((sub) => { %>
+                      <label class="filter-option whale-subfilter-option">
+                        <input type="radio" name="subcategory" value="<%= sub.slug %>" <%= filters.subcategory === sub.slug ? 'checked' : '' %>>
+                        <span><%= lang === 'ar' ? (sub.nameAr || sub.name) : sub.name %></span>
+                      </label>
+                    <% }) %>
+                  </div>
+                <% } %>
+              <% }) %>
+            </div>
+
+            <div class="filter-section">
+              <h4><%= t('market.condition') %></h4>
+              <% ['NEW', 'LIKE_NEW', 'USED', 'GOOD', 'FAIR', 'FOR_PARTS'].forEach((c) => { %>
+                <label class="filter-option">
+                  <input type="radio" name="condition" value="<%= c %>" <%= filters.condition === c ? 'checked' : '' %>>
+                  <span><%= t('cond.' + c) %></span>
+                </label>
+              <% }) %>
+              <label class="filter-option">
+                <input type="radio" name="condition" value="" <%= !filters.condition ? 'checked' : '' %>>
+                <span><%= t('market.all') %></span>
+              </label>
+            </div>
+
+            <div class="filter-section">
+              <h4><%= t('market.price_range') %></h4>
+              <div
+                class="whale-range-cluster"
+                data-range-cluster
+                data-min="<%= priceBounds.min %>"
+                data-max="<%= priceBounds.max %>"
+              >
+                <div class="whale-range-track">
+                  <span class="whale-range-progress" data-range-progress></span>
+                  <input
+                    type="range"
+                    min="<%= priceBounds.min %>"
+                    max="<%= priceBounds.max %>"
+                    value="<%= filters.minPrice || priceBounds.min %>"
+                    data-range-input="min"
+                    aria-label="<%= t('market.min_price') %>"
+                  >
+                  <input
+                    type="range"
+                    min="<%= priceBounds.min %>"
+                    max="<%= priceBounds.max %>"
+                    value="<%= filters.maxPrice || priceBounds.max %>"
+                    data-range-input="max"
+                    aria-label="<%= t('market.max_price') %>"
+                  >
+                </div>
+                <div class="price-range whale-range-inline">
+                  <label class="whale-range-field">
+                    <span><%= t('market.min_price') %></span>
+                    <input
+                      type="number"
+                      name="minPrice"
+                      min="<%= priceBounds.min %>"
+                      max="<%= priceBounds.max %>"
+                      placeholder="<%= t('market.min_price') %>"
+                      value="<%= filters.minPrice || '' %>"
+                      data-range-number="min"
+                    >
+                  </label>
+                  <span aria-hidden="true">—</span>
+                  <label class="whale-range-field">
+                    <span><%= t('market.max_price') %></span>
+                    <input
+                      type="number"
+                      name="maxPrice"
+                      min="<%= priceBounds.min %>"
+                      max="<%= priceBounds.max %>"
+                      placeholder="<%= t('market.max_price') %>"
+                      value="<%= filters.maxPrice || '' %>"
+                      data-range-number="max"
+                    >
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="filter-section">
+              <h4><%= t('market.city') %></h4>
+              <select name="city" class="search-input whale-filter-select" aria-label="<%= t('market.city') %>">
+                <option value=""><%= t('market.all') %></option>
+                <% Object.keys(groupedCities || {}).forEach((region) => { %>
+                  <optgroup label="<%= region %>">
+                    <% groupedCities[region].forEach((cityItem) => { %>
+                      <option value="<%= cityItem.value %>" <%= filters.city === cityItem.value ? 'selected' : '' %>><%= cityItem.name %></option>
+                    <% }) %>
+                  </optgroup>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="whale-filter-actions">
+              <button type="submit" class="btn btn-primary btn-full"><%= t('market.apply') %></button>
+              <a href="/whale" class="btn btn-ghost btn-full"><%= t('market.reset') %></a>
+            </div>
+          </form>
+        </div>
+      </aside>
+
+      <section class="market-center">
+        <% if (activeFilterChips.length) { %>
+          <section class="whale-filter-chipbar card">
+            <strong><%= t('market.active_filters') %></strong>
+            <div class="whale-chip-list">
+              <% activeFilterChips.forEach((chip) => { 
+                const nextParams = new URLSearchParams({
+                  category: filters.category || '',
+                  subcategory: filters.subcategory || '',
+                  city: filters.city || '',
+                  condition: filters.condition || '',
+                  minPrice: filters.minPrice || '',
+                  maxPrice: filters.maxPrice || '',
+                  q: filters.q || '',
+                  sort: filters.sort || 'newest'
+                });
+                nextParams.delete(chip.key);
+              %>
+                <a href="/whale?<%= nextParams.toString() %>" class="whale-filter-chip" aria-label="<%= t('market.remove_filter') %>">
+                  <span><%= chip.label %></span>
+                  <strong>×</strong>
+                </a>
+              <% }) %>
+              <a href="/whale" class="whale-inline-link"><%= t('market.clear_filters') %></a>
+            </div>
+          </section>
+        <% } %>
+
+        <section class="card whale-market-summary">
+          <div>
+            <strong><%= t('market.showing') %></strong>
+            <span class="muted"><%= (totalCount || listings.length).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> <%= t('market.results') %></span>
+            <% if (filters.q) { %><span class="whale-query-pill">“<%= filters.q %>”</span><% } %>
+          </div>
+          <button type="button" class="btn btn-ghost whale-filters-open whale-filters-open-inline" aria-label="<%= t('market.filters_open') %>">☰ <%= t('market.filters_open') %></button>
+        </section>
+
+        <div class="listing-grid listings-grid">
+          <% if (listings.length) { %>
+            <% listings.forEach((listing, listingIndex) => { %>
+              <% const cardImage = imageSet((listing.images && listing.images[0]) || null, {
+                widths: [210, 420, 630],
+                aspectRatio: '4:3',
+                sizes: '(max-width: 479px) 80px, (max-width: 719px) calc(100vw - 48px), (max-width: 959px) 50vw, 33vw'
+              }); %>
+              <article class="listing-card card whale-listing-card <%= listing.status === 'SOLD' ? 'is-sold' : '' %>">
+                <% if (listing.isBoosted) { %>
+                  <span class="whale-boost-ribbon"><%= t('market.sponsored') %></span>
+                <% } %>
+
+                <% if (currentUser) { %>
+                  <button class="save-btn whale-save-trigger" data-id="<%= listing.id %>" type="button" aria-label="<%= t('listing.save') %>">♡</button>
+                <% } else { %>
+                  <a href="/auth/register?reason=save" class="save-btn whale-save-trigger" aria-label="<%= t('listing.save') %>">♡</a>
+                <% } %>
+
+                <a href="/whale/listing/<%= listing.slug || listing.id %>" class="whale-card-link" aria-label="<%= listing.title %>">
+                  <div class="whale-card-media">
+                    <img
+                      src="<%= cardImage.placeholder %>"
+                      alt=""
+                      role="presentation"
+                      aria-hidden="true"
+                      class="whale-card-lqip"
+                      loading="lazy"
+                    >
+                    <picture class="whale-card-picture">
+                      <% if (cardImage.webpSrcset) { %>
+                        <source type="image/webp" srcset="<%= cardImage.webpSrcset %>" sizes="<%= cardImage.sizes %>">
+                      <% } %>
+                      <img
+                        src="<%= cardImage.src %>"
+                        srcset="<%= cardImage.srcset %>"
+                        sizes="<%= cardImage.sizes %>"
+                        width="<%= cardImage.width %>"
+                        height="<%= cardImage.height %>"
+                        alt="<%= listing.title %>"
+                        class="listing-img"
+                        loading="<%= listingIndex < 6 ? 'eager' : 'lazy' %>"
+                        fetchpriority="<%= listingIndex < 3 ? 'high' : 'auto' %>"
+                      >
+                    </picture>
+                    <span class="whale-condition-pill"><%= t('cond.' + listing.condition) %></span>
+                    <% if (listing._count.orders > 3) { %>
+                      <span class="whale-proof-pill">🛒 <%= t('listing.sold_recently', { n: listing._count.orders }) %></span>
+                    <% } %>
+                  </div>
+                </a>
+
+                <div class="listing-body l-body">
+                  <div class="listing-price l-price">
+                    <%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪
+                    <% if (listing.negotiable) { %>
+                      <span class="negotiable-badge"><%= t('listing.negotiable') %></span>
+                    <% } %>
+                  </div>
+
+                  <a href="/whale/listing/<%= listing.slug || listing.id %>" class="listing-title l-title" dir="auto">
+                    <%= listing.title %>
+                  </a>
+
+                  <div class="whale-seller-row">
+                    <span class="whale-seller-avatar" aria-hidden="true">
+                      <% if (listing.seller?.avatar) { %>
+                        <img src="<%= listing.seller.avatar %>" alt="<%= listing.seller.username %>">
+                      <% } else { %>
+                        <%= String(listing.seller?.username || '?').charAt(0).toUpperCase() %>
+                      <% } %>
+                    </span>
+                    <span class="whale-seller-name"><%= listing.seller?.username %></span>
+                    <% if (listing.seller?.sellerProfile?.isVerified) { %>
+                      <span class="verified-seller">✓</span>
+                    <% } %>
+                    <% if (listing.seller?.sellerProfile?.averageRating > 0) { %>
+                      <span class="stars"><%- '★'.repeat(Math.round(listing.seller.sellerProfile.averageRating)) %><%- '☆'.repeat(5 - Math.round(listing.seller.sellerProfile.averageRating)) %></span>
+                    <% } %>
+                  </div>
+
+                  <div class="listing-location">📍 <%= listing.city %> · <span class="listing-time" data-dynamic-time><%= timeAgo(listing.createdAt) %></span></div>
+
+                  <% if (listing.quantity <= 2) { %>
+                    <div class="whale-urgency-line"><%= t('listing.only_left', { n: listing.quantity }) %></div>
+                  <% } %>
+                </div>
+              </article>
+            <% }) %>
+          <% } else { %>
+            <div class="card whale-empty-state">
+              <div class="whale-empty-illustration" aria-hidden="true">🐳</div>
+              <h3><%= t('market.no_results') %></h3>
+              <p class="muted"><%= t('market.no_results_d') %></p>
+              <a href="/whale" class="btn btn-ghost"><%= t('market.reset') %></a>
+            </div>
+          <% } %>
+        </div>
+
+        <% if (hasMore && nextCursor) { %>
+          <div style="margin-top:14px;">
+            <a
+              class="btn btn-ghost"
+              href="/whale?<%= new URLSearchParams({
+                category: filters.category || '',
+                subcategory: filters.subcategory || '',
+                city: filters.city || '',
+                condition: filters.condition || '',
+                minPrice: filters.minPrice || '',
+                maxPrice: filters.maxPrice || '',
+                q: filters.q || '',
+                sort: filters.sort || 'newest',
+                cursor: nextCursor
+              }).toString() %>"
+            ><%= t('market.load_more') %></a>
+          </div>
+        <% } %>
+      </section>
+
+      <aside class="market-right">
+        <div class="card whale-side-card">
+          <h3><%= t('home.how_title') %></h3>
+          <ol class="simple-list whale-how-list">
+            <li><strong><%= t('home.step1_t') %></strong><br><span class="muted"><%= t('home.step1_d') %></span></li>
+            <li><strong><%= t('home.step2_t') %></strong><br><span class="muted"><%= t('home.step2_d') %></span></li>
+            <li><strong><%= t('home.step3_t') %></strong><br><span class="muted"><%= t('home.step3_d') %></span></li>
+          </ol>
+        </div>
+
+        <div class="card whale-side-card" style="margin-top:12px;">
+          <h3><%= t('market.sell_cta_title') %></h3>
+          <p class="muted"><%= t('market.sell_cta_body') %></p>
+          <p class="whale-trust-inline">🔒 <%= t('app.trust_promise') %></p>
+          <% if (currentUser) { %>
+            <a href="/whale/sell" class="btn btn-primary btn-full"><%= t('market.add_listing') %></a>
+          <% } else { %>
+            <a href="/auth/register" class="btn btn-primary btn-full"><%= t('home.guest_cta') %></a>
+          <% } %>
+        </div>
+
+        <% if (cityStats && cityStats.length) { %>
+          <div class="card whale-side-card" style="margin-top:12px;">
+            <h3><%= t('home.near_you') %></h3>
+            <div class="whale-city-list">
+              <% cityStats.slice(0, 6).forEach((row) => { %>
+                <a href="/whale?city=<%= encodeURIComponent(row.city) %>" class="whale-city-link">
+                  <span><%= row.city %></span>
+                  <span class="muted"><%= t('market.city_count', { n: row._count.city }) %></span>
+                </a>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </aside>
+    </div>
+  </div>
+
+  <% if (!currentUser) { %>
+    <div class="guest-cta whale-market-guest-cta">
+      <span>🛒 <%= t('market.guest_banner') %></span>
+      <a href="/auth/register"><%= t('nav.register') %></a>
+    </div>
+  <% } %>
+</main>
+
+<script>
+  (function () {
+    var csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    document.querySelectorAll('.save-btn[data-id]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        try {
+          const res = await fetch('/whale/listing/' + btn.dataset.id + '/save', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-csrf-token': csrf || ''
+            }
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          btn.classList.toggle('saved', Boolean(data.saved));
+          btn.textContent = data.saved ? '♥' : '♡';
+          if (window.showToast) {
+            window.showToast(data.saved ? '<%= t("listing.track_saved") %>' : '<%= t("listing.unsaved") %>', 'success');
+          }
+        } catch (_error) {
+          if (window.showToast) window.showToast('<%= t("ui.error") %>', 'error');
+        }
+      });
+    });
+  })();
+</script>
+
+<%- include('../partials/footer') %>
