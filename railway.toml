@@ -6,7 +6,7 @@
 builder = "dockerfile"
 
 [deploy]
-startCommand = "node entrypoint.js"
+startCommand = "node server.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
