@@ -2,8 +2,10 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Force cache bust by adding a comment with build version
+# v2 — fix package-lock sync
 COPY package*.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 
 COPY . .
 
@@ -14,4 +16,4 @@ ENV PORT=3000
 
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
