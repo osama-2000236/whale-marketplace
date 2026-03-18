@@ -14,6 +14,9 @@ process.on('unhandledRejection', (reason) => {
 
 try { require('dotenv').config(); } catch (_) { /* dotenv unavailable in production — env vars set by platform */ }
 
+// eslint-disable-next-line no-console
+console.log('[WHALE] server.js loading — NODE_ENV=' + process.env.NODE_ENV);
+
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
@@ -120,7 +123,9 @@ const sessionSecret = process.env.SESSION_SECRET;
 if (isProd && !sessionSecret) {
   // eslint-disable-next-line no-console
   console.error('FATAL: SESSION_SECRET environment variable is required in production');
-  process.exit(1);
+  // Flush stderr before exiting
+  process.stderr.write('', () => process.exit(1));
+  setTimeout(() => process.exit(1), 1000);
 }
 
 app.use(
