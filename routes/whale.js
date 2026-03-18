@@ -7,8 +7,12 @@ const cartService = require('../services/cartService');
 const prisma = require('../lib/prisma');
 const { upload, storeFiles } = require('../utils/upload');
 const { sanitizeText, sanitizeInt, sanitizeTags } = require('../utils/sanitize');
+const { MemoryCache } = require('../utils/cache');
 
 const router = express.Router();
+
+// Cache categories and shipping companies — they rarely change (5 min TTL)
+const staticDataCache = new MemoryCache({ ttlMs: 5 * 60_000, maxSize: 20 });
 const WHALE_CATEGORY_SLUGS = [
   'electronics',
   'phones',
@@ -100,21 +104,27 @@ router.get('/', optionalAuth, async (req, res) => {
         condition,
         q
       }),
-      prisma.marketCategory.findMany({
-        where: { slug: { in: WHALE_CATEGORY_SLUGS } },
-        orderBy: { order: 'asc' },
-        include: { subcategories: true }
-      }),
-      prisma.marketListing.groupBy({
-        by: ['city'],
-        where: { status: 'ACTIVE' },
-        _count: { city: true },
-        orderBy: { _count: { city: 'desc' } }
-      }),
-      prisma.shippingCompany.findMany({
-        where: { isActive: true },
-        orderBy: { basePrice: 'asc' }
-      }),
+      staticDataCache.getOrSet('categories', () =>
+        prisma.marketCategory.findMany({
+          where: { slug: { in: WHALE_CATEGORY_SLUGS } },
+          orderBy: { order: 'asc' },
+          include: { subcategories: true }
+        })
+      ),
+      staticDataCache.getOrSet('cityStats', () =>
+        prisma.marketListing.groupBy({
+          by: ['city'],
+          where: { status: 'ACTIVE' },
+          _count: { city: true },
+          orderBy: { _count: { city: 'desc' } }
+        })
+      ),
+      staticDataCache.getOrSet('shippingCos', () =>
+        prisma.shippingCompany.findMany({
+          where: { isActive: true },
+          orderBy: { basePrice: 'asc' }
+        })
+      ),
       req.user ? prisma.sellerProfile.findUnique({ where: { userId: req.user.id } }).catch(() => null) : null,
       req.user ? prisma.marketListing.count({ where: { sellerId: req.user.id, status: { not: 'REMOVED' } } }).catch(() => 0) : 0,
       req.user ? prisma.order.count({ where: { OR: [{ buyerId: req.user.id }, { sellerId: req.user.id }] } }).catch(() => 0) : 0,
@@ -705,7 +715,9 @@ router.get('/orders/:id', requireAuth, async (req, res) => {
     }
 
     const shippingCo = order.shippingCompany
-      ? await prisma.shippingCompany.findFirst({ where: { name: order.shippingCompany } })
+      ? await staticDataCache.getOrSet(`shipco:${order.shippingCompany}`, () =>
+          prisma.shippingCompany.findFirst({ where: { name: order.shippingCompany } })
+        )
       : null;
 
     return res.render('whale/order-detail', {
