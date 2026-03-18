@@ -3,7 +3,7 @@
  * Node.js + Express + Prisma
  */
 
-require('dotenv').config();
+try { require('dotenv').config(); } catch (_) { /* dotenv unavailable in production — env vars set by platform */ }
 
 const express = require('express');
 const path = require('path');
