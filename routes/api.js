@@ -47,22 +47,25 @@ router.get('/config', (_req, res) => {
   });
 });
 
+/**
+ * GET /api/categories
+ * Returns legacy store categories with product counts.
+ */
 router.get('/categories', async (_req, res) => {
-  const categoriesWithCount = await Promise.all(
-    categories.map(async (category) => {
-      const productCount = await productService.countProducts({
-        category: category.id,
-        inStock: true
-      });
-
-      return {
-        ...category,
-        productCount
-      };
-    })
-  );
-
-  res.json(categoriesWithCount);
+  try {
+    const categoriesWithCount = await Promise.all(
+      categories.map(async (category) => {
+        const productCount = await productService.countProducts({
+          category: category.id,
+          inStock: true
+        });
+        return { ...category, productCount };
+      })
+    );
+    res.json(categoriesWithCount);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load categories' });
+  }
 });
 
 router.get('/products', async (req, res) => {
