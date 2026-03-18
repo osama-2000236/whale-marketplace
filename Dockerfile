@@ -14,4 +14,4 @@ ENV PORT=3000
 
 EXPOSE ${PORT}
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy; echo '[DEBUG] Migration done, exit=$?'; echo '[DEBUG] Node version:'; node --version; echo '[DEBUG] Starting server...'; node server.js; echo '[DEBUG] Server exited with code=$?'"]
