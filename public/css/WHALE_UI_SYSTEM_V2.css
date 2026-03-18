@@ -34,7 +34,12 @@
     --ui-shadow-lift: 0 24px 60px rgba(16, 32, 45, 0.16);
     --ui-shadow-float: 0 18px 40px rgba(10, 75, 110, 0.18);
     --ui-ring: color-mix(in srgb, var(--ui-brand) 28%, transparent);
-    --ui-gradient-hero: linear-gradient(135deg, color-mix(in srgb, var(--ui-brand-strong) 92%, white) 0%, color-mix(in srgb, var(--ui-brand) 88%, white) 58%, color-mix(in srgb, var(--ui-success) 58%, var(--ui-brand) 42%) 100%);
+    --ui-hero-text: #ffffff;
+    --ui-hero-text-soft: rgba(255, 255, 255, 0.9);
+    --ui-hero-overlay: rgba(255, 255, 255, 0.12);
+    --ui-hero-overlay-strong: rgba(255, 255, 255, 0.16);
+    --ui-hero-border: rgba(255, 255, 255, 0.14);
+    --ui-gradient-hero: linear-gradient(135deg, color-mix(in srgb, var(--ui-brand-strong) 92%, #ffffff) 0%, color-mix(in srgb, var(--ui-brand) 88%, #ffffff) 58%, color-mix(in srgb, var(--ui-success) 58%, var(--ui-brand) 42%) 100%);
     --ui-gradient-card: linear-gradient(180deg, var(--ui-surface-1) 0%, var(--ui-surface-2) 100%);
     --ui-gradient-card-hover: linear-gradient(180deg, var(--ui-surface-1) 0%, color-mix(in srgb, var(--ui-surface-2) 70%, var(--ui-brand-soft)) 100%);
     --ui-skeleton-base: color-mix(in srgb, var(--ui-border-soft) 58%, var(--ui-surface-2));
@@ -147,9 +152,14 @@
     --ui-shadow-lift: 0 28px 70px rgba(0, 0, 0, 0.48);
     --ui-shadow-float: 0 24px 56px rgba(0, 0, 0, 0.42);
     --ui-ring: color-mix(in srgb, var(--ui-brand) 38%, transparent);
+    --ui-hero-text: #edf5fb;
+    --ui-hero-text-soft: rgba(237, 245, 251, 0.88);
+    --ui-hero-overlay: rgba(255, 255, 255, 0.06);
+    --ui-hero-overlay-strong: rgba(255, 255, 255, 0.09);
+    --ui-hero-border: rgba(255, 255, 255, 0.08);
     --ui-gradient-hero: linear-gradient(135deg, #0d2b40 0%, #103a58 58%, #0f4f53 100%);
     --ui-gradient-card: linear-gradient(180deg, var(--ui-surface-1) 0%, var(--ui-surface-2) 100%);
-    --ui-gradient-card-hover: linear-gradient(180deg, color-mix(in srgb, var(--ui-surface-1) 92%, white) 0%, color-mix(in srgb, var(--ui-surface-2) 72%, var(--ui-brand-soft)) 100%);
+    --ui-gradient-card-hover: linear-gradient(180deg, var(--ui-surface-1) 0%, color-mix(in srgb, var(--ui-surface-2) 72%, var(--ui-brand-soft)) 100%);
     --ui-skeleton-base: color-mix(in srgb, var(--ui-surface-3) 86%, var(--ui-border-soft));
     --ui-skeleton-shine: color-mix(in srgb, white 12%, transparent);
     --ui-navbar-bg: color-mix(in srgb, #081119 78%, transparent);
@@ -237,6 +247,13 @@
     line-height: var(--lh-arabic);
   }
 
+  body.whale-theme-transitioning,
+  body.whale-theme-transitioning *,
+  body.whale-theme-transitioning *::before,
+  body.whale-theme-transitioning *::after {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, fill 0.3s ease, stroke 0.3s ease !important;
+  }
+
   body.whale-theme-fade {
     animation: whaleThemeFade 0.2s ease;
   }
@@ -313,7 +330,7 @@
   }
 
   .btn-wa {
-    background: linear-gradient(135deg, color-mix(in srgb, var(--ui-wa) 78%, white), var(--ui-wa));
+    background: linear-gradient(135deg, color-mix(in srgb, var(--ui-wa) 78%, var(--ui-surface-1)), var(--ui-wa));
     box-shadow: 0 14px 28px color-mix(in srgb, var(--ui-wa) 26%, transparent);
   }
 
@@ -551,7 +568,7 @@
     overflow: hidden;
     padding: clamp(1.35rem, 2vw, 2rem);
     background: var(--ui-gradient-hero);
-    color: white;
+    color: var(--ui-hero-text);
     isolation: isolate;
   }
 
@@ -559,10 +576,10 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(circle at 20% 18%, rgba(255, 255, 255, 0.16), transparent 25%),
-      radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.12), transparent 24%),
-      radial-gradient(circle at 55% 85%, rgba(255, 255, 255, 0.08), transparent 28%),
-      linear-gradient(120deg, transparent 0%, rgba(255, 255, 255, 0.08) 48%, transparent 100%);
+      radial-gradient(circle at 20% 18%, var(--ui-hero-overlay-strong), transparent 25%),
+      radial-gradient(circle at 78% 22%, var(--ui-hero-overlay), transparent 24%),
+      radial-gradient(circle at 55% 85%, var(--ui-hero-overlay), transparent 28%),
+      linear-gradient(120deg, transparent 0%, var(--ui-hero-overlay) 48%, transparent 100%);
     opacity: 0.92;
     pointer-events: none;
   }
@@ -587,7 +604,7 @@
 
   .whale-hero-shell .page-title,
   .whale-hero-shell .whale-hero-title {
-    color: white;
+    color: var(--ui-hero-text);
     text-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
   }
 
@@ -600,14 +617,14 @@
   }
 
   .whale-hero-shell .whale-eyebrow {
-    color: color-mix(in srgb, white 78%, var(--ui-brand-glow));
+    color: color-mix(in srgb, var(--ui-hero-text) 78%, var(--ui-brand-glow));
     opacity: 1;
   }
 
   .whale-hero-copy {
     font-size: var(--fs-body-lg);
     max-width: 44rem;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--ui-hero-text-soft);
   }
 
   .whale-trust-row {
@@ -623,8 +640,8 @@
     gap: 6px;
     padding: 0.55rem 0.9rem;
     border-radius: var(--ui-radius-pill);
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: var(--ui-hero-overlay);
+    border: 1px solid var(--ui-hero-border);
     backdrop-filter: blur(10px);
   }
 
@@ -654,15 +671,15 @@
     gap: 0.15rem;
     padding: 0.9rem 1rem;
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: var(--ui-hero-overlay);
+    border: 1px solid var(--ui-hero-border);
     min-width: 190px;
   }
 
   .whale-hero-shell .whale-counter-banner,
   .whale-hero-shell .whale-counter-banner span,
   .whale-hero-shell .whale-counter-number {
-    color: white;
+    color: var(--ui-hero-text);
   }
 
   .whale-counter-number,
@@ -687,8 +704,8 @@
     min-width: 120px;
     padding: 1rem 1rem 0.92rem;
     border-radius: 18px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: var(--ui-hero-overlay);
+    border: 1px solid var(--ui-hero-border);
     display: grid;
     gap: 4px;
   }
@@ -1193,7 +1210,7 @@
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, var(--ui-brand), var(--ui-brand-strong));
-    color: white;
+    color: var(--ui-surface-1);
     font-size: 0.75rem;
     font-weight: 700;
   }
@@ -1524,7 +1541,7 @@
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--ui-warning), color-mix(in srgb, var(--ui-warning) 70%, white));
+    background: linear-gradient(90deg, var(--ui-warning), color-mix(in srgb, var(--ui-warning) 70%, var(--ui-surface-1)));
   }
 
   .whale-sales-progress {
@@ -1677,9 +1694,9 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    border: 1px solid color-mix(in srgb, white 16%, transparent);
-    background: rgba(0, 0, 0, 0.24);
-    color: white;
+    border: 1px solid color-mix(in srgb, var(--ui-hero-text) 16%, transparent);
+    background: color-mix(in srgb, var(--ui-surface-0) 42%, transparent);
+    color: var(--ui-hero-text);
   }
 
   .whale-mobile-buybar {
@@ -1995,7 +2012,7 @@
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, var(--ui-brand), var(--ui-brand-strong));
-    color: white;
+    color: #ffffff;
     box-shadow: 0 10px 24px color-mix(in srgb, var(--ui-brand) 32%, transparent);
   }
 
@@ -2649,8 +2666,37 @@
     }
   }
 
+  .whale-cart-items-card {
+    padding: 14px;
+  }
+
+  .whale-cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .whale-cart-total-value {
+    color: var(--ui-brand-strong);
+  }
+
+  .whale-cart-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .whale-cart-item-price {
+    font-size: clamp(1rem, 1.8vw, 1.15rem);
+  }
+
   .whale-cart-sidebar {
     height: max-content;
+    padding: 14px;
+  }
+
+  .whale-cart-sidebar h3 {
+    margin-bottom: 10px;
   }
 
   .whale-cart-item {
@@ -2658,6 +2704,7 @@
     grid-template-columns: 88px 1fr auto;
     gap: 10px;
     align-items: center;
+    padding: 10px;
   }
 
   @media (max-width: 479px) {
