@@ -12,17 +12,17 @@
   <div class="container">
     <div class="panel-card">
       <h1><%= t('order.number') %> #<%= order.orderNumber %></h1>
-      <span class="status-badge status-<%= order.orderStatus %>"><%= t('status.' + order.orderStatus) %></span>
+      <%- include('../partials/status-badge', { status: order.orderStatus }) %>
       <p class="muted whale-escrow-copy" style="margin-top:8px;">🐳 <%= t('listing.escrow') %></p>
     </div>
 
     <div class="whale-order-layout">
       <div class="panel-card">
         <h3><%= t('order.timeline') %></h3>
-        <div class="timeline" style="margin-top:10px;">
-          <% order.timeline.forEach((event) => { %>
-            <div class="timeline-event <%= event.event === order.orderStatus.toLowerCase() ? 'active' : '' %>">
-              <div class="timeline-dot"></div>
+        <div class="timeline" role="list" aria-label="<%= t('order.timeline') %>" style="margin-top:10px;">
+          <% order.timeline.forEach((event, i) => { const isActive = event.event === order.orderStatus.toLowerCase(); %>
+            <div class="timeline-event <%= isActive ? 'active' : '' %>" role="listitem" <%= isActive ? 'aria-current="step"' : '' %>>
+              <div class="timeline-dot" aria-hidden="true"></div>
               <div class="timeline-content">
                 <strong><%= eventLabel(event.event) %></strong>
                 <span style="display:block;"><%= timeAgo(event.createdAt) %></span>
@@ -49,7 +49,7 @@
         <div class="whale-order-item-row">
           <img src="<%= order.listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= order.listing.title %>" class="whale-order-item-image">
           <div>
-            <strong dir="auto"><%= order.listing.title %></strong>
+            <strong dir="auto"><%= order.listing.titleAr || order.listing.title %></strong>
             <p><%= order.amount.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</p>
           </div>
         </div>

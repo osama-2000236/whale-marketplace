@@ -8,19 +8,19 @@
     </div>
 
     <div class="listing-grid whale-dashboard-stats">
-      <div class="panel-card">
+      <div class="panel-card" aria-label="<%= t('dashboard.total_sales') %>: <%= profile?.totalSales || 0 %>">
         <div class="muted"><%= t('dashboard.total_sales') %></div>
         <strong style="font-size:1.5rem;"><%= profile?.totalSales || 0 %></strong>
       </div>
-      <div class="panel-card">
+      <div class="panel-card" aria-label="<%= t('dashboard.total_revenue') %>: <%= Number(profile?.totalRevenue || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪">
         <div class="muted"><%= t('dashboard.total_revenue') %></div>
         <strong style="font-size:1.5rem;"><%= Number(profile?.totalRevenue || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</strong>
       </div>
-      <div class="panel-card">
+      <div class="panel-card" aria-label="<%= t('dashboard.avg_rating') %>: <%= Number(profile?.averageRating || 0).toFixed(1) %>">
         <div class="muted"><%= t('dashboard.avg_rating') %></div>
         <strong style="font-size:1.5rem;"><%= Number(profile?.averageRating || 0).toFixed(1) %> ★</strong>
       </div>
-      <div class="panel-card">
+      <div class="panel-card" aria-label="<%= t('dashboard.active_listings') %>: <%= activeListings %>">
         <div class="muted"><%= t('dashboard.active_listings') %></div>
         <strong style="font-size:1.5rem;"><%= activeListings %></strong>
       </div>
@@ -31,14 +31,15 @@
       <% const pendingRows = recentOrders.filter((o) => ['PENDING', 'SELLER_CONFIRMED', 'SHIPPED'].includes(o.orderStatus)); %>
       <% if (pendingRows.length) { %>
         <table class="data-table" style="margin-top:8px;">
+          <caption class="sr-only"><%= t('dashboard.pending_orders') %></caption>
           <thead>
             <tr>
-              <th><%= t('order.number') %></th>
-              <th><%= t('order.buyer') %></th>
-              <th><%= t('order.item') %></th>
-              <th><%= t('order.amount') %></th>
-              <th><%= t('order.status') %></th>
-              <th><%= t('order.actions') %></th>
+              <th scope="col"><%= t('order.number') %></th>
+              <th scope="col"><%= t('order.buyer') %></th>
+              <th scope="col"><%= t('order.item') %></th>
+              <th scope="col"><%= t('order.amount') %></th>
+              <th scope="col"><%= t('order.status') %></th>
+              <th scope="col"><%= t('order.actions') %></th>
             </tr>
           </thead>
           <tbody>
@@ -46,16 +47,16 @@
               <tr>
                 <td><%= order.orderNumber %></td>
                 <td><%= order.buyer.username %></td>
-                <td dir="auto"><%= order.listing.title %></td>
+                <td dir="auto"><%= order.listing.titleAr || order.listing.title %></td>
                 <td><%= order.amount.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</td>
-                <td><span class="status-badge status-<%= order.orderStatus %>"><%= t('status.' + order.orderStatus) %></span></td>
+                <td><%- include('../partials/status-badge', { status: order.orderStatus }) %></td>
                 <td><a href="/whale/orders/<%= order.id %>"><%= t('ui.open') %></a></td>
               </tr>
             <% }) %>
           </tbody>
         </table>
       <% } else { %>
-        <p class="muted"><%= t('order.no_orders') %></p>
+        <p class="muted" style="padding:12px 0;"><%= t('order.no_orders') %></p>
       <% } %>
     </div>
 
@@ -63,15 +64,10 @@
       <h3><%= t('dashboard.recent_reviews') %></h3>
       <% if (recentReviews.length) { %>
         <% recentReviews.forEach((review) => { %>
-          <article class="panel-card whale-review-card">
-            <strong><%= review.reviewer.username %></strong>
-            <span class="stars" style="margin-inline-start:6px;"><%- '★'.repeat(review.rating) %><%- '☆'.repeat(5 - review.rating) %></span>
-            <% if (review.title) { %><p dir="auto" style="margin-top:4px;"><%= review.title %></p><% } %>
-            <% if (review.body) { %><p dir="auto"><%= review.body %></p><% } %>
-          </article>
+          <%- include('../partials/review-card', { review, lang }) %>
         <% }) %>
       <% } else { %>
-        <p class="muted"><%= t('seller.no_reviews') %></p>
+        <p class="muted" style="padding:12px 0;"><%= t('seller.no_reviews') %></p>
       <% } %>
     </div>
 
@@ -79,10 +75,10 @@
       <h3><%= t('dashboard.my_listings_preview') %></h3>
       <div class="listing-grid" style="margin-top:8px;">
         <% myListingsPreview.forEach((listing) => { %>
-          <a class="listing-card" href="/whale/listing/<%= listing.slug || listing.id %>">
-            <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" class="listing-img" alt="<%= listing.title %>">
+          <a class="listing-card card" href="/whale/listing/<%= listing.slug || listing.id %>">
+            <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" class="listing-img" alt="<%= listing.titleAr || listing.title %>" loading="lazy">
             <div class="listing-body">
-              <div class="listing-title" dir="auto"><%= listing.title %></div>
+              <div class="listing-title" dir="auto"><%= listing.titleAr || listing.title %></div>
               <div class="muted">👁️ <%= listing.views %> · 🛒 <%= listing._count.orders %></div>
             </div>
           </a>

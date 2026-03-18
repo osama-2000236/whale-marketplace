@@ -75,6 +75,7 @@ router.post('/logout', optionalAuth, (req, res) => {
   });
 });
 
+// GET /admin/logout — convenience redirect, POST is preferred for CSRF safety
 router.get('/logout', optionalAuth, (req, res) => {
   req.session.destroy(() => {
     res.redirect('/admin/login');

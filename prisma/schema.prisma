@@ -4,6 +4,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Append ?connection_limit=10&pool_timeout=30 to DATABASE_URL in production
+  // to control connection pool size (Railway PostgreSQL default is 20)
   url      = env("DATABASE_URL")
 }
 
@@ -418,7 +420,7 @@ model MarketSubcategory {
   nameAr     String
   slug       String         @unique
   categoryId String
-  category   MarketCategory @relation(fields: [categoryId], references: [id])
+  category   MarketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   listings   MarketListing[]
 
   @@index([categoryId, slug])
@@ -460,6 +462,11 @@ model MarketListing {
   @@index([categoryId, status, createdAt])
   @@index([city, status, createdAt])
   @@index([isBoosted, boostExpiresAt])
+  // Added: standalone indexes for common browse/sort queries
+  @@index([status])        // Every browse query filters by status = ACTIVE
+  @@index([price])         // Price range filter and price sort
+  @@index([views])         // Popular sort (orderBy views desc)
+  @@index([createdAt])     // Newest sort (orderBy createdAt desc)
 }
 
 model Order {

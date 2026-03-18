@@ -6,8 +6,13 @@ const svc = require('../services/whaleService');
 const cartService = require('../services/cartService');
 const prisma = require('../lib/prisma');
 const { upload, storeFiles } = require('../utils/upload');
+const { sanitizeText, sanitizeInt, sanitizeTags } = require('../utils/sanitize');
+const { MemoryCache } = require('../utils/cache');
 
 const router = express.Router();
+
+// Cache categories and shipping companies — they rarely change (5 min TTL)
+const staticDataCache = new MemoryCache({ ttlMs: 5 * 60_000, maxSize: 20 });
 const WHALE_CATEGORY_SLUGS = [
   'electronics',
   'phones',
@@ -99,21 +104,27 @@ router.get('/', optionalAuth, async (req, res) => {
         condition,
         q
       }),
-      prisma.marketCategory.findMany({
-        where: { slug: { in: WHALE_CATEGORY_SLUGS } },
-        orderBy: { order: 'asc' },
-        include: { subcategories: true }
-      }),
-      prisma.marketListing.groupBy({
-        by: ['city'],
-        where: { status: 'ACTIVE' },
-        _count: { city: true },
-        orderBy: { _count: { city: 'desc' } }
-      }),
-      prisma.shippingCompany.findMany({
-        where: { isActive: true },
-        orderBy: { basePrice: 'asc' }
-      }),
+      staticDataCache.getOrSet('categories', () =>
+        prisma.marketCategory.findMany({
+          where: { slug: { in: WHALE_CATEGORY_SLUGS } },
+          orderBy: { order: 'asc' },
+          include: { subcategories: true }
+        })
+      ),
+      staticDataCache.getOrSet('cityStats', () =>
+        prisma.marketListing.groupBy({
+          by: ['city'],
+          where: { status: 'ACTIVE' },
+          _count: { city: true },
+          orderBy: { _count: { city: 'desc' } }
+        })
+      ),
+      staticDataCache.getOrSet('shippingCos', () =>
+        prisma.shippingCompany.findMany({
+          where: { isActive: true },
+          orderBy: { basePrice: 'asc' }
+        })
+      ),
       req.user ? prisma.sellerProfile.findUnique({ where: { userId: req.user.id } }).catch(() => null) : null,
       req.user ? prisma.marketListing.count({ where: { sellerId: req.user.id, status: { not: 'REMOVED' } } }).catch(() => 0) : 0,
       req.user ? prisma.order.count({ where: { OR: [{ buyerId: req.user.id }, { sellerId: req.user.id }] } }).catch(() => 0) : 0,
@@ -351,7 +362,18 @@ router.post('/sell', requireAuth, requirePro, upload.array('images', 6), async (
   try {
     const images = await storeFiles(req.files || [], 'uploads/whale', 6);
     const listing = await svc.createListing(req.session.userId, {
-      ...req.body,
+      title: sanitizeText(req.body.title, 200),
+      titleAr: sanitizeText(req.body.titleAr, 200),
+      description: sanitizeText(req.body.description, 5000),
+      descriptionAr: sanitizeText(req.body.descriptionAr, 5000),
+      categoryId: req.body.categoryId || null,
+      subcategoryId: req.body.subcategoryId || null,
+      city: sanitizeText(req.body.city, 100),
+      price: sanitizeInt(req.body.price, { min: 1, max: 10000000 }),
+      quantity: sanitizeInt(req.body.quantity, { min: 1, max: 9999, defaultVal: 1 }),
+      condition: req.body.condition,
+      tags: typeof req.body.tags === 'string' ? sanitizeTags(req.body.tags) : [],
+      negotiable: req.body.negotiable === 'true',
       specs: parseJsonField(req.body.specs),
       images
     });
@@ -402,7 +424,18 @@ router.post('/listing/:id/edit', requireAuth, upload.array('images', 6), async (
     if (!listingId) return res.status(404).render('404', { title: 'Listing not found' });
     const images = await storeFiles(req.files || [], 'uploads/whale', 6);
     const updated = await svc.updateListing(listingId, req.session.userId, {
-      ...req.body,
+      title: sanitizeText(req.body.title, 200),
+      titleAr: sanitizeText(req.body.titleAr, 200),
+      description: sanitizeText(req.body.description, 5000),
+      descriptionAr: sanitizeText(req.body.descriptionAr, 5000),
+      categoryId: req.body.categoryId || null,
+      subcategoryId: req.body.subcategoryId || null,
+      city: sanitizeText(req.body.city, 100),
+      price: sanitizeInt(req.body.price, { min: 1, max: 10000000 }),
+      quantity: sanitizeInt(req.body.quantity, { min: 1, max: 9999, defaultVal: 1 }),
+      condition: req.body.condition,
+      tags: typeof req.body.tags === 'string' ? sanitizeTags(req.body.tags) : [],
+      negotiable: req.body.negotiable === 'true',
       specs: parseJsonField(req.body.specs),
       ...(images.length ? { images } : {})
     });
@@ -477,34 +510,22 @@ router.post('/listing/:id/buy', requireAuth, async (req, res) => {
   try {
     const listingId = await resolveListingId(req.params.id);
     if (!listingId) return res.status(404).render('404', { title: 'Listing not found' });
-    const {
-      paymentMethod,
-      shippingMethod,
-      shippingCompany,
-      buyerNote,
-      buyerName,
-      buyerPhone,
-      buyerCity,
-      buyerAddress,
-      quantity
-    } = req.body;
-
     const shippingAddress = {
-      name: buyerName,
-      phone: buyerPhone,
-      city: buyerCity,
-      address: buyerAddress
+      name: sanitizeText(req.body.buyerName, 100),
+      phone: sanitizeText(req.body.buyerPhone, 20),
+      city: sanitizeText(req.body.buyerCity, 100),
+      address: sanitizeText(req.body.buyerAddress, 300)
     };
 
     const order = await svc.createOrder({
       listingId,
       buyerId: req.session.userId,
-      quantity: Number(quantity) || 1,
-      paymentMethod,
-      shippingMethod,
-      shippingCompany,
+      quantity: sanitizeInt(req.body.quantity, { min: 1, max: 9999, defaultVal: 1 }),
+      paymentMethod: req.body.paymentMethod,
+      shippingMethod: req.body.shippingMethod,
+      shippingCompany: sanitizeText(req.body.shippingCompany, 100),
       shippingAddress,
-      buyerNote
+      buyerNote: sanitizeText(req.body.buyerNote, 1000)
     });
 
     if (paymentMethod === 'card') {
@@ -582,27 +603,21 @@ router.post('/cart/checkout', requireAuth, async (req, res) => {
     const cart = await cartService.getCartWithDetails(req);
     if (!cart.items.length) return res.redirect('/whale/cart?error=empty');
 
-    const {
-      paymentMethod,
-      shippingMethod,
-      shippingCompany,
-      buyerName,
-      buyerPhone,
-      buyerCity,
-      buyerAddress,
-      buyerNote
-    } = req.body;
+    const paymentMethod = req.body.paymentMethod;
+    const shippingMethod = req.body.shippingMethod;
 
     if (String(paymentMethod || '').toLowerCase() === 'card' && cart.items.length > 1) {
       return res.redirect('/whale/cart?error=card_multi_not_supported');
     }
 
     const shippingAddress = {
-      name: buyerName,
-      phone: buyerPhone,
-      city: buyerCity,
-      address: buyerAddress
+      name: sanitizeText(req.body.buyerName, 100),
+      phone: sanitizeText(req.body.buyerPhone, 20),
+      city: sanitizeText(req.body.buyerCity, 100),
+      address: sanitizeText(req.body.buyerAddress, 300)
     };
+    const sanitizedNote = sanitizeText(req.body.buyerNote, 1000);
+    const sanitizedShippingCo = sanitizeText(req.body.shippingCompany, 100);
 
     const orders = [];
     for (const item of cart.items) {
@@ -613,9 +628,9 @@ router.post('/cart/checkout', requireAuth, async (req, res) => {
         quantity: item.quantity,
         paymentMethod,
         shippingMethod,
-        shippingCompany,
+        shippingCompany: sanitizedShippingCo,
         shippingAddress,
-        buyerNote
+        buyerNote: sanitizedNote
       });
       orders.push(order);
     }
@@ -700,7 +715,9 @@ router.get('/orders/:id', requireAuth, async (req, res) => {
     }
 
     const shippingCo = order.shippingCompany
-      ? await prisma.shippingCompany.findFirst({ where: { name: order.shippingCompany } })
+      ? await staticDataCache.getOrSet(`shipco:${order.shippingCompany}`, () =>
+          prisma.shippingCompany.findFirst({ where: { name: order.shippingCompany } })
+        )
       : null;
 
     return res.render('whale/order-detail', {
@@ -731,11 +748,10 @@ router.post('/orders/:id/confirm', requireAuth, async (req, res) => {
 
 router.post('/orders/:id/ship', requireAuth, async (req, res) => {
   try {
-    const { trackingNumber, shippingCompany, estimatedDelivery } = req.body;
     await svc.sellerShipOrder(req.params.id, req.session.userId, {
-      trackingNumber,
-      shippingCompany,
-      estimatedDelivery
+      trackingNumber: sanitizeText(req.body.trackingNumber, 100),
+      shippingCompany: sanitizeText(req.body.shippingCompany, 100),
+      estimatedDelivery: req.body.estimatedDelivery || null
     });
     return res.redirect(`/whale/orders/${req.params.id}`);
   } catch (error) {
@@ -760,7 +776,7 @@ router.post('/orders/:id/confirm-delivery', requireAuth, async (req, res) => {
 
 router.post('/orders/:id/cancel', requireAuth, async (req, res) => {
   try {
-    const { reason } = req.body;
+    const reason = sanitizeText(req.body.reason, 500);
     await svc.cancelOrder(req.params.id, req.session.userId, reason);
     return res.redirect(`/whale/orders/${req.params.id}`);
   } catch (error) {
@@ -775,8 +791,11 @@ router.post('/orders/:id/cancel', requireAuth, async (req, res) => {
 
 router.post('/orders/:id/review', requireAuth, async (req, res) => {
   try {
-    const { rating, title, body } = req.body;
-    await svc.createReview(req.params.id, req.session.userId, { rating, title, body });
+    await svc.createReview(req.params.id, req.session.userId, {
+      rating: sanitizeInt(req.body.rating, { min: 1, max: 5, defaultVal: 5 }),
+      title: sanitizeText(req.body.title, 200),
+      body: sanitizeText(req.body.body, 2000)
+    });
     return res.redirect(`/whale/orders/${req.params.id}?reviewed=1`);
   } catch (error) {
     return res.status(400).render('error', {

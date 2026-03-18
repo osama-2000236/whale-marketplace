@@ -30,6 +30,10 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const isProd = process.env.NODE_ENV === 'production';
 
+// Trust proxy in production (Railway, Heroku, etc.) for correct req.ip and secure cookies
+if (isProd) app.set('trust proxy', 1);
+app.disable('x-powered-by');
+
 const authRoutes = require('./routes/auth');
 const paymentRouter = require('./routes/payment');
 const welcomeRouter = require('./routes/welcome');
@@ -66,20 +70,54 @@ function timeAgo(input, lang = 'ar') {
 
 app.use(
   helmet({
-    contentSecurityPolicy: false,
-    crossOriginEmbedderPolicy: false
+    contentSecurityPolicy: isProd
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://www.googletagmanager.com', 'https://accept.paymob.com'],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
+            imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
+            connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://accept.paymob.com'],
+            frameSrc: ["'self'", 'https://accept.paymob.com'],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'none'"],
+            upgradeInsecureRequests: []
+          }
+        }
+      : false,
+    crossOriginEmbedderPolicy: false,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    hsts: isProd ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false
   })
 );
 
 app.use(compression());
-app.use(cors());
-app.use(express.json({ limit: '12mb' }));
-app.use(express.urlencoded({ extended: true, limit: '12mb' }));
+
+// CORS: restrict to known origins in production
+const corsOptions = isProd
+  ? { origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : false, credentials: true }
+  : { origin: true, credentials: true };
+app.use(cors(corsOptions));
+
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(cookieParser());
+
+// Session: require a real secret in production
+const sessionSecret = process.env.SESSION_SECRET;
+if (isProd && !sessionSecret) {
+  // eslint-disable-next-line no-console
+  console.error('FATAL: SESSION_SECRET environment variable is required in production');
+  process.exit(1);
+}
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'default-secret-change-me',
+    name: 'whale.sid',
+    secret: sessionSecret || 'dev-only-secret-not-for-production',
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -93,17 +131,29 @@ app.use(
 
 app.use(passport.initialize());
 
-if (isProd) {
-  app.use(
-    rateLimit({
-      windowMs: 15 * 60 * 1000,
-      max: 300,
-      standardHeaders: true,
-      legacyHeaders: false,
-      message: { error: 'Too many requests. Please try again later.' }
-    })
-  );
-}
+// Global rate limiter — always active, stricter in production
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProd ? 300 : 1000,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests. Please try again later.' },
+    skip: (req) => req.path === '/health' || req.path === '/api/health'
+  })
+);
+
+// Stricter rate limit on API write endpoints
+app.use(
+  '/api',
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProd ? 100 : 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'API rate limit exceeded.' }
+  })
+);
 
 app.use(
   express.static(path.join(__dirname, 'public'), {
@@ -214,8 +264,9 @@ app.use((err, req, res, next) => {
     });
   }
 
+  // Log full error server-side but never expose stack trace to client
   // eslint-disable-next-line no-console
-  console.error('Server Error:', err);
+  console.error('Server Error:', err.stack || err);
 
   if (req.path.startsWith('/api/')) {
     return res.status(500).json({ error: 'Internal server error' });
@@ -223,7 +274,7 @@ app.use((err, req, res, next) => {
 
   return res.status(500).render('error', {
     title: 'Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    message: isProd ? 'Something went wrong' : err.message
   });
 });
 

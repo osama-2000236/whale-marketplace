@@ -172,7 +172,7 @@
                     <%- include('../partials/avatar', { user: review.reviewer, size: 'sm' }) %>
                     <div>
                       <strong><%= review.reviewer.username %></strong>
-                      <div class="stars"><%- '★'.repeat(review.rating) %><%- '☆'.repeat(5 - review.rating) %></div>
+                      <%- include('../partials/star-rating', { rating: review.rating }) %>
                     </div>
                   </div>
                   <small><%= new Date(review.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></small>
@@ -249,7 +249,7 @@
 
         <% if (sellerProfile.averageRating > 0) { %>
           <div class="whale-product-rating">
-            <span class="stars"><%- '★'.repeat(Math.round(sellerProfile.averageRating)) %><%- '☆'.repeat(5 - Math.round(sellerProfile.averageRating)) %></span>
+            <%- include('../partials/star-rating', { rating: Math.round(sellerProfile.averageRating) }) %>
             <a href="#reviews"><%= listing._count.reviews %> <%= t('listing.reviews') %></a>
           </div>
         <% } %>

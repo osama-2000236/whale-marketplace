@@ -1,0 +1,37 @@
+<%#
+  @partial review-card.ejs
+  @description Renders a single seller review card with rating, body, and helpful votes
+  @param {Object} review - Review object with reviewer, rating, body, title, createdAt, isVerified
+  @param {string} [lang='ar'] - Current language for date formatting
+  @example <%- include('partials/review-card', { review, lang }) %>
+%>
+<%
+  const rv = review || {};
+  const reviewer = rv.reviewer || {};
+  const rvLang = (typeof lang !== 'undefined' && lang) || 'ar';
+  const dateStr = rv.createdAt
+    ? new Date(rv.createdAt).toLocaleDateString(rvLang === 'ar' ? 'ar-PS' : 'en-GB')
+    : '';
+%>
+<article class="panel-card whale-review-card" data-review-item data-rating="<%= rv.rating || 0 %>">
+  <div class="whale-review-head">
+    <div style="display:flex;gap:8px;align-items:flex-start;">
+      <%- include('avatar', { user: reviewer, size: 'sm' }) %>
+      <div>
+        <strong><%= reviewer.username || '—' %></strong>
+        <%- include('star-rating', { rating: rv.rating || 0 }) %>
+      </div>
+    </div>
+    <small><%= dateStr %></small>
+  </div>
+  <% if (rv.isVerified) { %>
+    <div style="margin-top:6px;"><span class="verified-seller"><%= typeof t === 'function' ? t('listing.verified_p') : 'Verified purchase' %></span></div>
+  <% } %>
+  <% if (rv.title) { %><h4 dir="auto" style="margin-top:8px;"><%= rv.title %></h4><% } %>
+  <% if (rv.body) { %><p dir="auto" style="margin-top:4px;"><%= rv.body %></p><% } %>
+  <div class="whale-review-actions">
+    <span><%= typeof t === 'function' ? t('reviews.helpful') : 'Was this helpful?' %></span>
+    <button type="button" class="whale-inline-vote" data-review-vote="yes"><%= typeof t === 'function' ? t('reviews.yes') : 'Yes' %></button>
+    <button type="button" class="whale-inline-vote" data-review-vote="no"><%= typeof t === 'function' ? t('reviews.no') : 'No' %></button>
+  </div>
+</article>

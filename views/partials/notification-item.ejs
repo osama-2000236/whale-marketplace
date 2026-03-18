@@ -1,14 +1,17 @@
 <%
-  const typeMap = {
-    LIKE: '👍 إعجاب جديد | New like',
-    COMMENT: '💬 تعليق جديد | New comment',
-    FOLLOW: '👤 متابع جديد | New follower',
-    MENTION: '📣 تمت الإشارة إليك | You were mentioned',
-    SALE_INQUIRY: '🛒 استفسار بيع | Sale inquiry',
-    ANNOUNCEMENT: '📢 إعلان إداري | Admin announcement'
+  const typeIcons = {
+    LIKE: '👍',
+    COMMENT: '💬',
+    FOLLOW: '👤',
+    MENTION: '📣',
+    SALE_INQUIRY: '🛒',
+    ANNOUNCEMENT: '📢'
   };
+  const icon = typeIcons[item.type] || '🔔';
+  const label = t('notif.' + item.type.toLowerCase()) || item.type;
 %>
-<div class="notification-item <%= item.isRead ? '' : 'unread' %>">
-  <div class="notification-title"><%= typeMap[item.type] || item.type %></div>
-  <div class="notification-time"><%= new Date(item.createdAt).toLocaleString('ar-PS') %></div>
-</div>
+<article class="notification-item <%= item.isRead ? '' : 'unread' %>" role="article" aria-label="<%= label %>">
+  <div class="notification-title"><span aria-hidden="true"><%= icon %></span> <%= label %></div>
+  <% if (item.message) { %><p class="notification-body" dir="auto"><%= item.message %></p><% } %>
+  <time class="notification-time" datetime="<%= new Date(item.createdAt).toISOString() %>"><%= new Date(item.createdAt).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %></time>
+</article>

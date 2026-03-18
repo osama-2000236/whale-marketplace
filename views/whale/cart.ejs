@@ -11,46 +11,48 @@
     }; %>
 
     <% if (query && query.error && cartErrors[query.error]) { %>
-      <div class="alert alert-err" style="margin-bottom:14px;"><%= cartErrors[query.error] %></div>
+      <div class="alert alert-err" role="alert" style="margin-bottom:14px;"><%= cartErrors[query.error] %></div>
     <% } %>
 
     <% if (!cart.items.length) { %>
-      <div class="card" style="padding:24px;text-align:center;">
-        <p style="font-size:16px;font-weight:700;margin-bottom:10px;"><%= t('cart.empty') %></p>
-        <a href="/whale" class="btn btn-primary"><%= t('cart.empty_cta') %></a>
-      </div>
+      <%- include('../partials/empty-state', {
+        icon: '🛒',
+        title: t('cart.empty'),
+        ctaText: t('cart.empty_cta'),
+        ctaHref: '/whale'
+      }) %>
     <% } else { %>
-      <div style="display:grid;grid-template-columns:1.7fr 1fr;gap:14px;">
+      <div class="whale-cart-layout">
         <div class="card" style="padding:14px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
             <strong><%= cart.count %> <%= t('cart.items') %></strong>
-            <span class="muted"><%= t('cart.total') %>: <strong style="color:var(--c-ocean)"><%= cart.total.toLocaleString('ar-PS') %> ₪</strong></span>
+            <span class="muted"><%= t('cart.total') %>: <strong style="color:var(--ui-brand-strong)"><%= cart.total.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</strong></span>
           </div>
 
           <div style="display:grid;gap:10px;">
             <% cart.items.forEach((item) => { %>
-              <article class="card" style="padding:10px;display:grid;grid-template-columns:88px 1fr auto;gap:10px;align-items:center;">
+              <article class="card whale-cart-item" style="padding:10px;">
                 <a href="/whale/listing/<%= item.listing.slug || item.listing.id %>">
-                  <img src="<%= item.listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= item.listing.title %>" style="width:88px;height:72px;object-fit:cover;border-radius:8px;">
+                  <img src="<%= item.listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= item.listing.title %>" class="whale-cart-item-image" loading="lazy">
                 </a>
                 <div>
-                  <a href="/whale/listing/<%= item.listing.slug || item.listing.id %>" class="listing-title" dir="auto"><%= item.listing.title %></a>
+                  <a href="/whale/listing/<%= item.listing.slug || item.listing.id %>" class="listing-title" dir="auto"><%= item.listing.titleAr || item.listing.title %></a>
                   <div class="listing-meta"><%= item.listing.city %> · x<%= item.quantity %></div>
-                  <div class="listing-price" style="font-size:18px;"><%= item.subtotal.toLocaleString('ar-PS') %> ₪</div>
+                  <div class="listing-price" style="font-size:18px;"><%= item.subtotal.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</div>
                 </div>
                 <form method="POST" action="/whale/cart/remove">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <input type="hidden" name="listingId" value="<%= item.listingId %>">
-                  <button type="submit" class="btn btn-danger"><%= t('cart.remove') %></button>
+                  <button type="submit" class="btn btn-danger" aria-label="<%= t('cart.remove') %>"><%= t('cart.remove') %></button>
                 </form>
               </article>
             <% }) %>
           </div>
         </div>
 
-        <div class="card" style="padding:14px;height:max-content;">
+        <div class="card whale-cart-sidebar" style="padding:14px;">
           <h3 style="margin-bottom:10px;"><%= t('cart.checkout') %></h3>
-          <form method="POST" action="/whale/cart/checkout" class="auth-form">
+          <form method="POST" action="/whale/cart/checkout" class="auth-form" novalidate>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <label for="paymentMethod"><%= t('checkout.payment') %></label>
             <select id="paymentMethod" name="paymentMethod" required>
@@ -77,10 +79,10 @@
             </select>
 
             <label for="buyerName"><%= t('checkout.full_name') %></label>
-            <input id="buyerName" name="buyerName" required>
+            <input id="buyerName" name="buyerName" type="text" autocomplete="name" required>
 
             <label for="buyerPhone"><%= t('checkout.phone') %></label>
-            <input id="buyerPhone" name="buyerPhone" required>
+            <input id="buyerPhone" name="buyerPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="0599-123-456" required>
 
             <label for="buyerCity"><%= t('checkout.city') %></label>
             <select id="buyerCity" name="buyerCity" required>
@@ -90,12 +92,12 @@
             </select>
 
             <label for="buyerAddress"><%= t('checkout.address') %></label>
-            <input id="buyerAddress" name="buyerAddress" required>
+            <input id="buyerAddress" name="buyerAddress" type="text" autocomplete="street-address" required>
 
             <label for="buyerNote"><%= t('checkout.note') %></label>
             <textarea id="buyerNote" name="buyerNote" rows="3"></textarea>
 
-            <p class="muted" style="font-size:13px;">🐳 <%= t('checkout.escrow_d') %></p>
+            <%- include('../partials/trust-box', { variant: 'inline' }) %>
             <p class="muted" style="font-size:13px;"><%= t('checkout.refund_note') %></p>
 
             <button type="submit" class="btn btn-primary btn-full"><%= t('cart.checkout') %></button>
