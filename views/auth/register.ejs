@@ -6,11 +6,11 @@
       <div class="auth-brand">
         <div class="brand-icon auth-logo">
           <svg width="28" height="28" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-            <ellipse cx="26" cy="30" rx="18" ry="13" fill="var(--c-ocean)"/>
-            <ellipse cx="16" cy="26" rx="10" ry="9" fill="var(--c-ocean)"/>
-            <circle cx="13" cy="24" r="2.5" fill="white"/>
-            <path d="M42 32 Q50 24 52 30 Q48 34 44 35 Z" fill="var(--c-wave)"/>
-            <path d="M42 34 Q50 42 52 37 Q48 33 44 32 Z" fill="var(--c-wave)"/>
+            <ellipse cx="26" cy="30" rx="18" ry="13" fill="var(--ui-brand-strong, var(--c-ocean))"/>
+            <ellipse cx="16" cy="26" rx="10" ry="9" fill="var(--ui-brand-strong, var(--c-ocean))"/>
+            <circle cx="13" cy="24" r="2.5" fill="var(--ui-surface-1, #fff)"/>
+            <path d="M42 32 Q50 24 52 30 Q48 34 44 35 Z" fill="var(--ui-brand, var(--c-wave))"/>
+            <path d="M42 34 Q50 42 52 37 Q48 33 44 32 Z" fill="var(--ui-brand, var(--c-wave))"/>
           </svg>
         </div>
         <div class="brand-name">Whale</div>
@@ -19,10 +19,10 @@
       <h1 class="auth-title"><%= t('register.title') %></h1>
 
       <% if (error) { %>
-        <div class="alert alert-err"><%= error %></div>
+        <div class="alert alert-err" role="alert"><%= error %></div>
       <% } %>
 
-      <form method="POST" action="/auth/register" class="auth-form">
+      <form method="POST" action="/auth/register" class="auth-form" novalidate>
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <% if (formData.ref) { %>
           <input type="hidden" name="ref" value="<%= formData.ref %>">
@@ -33,13 +33,13 @@
         <% } %>
 
         <label for="username"><%= t('register.username') %></label>
-        <input id="username" type="text" name="username" required value="<%= formData.username || '' %>">
+        <input id="username" type="text" name="username" autocomplete="username" required value="<%= formData.username || '' %>">
 
         <label for="email"><%= t('register.email') %></label>
-        <input id="email" type="email" name="email" required value="<%= formData.email || '' %>">
+        <input id="email" type="email" name="email" autocomplete="email" required value="<%= formData.email || '' %>">
 
         <label for="password"><%= t('register.password') %></label>
-        <input id="password" type="password" name="password" minlength="8" required>
+        <input id="password" type="password" name="password" autocomplete="new-password" minlength="8" required>
 
         <button type="submit" class="btn btn-primary btn-full"><%= t('register.submit') %></button>
       </form>
@@ -76,7 +76,7 @@
           <% } %>
         </div>
       <% } %>
-      <p class="auth-switch" style="margin-top:8px;"><%= t('register.terms_consent') %> <a href="/terms"><%= t('footer.terms') %></a> · <a href="/privacy"><%= t('footer.privacy') %></a></p>
+      <p class="auth-switch whale-mt-sm"><%= t('register.terms_consent') %> <a href="/terms"><%= t('footer.terms') %></a> · <a href="/privacy"><%= t('footer.privacy') %></a></p>
       <p class="auth-switch"><%= t('register.have_acct') %> <a href="/auth/login"><%= t('register.login_cta') %></a></p>
     </div>
   </div>

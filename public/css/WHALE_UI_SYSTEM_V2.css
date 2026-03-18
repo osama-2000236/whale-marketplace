@@ -2803,4 +2803,437 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* ══════════════════════════════════════════════════════════
+     PHASE 2: ENHANCED COMPONENT SYSTEM
+     Floating Labels · Button Micro-interactions · Form States
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── Floating Label Form Fields ── */
+  .whale-field {
+    position: relative;
+    display: grid;
+    gap: 0;
+  }
+
+  .whale-field input,
+  .whale-field textarea,
+  .whale-field select {
+    background: color-mix(in srgb, var(--ui-surface-1) 94%, transparent);
+    border: 1.5px solid var(--ui-border-soft);
+    border-radius: var(--ui-radius-md);
+    padding: 16px 14px 8px;
+    font-size: var(--fs-body);
+    color: var(--ui-ink);
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    width: 100%;
+  }
+
+  .whale-field label {
+    position: absolute;
+    top: 50%;
+    inset-inline-start: 14px;
+    transform: translateY(-50%);
+    font-size: var(--fs-body);
+    color: var(--ui-ink-soft);
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-origin: left top;
+    background: transparent;
+    padding: 0 4px;
+    z-index: 1;
+  }
+
+  [dir="rtl"] .whale-field label {
+    transform-origin: right top;
+  }
+
+  .whale-field textarea ~ label {
+    top: 16px;
+    transform: translateY(0);
+  }
+
+  /* Float label up when input has value or is focused */
+  .whale-field input:focus ~ label,
+  .whale-field input:not(:placeholder-shown) ~ label,
+  .whale-field textarea:focus ~ label,
+  .whale-field textarea:not(:placeholder-shown) ~ label,
+  .whale-field select ~ label {
+    top: 6px;
+    transform: translateY(0) scale(0.78);
+    color: var(--ui-brand);
+    font-weight: 600;
+  }
+
+  .whale-field input:focus,
+  .whale-field textarea:focus,
+  .whale-field select:focus {
+    border-color: var(--ui-brand);
+    box-shadow: 0 0 0 4px var(--ui-ring);
+    background: var(--ui-surface-1);
+  }
+
+  /* Validation states */
+  .whale-field input:user-valid:not(:placeholder-shown) {
+    border-color: var(--ui-success);
+  }
+
+  .whale-field input:user-invalid:not(:placeholder-shown) {
+    border-color: var(--ui-danger);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-danger) 14%, transparent);
+  }
+
+  .whale-field input:user-invalid:not(:placeholder-shown) ~ label {
+    color: var(--ui-danger);
+  }
+
+  .whale-field select {
+    padding: 14px 14px 8px;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234d6477' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-inline-end: 36px;
+  }
+
+  [dir="rtl"] .whale-field select {
+    background-position: left 14px center;
+  }
+
+  /* ── Enhanced Button System ── */
+  .btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  /* Ripple effect on click */
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, currentColor 10%, transparent 10.01%);
+    transform: scale(10);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+  }
+
+  .btn:active::after {
+    transform: scale(0);
+    opacity: 0.08;
+    transition: 0s;
+  }
+
+  /* Loading state */
+  .btn.is-loading {
+    color: transparent !important;
+    pointer-events: none;
+  }
+
+  .btn.is-loading::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid color-mix(in srgb, currentColor 30%, transparent);
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: whaleSpin 0.6s linear infinite;
+    z-index: 2;
+    inset: 0;
+    margin: auto;
+  }
+
+  .btn.is-loading::after {
+    display: none;
+  }
+
+  /* Disabled state */
+  .btn:disabled,
+  .btn[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Primary button enhanced */
+  .btn-primary {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .btn-primary:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* Ghost button enhanced hover */
+  .btn-ghost:active {
+    transform: translateY(0) scale(0.98);
+  }
+
+  /* ── Enhanced Auth Page ── */
+  .auth-page {
+    background:
+      radial-gradient(circle at 20% 30%, color-mix(in srgb, var(--ui-brand-soft) 50%, transparent) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, color-mix(in srgb, var(--ui-success-soft) 30%, transparent) 0%, transparent 35%),
+      var(--ui-surface-0);
+  }
+
+  .auth-card {
+    background: var(--ui-surface-1);
+    border: 1px solid var(--ui-border-soft);
+    box-shadow: var(--ui-shadow-lift);
+    backdrop-filter: blur(20px);
+  }
+
+  html.dark .auth-card {
+    background: color-mix(in srgb, var(--ui-surface-1) 80%, transparent);
+    border-color: var(--ui-border-strong);
+    box-shadow:
+      var(--ui-shadow-lift),
+      inset 0 1px 0 color-mix(in srgb, var(--ui-border-soft) 40%, transparent);
+  }
+
+  /* Auth form inputs enhanced */
+  .auth-form input,
+  .auth-form select,
+  .auth-form textarea {
+    background: color-mix(in srgb, var(--ui-surface-0) 60%, var(--ui-surface-1));
+    border: 1.5px solid var(--ui-border-soft);
+    border-radius: var(--ui-radius-md);
+    padding: 13px 14px;
+    font-size: var(--fs-body);
+    color: var(--ui-ink);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  }
+
+  .auth-form input:focus,
+  .auth-form select:focus,
+  .auth-form textarea:focus {
+    border-color: var(--ui-brand);
+    box-shadow: 0 0 0 4px var(--ui-ring);
+    background: var(--ui-surface-1);
+    outline: none;
+  }
+
+  .auth-form input::placeholder {
+    color: var(--ui-ink-disabled);
+  }
+
+  .auth-form label {
+    color: var(--ui-ink-muted);
+    font-size: var(--fs-body-sm);
+    font-weight: 600;
+  }
+
+  /* Auth title */
+  .auth-title {
+    color: var(--ui-ink);
+  }
+
+  /* Brand name */
+  .brand-name {
+    color: var(--ui-brand-strong);
+  }
+
+  /* Trial pill */
+  .trial-pill {
+    background: color-mix(in srgb, var(--ui-brand-soft) 60%, var(--ui-surface-1));
+    border-color: color-mix(in srgb, var(--ui-brand) 20%, transparent);
+    color: var(--ui-brand-strong);
+  }
+
+  /* Auth switch link text */
+  .auth-switch {
+    color: var(--ui-ink-soft);
+  }
+
+  .auth-switch a {
+    color: var(--ui-brand);
+  }
+
+  /* Auth divider */
+  .auth-divider {
+    color: var(--ui-ink-disabled);
+  }
+
+  /* OAuth buttons dark mode */
+  .oauth-btn {
+    background: color-mix(in srgb, var(--ui-surface-0) 60%, var(--ui-surface-1));
+    border: 1.5px solid var(--ui-border-soft);
+    color: var(--ui-ink);
+    border-radius: var(--ui-radius-md);
+    transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .oauth-btn:hover {
+    border-color: var(--ui-border-strong);
+    background: var(--ui-surface-2);
+    transform: translateY(-1px);
+    box-shadow: var(--ui-shadow-soft);
+  }
+
+  .oauth-apple svg {
+    fill: var(--ui-ink);
+  }
+
+  /* Alert boxes dark mode */
+  .alert-err {
+    background: var(--ui-danger-soft);
+    border-color: color-mix(in srgb, var(--ui-danger) 25%, transparent);
+    color: var(--ui-danger);
+  }
+
+  .alert-ok {
+    background: var(--ui-success-soft);
+    border-color: color-mix(in srgb, var(--ui-success) 25%, transparent);
+    color: var(--ui-success);
+  }
+
+  .alert-info {
+    background: var(--ui-info-soft);
+    border-color: color-mix(in srgb, var(--ui-info) 25%, transparent);
+    color: var(--ui-brand-strong);
+  }
+
+  /* ── Enhanced Product Cards ── */
+  .listing-card {
+    will-change: transform;
+  }
+
+  .listing-card .listing-body {
+    flex: 1;
+  }
+
+  /* Quick-view overlay on hover */
+  @media (hover: hover) and (pointer: fine) {
+    .listing-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, color-mix(in srgb, var(--ui-surface-0) 60%, transparent) 0%, transparent 40%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: inherit;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .listing-card:hover::before {
+      opacity: 1;
+    }
+  }
+
+  /* ── Inline styles replaced with proper classes ── */
+  .whale-mt-sm { margin-top: 8px; }
+  .whale-mt-md { margin-top: 12px; }
+  .whale-mt-lg { margin-top: 14px; }
+  .whale-gap-sm { gap: 8px; }
+
+  /* ── Listing detail inline style replacements ── */
+  .whale-review-header-layout {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .whale-review-verified { margin-top: 6px; }
+  .whale-review-title-text { margin-top: 8px; }
+  .whale-review-body-text { margin-top: 4px; }
+
+  /* ── Footer dark mode ── */
+  .site-footer {
+    background: var(--ui-surface-1);
+    border-top: 1px solid var(--ui-border-soft);
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .site-footer {
+    background: color-mix(in srgb, var(--ui-surface-1) 60%, var(--ui-surface-0));
+  }
+
+  .footer-col-title {
+    color: var(--ui-ink);
+  }
+
+  .footer-links a {
+    color: var(--ui-ink-muted);
+  }
+
+  .footer-links a:hover {
+    color: var(--ui-brand);
+  }
+
+  .footer-bottom {
+    border-top: 1px solid var(--ui-border-soft);
+    color: var(--ui-ink-soft);
+  }
+
+  /* ── Checkout form enhanced ── */
+  .whale-checkout-form input,
+  .whale-checkout-form select,
+  .whale-checkout-form textarea {
+    background: color-mix(in srgb, var(--ui-surface-0) 60%, var(--ui-surface-1));
+    border: 1.5px solid var(--ui-border-soft);
+    border-radius: var(--ui-radius-md);
+    color: var(--ui-ink);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .whale-checkout-form input:focus,
+  .whale-checkout-form select:focus,
+  .whale-checkout-form textarea:focus {
+    border-color: var(--ui-brand);
+    box-shadow: 0 0 0 4px var(--ui-ring);
+    outline: none;
+  }
+
+  .whale-checkout-form label {
+    color: var(--ui-ink-muted);
+    font-weight: 600;
+  }
+
+  /* ── Data table dark mode ── */
+  .data-table td {
+    border-bottom-color: var(--ui-border-soft);
+  }
+
+  .data-table tr:hover td {
+    background: color-mix(in srgb, var(--ui-brand-soft) 20%, transparent);
+  }
+
+  /* ── Smooth scroll-snap sections ── */
+  .whale-nearby-scroller,
+  .whale-thumb-grid,
+  .whale-gallery-rail {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .whale-nearby-scroller::-webkit-scrollbar,
+  .whale-thumb-grid::-webkit-scrollbar,
+  .whale-gallery-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* ── Focus visible ring for keyboard nav ── */
+  :focus-visible {
+    outline: 2px solid var(--ui-brand);
+    outline-offset: 2px;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--ui-brand);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--ui-ring);
+  }
+
+  /* ── Selection color ── */
+  ::selection {
+    background: color-mix(in srgb, var(--ui-brand) 28%, transparent);
+    color: var(--ui-ink);
+  }
 }
