@@ -4,6 +4,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Append ?connection_limit=10&pool_timeout=30 to DATABASE_URL in production
+  // to control connection pool size (Railway PostgreSQL default is 20)
   url      = env("DATABASE_URL")
 }
 
