@@ -1,28 +1,31 @@
-<%- include('../partials/header') %>
+<%- include('../partials/header', { title: (t('nav.saved') || (lang === 'ar' ? 'المحفوظات' : 'Saved')) + ' — Whale' }) %>
 
 <section class="page-section whale-page">
   <div class="container">
-    <h1 class="page-title">المحفوظات | Saved Listings</h1>
+    <h1 class="page-title"><%= t('nav.saved') || (lang === 'ar' ? 'المحفوظات' : 'Saved Listings') %></h1>
 
-    <div class="listing-grid">
-      <% if (saved.length) { %>
+    <% if (saved.length) { %>
+      <div class="listing-grid">
         <% saved.forEach((entry) => { const listing = entry.listing; %>
           <a class="listing-card" href="/whale/listing/<%= listing.slug || listing.id %>">
-            <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= listing.title %>" class="listing-img">
+            <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= listing.titleAr || listing.title %>" class="listing-img" loading="lazy">
             <div class="listing-body">
-              <div class="listing-price"><%= listing.price.toLocaleString('ar-PS') %> ₪</div>
-              <div class="listing-title" dir="auto"><%= listing.title %></div>
-              <div class="muted">📍 <%= listing.city %> · by <%= listing.seller.username %></div>
+              <div class="listing-price"><%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</div>
+              <div class="listing-title" dir="auto"><%= listing.titleAr || listing.title %></div>
+              <div class="muted">📍 <%= listing.city %> · <%= listing.seller.username %></div>
             </div>
           </a>
         <% }) %>
-      <% } else { %>
-        <div class="panel-card">
-          <p class="muted">لا توجد عناصر محفوظة | No saved listings yet.</p>
-          <a href="/whale" class="btn btn-outline">تصفح السوق | Browse Whale</a>
-        </div>
-      <% } %>
-    </div>
+      </div>
+    <% } else { %>
+      <%- include('../partials/empty-state', {
+        icon: '💾',
+        title: t('saved.empty') || (lang === 'ar' ? 'لا توجد عناصر محفوظة' : 'No saved listings yet'),
+        subtitle: t('saved.empty_hint') || (lang === 'ar' ? 'احفظ الإعلانات التي تعجبك للعودة إليها لاحقاً' : 'Save listings you like to come back to them later'),
+        ctaText: t('ui.browse') || (lang === 'ar' ? 'تصفح السوق' : 'Browse Whale'),
+        ctaHref: '/whale'
+      }) %>
+    <% } %>
   </div>
 </section>
 

@@ -1,0 +1,23 @@
+<%#
+  @partial empty-state.ejs
+  @description Configurable empty state with icon, title, subtitle, and optional CTA
+  @param {string} [icon='🐳'] - Emoji or SVG icon
+  @param {string} title - Main heading text
+  @param {string} [subtitle=''] - Secondary description text
+  @param {string} [ctaText=''] - Button label (if empty, no button shown)
+  @param {string} [ctaHref='#'] - Button link
+  @example <%- include('partials/empty-state', { icon: '📦', title: t('orders.empty'), ctaText: t('ui.browse'), ctaHref: '/whale' }) %>
+%>
+<%
+  const emIcon = (typeof icon !== 'undefined' && icon) || '🐳';
+  const emTitle = (typeof title !== 'undefined' && title) || '';
+  const emSubtitle = (typeof subtitle !== 'undefined' && subtitle) || '';
+  const emCtaText = (typeof ctaText !== 'undefined' && ctaText) || '';
+  const emCtaHref = (typeof ctaHref !== 'undefined' && ctaHref) || '#';
+%>
+<div class="card whale-empty-state" role="status">
+  <div class="whale-empty-illustration" aria-hidden="true"><%= emIcon %></div>
+  <h3><%= emTitle %></h3>
+  <% if (emSubtitle) { %><p class="muted"><%= emSubtitle %></p><% } %>
+  <% if (emCtaText) { %><a href="<%= emCtaHref %>" class="btn btn-ghost"><%= emCtaText %></a><% } %>
+</div>

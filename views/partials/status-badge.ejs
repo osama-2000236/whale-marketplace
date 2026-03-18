@@ -1,0 +1,14 @@
+<%#
+  @partial status-badge.ejs
+  @description Renders an order/listing status badge with translated label
+  @param {string} status - The status key (e.g. 'PENDING', 'SHIPPED', 'COMPLETED')
+  @param {string} [type='order'] - Type prefix for i18n key: 'order' or 'listing'
+  @example <%- include('partials/status-badge', { status: order.orderStatus }) %>
+%>
+<%
+  const badgeStatus = (typeof status !== 'undefined' && status) || 'PENDING';
+  const badgeType = (typeof type !== 'undefined' && type) || 'order';
+  const i18nKey = 'status.' + badgeStatus;
+  const label = typeof t === 'function' ? t(i18nKey) : badgeStatus;
+%>
+<span class="status-badge status-<%= badgeStatus.toLowerCase() %>" role="status" aria-label="<%= label %>"><%= label %></span>

@@ -1,0 +1,19 @@
+<%#
+  @partial trust-box.ejs
+  @description Whale escrow trust message — shows buyer protection info
+  @param {string} [variant='inline'] - 'inline' for single line, 'full' for trust row with multiple items
+  @example <%- include('partials/trust-box', { variant: 'inline' }) %>
+%>
+<%
+  const tbVariant = (typeof variant !== 'undefined' && variant) || 'inline';
+%>
+<% if (tbVariant === 'inline') { %>
+  <p class="muted whale-escrow-copy">🐳 <%= typeof t === 'function' ? t('checkout.escrow_d') : 'Your money is protected until you confirm delivery' %></p>
+<% } else { %>
+  <div class="trust-row">
+    <div class="trust-item">🔒 <strong><%= typeof t === 'function' ? t('trust.secure') : 'Secure Payment' %></strong><br><%= typeof t === 'function' ? t('trust.secure_d') : 'Encrypted card payment' %></div>
+    <div class="trust-item">🚚 <strong><%= typeof t === 'function' ? t('trust.shipping') : 'Reliable Shipping' %></strong><br><%= typeof t === 'function' ? t('trust.shipping_d') : 'Verified shipping companies' %></div>
+    <div class="trust-item">✅ <strong><%= typeof t === 'function' ? t('trust.protection') : 'Buyer Protection' %></strong><br><%= typeof t === 'function' ? t('trust.protection_d') : 'Money held until delivery confirmed' %></div>
+    <div class="trust-item">⭐ <strong><%= typeof t === 'function' ? t('trust.reviews') : 'Real Reviews' %></strong><br><%= typeof t === 'function' ? t('trust.reviews_d') : 'From verified buyers only' %></div>
+  </div>
+<% } %>

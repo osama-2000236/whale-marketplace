@@ -1,70 +1,70 @@
-<%- include('../partials/header') %>
+<%- include('../partials/header', { title: (t('listing.edit') || 'Edit Listing') + ' — Whale' }) %>
 
 <section class="page-section whale-page">
   <div class="container">
-    <h1 class="page-title">تعديل الإعلان | Edit Listing</h1>
+    <h1 class="page-title"><%= t('listing.edit') || (lang === 'ar' ? 'تعديل الإعلان' : 'Edit Listing') %></h1>
 
-    <form method="POST" action="/whale/listing/<%= listing.slug || listing.id %>/edit" enctype="multipart/form-data" class="panel-card">
+    <form method="POST" action="/whale/listing/<%= listing.slug || listing.id %>/edit" enctype="multipart/form-data" class="panel-card" novalidate>
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
       <div class="form-row">
         <div class="form-group">
-          <label>العنوان | Title</label>
-          <input type="text" name="title" value="<%= listing.title %>" required>
+          <label for="editTitle"><%= t('listing.title') || (lang === 'ar' ? 'العنوان' : 'Title') %></label>
+          <input id="editTitle" type="text" name="title" value="<%= listing.title %>" required>
         </div>
         <div class="form-group">
-          <label>العنوان بالعربي | Arabic Title</label>
-          <input type="text" name="titleAr" value="<%= listing.titleAr || '' %>">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>الوصف | Description</label>
-          <textarea name="description" rows="4" required><%= listing.description %></textarea>
-        </div>
-        <div class="form-group">
-          <label>الوصف بالعربي | Arabic Description</label>
-          <textarea name="descriptionAr" rows="4"><%= listing.descriptionAr || '' %></textarea>
+          <label for="editTitleAr"><%= t('listing.title_ar') || (lang === 'ar' ? 'العنوان بالعربي' : 'Arabic Title') %></label>
+          <input id="editTitleAr" type="text" name="titleAr" value="<%= listing.titleAr || '' %>" dir="rtl">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>الفئة | Category</label>
+          <label for="editDescription"><%= t('listing.description') %></label>
+          <textarea id="editDescription" name="description" rows="4" required><%= listing.description %></textarea>
+        </div>
+        <div class="form-group">
+          <label for="editDescriptionAr"><%= t('listing.description_ar') || (lang === 'ar' ? 'الوصف بالعربي' : 'Arabic Description') %></label>
+          <textarea id="editDescriptionAr" name="descriptionAr" rows="4" dir="rtl"><%= listing.descriptionAr || '' %></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="editCategory"><%= t('market.category') || (lang === 'ar' ? 'الفئة' : 'Category') %></label>
           <select name="categoryId" id="editCategory">
-            <option value="">No category</option>
+            <option value=""><%= lang === 'ar' ? 'بدون فئة' : 'No category' %></option>
             <% categories.forEach((cat) => { %>
               <option value="<%= cat.id %>" <%= listing.categoryId === cat.id ? 'selected' : '' %>>
-                <%= cat.nameAr %> / <%= cat.name %>
+                <%= lang === 'ar' ? cat.nameAr : cat.name %>
               </option>
             <% }) %>
           </select>
         </div>
         <div class="form-group">
-          <label>الفئة الفرعية | Subcategory</label>
+          <label for="editSubcategory"><%= t('market.subcategory') || (lang === 'ar' ? 'الفئة الفرعية' : 'Subcategory') %></label>
           <select name="subcategoryId" id="editSubcategory"></select>
         </div>
         <div class="form-group">
-          <label>المدينة | City</label>
-          <input type="text" name="city" value="<%= listing.city %>" required>
+          <label for="editCity"><%= t('market.city') %></label>
+          <input id="editCity" type="text" name="city" value="<%= listing.city %>" required>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label>السعر | Price</label>
-          <input type="number" name="price" value="<%= listing.price %>" min="1" required>
+          <label for="editPrice"><%= t('listing.price') || (lang === 'ar' ? 'السعر (₪)' : 'Price (₪)') %></label>
+          <input id="editPrice" type="number" name="price" value="<%= listing.price %>" min="1" inputmode="numeric" required>
         </div>
         <div class="form-group">
-          <label>الكمية | Quantity</label>
-          <input type="number" name="quantity" value="<%= listing.quantity %>" min="1" required>
+          <label for="editQuantity"><%= t('listing.quantity') || (lang === 'ar' ? 'الكمية' : 'Quantity') %></label>
+          <input id="editQuantity" type="number" name="quantity" value="<%= listing.quantity %>" min="1" inputmode="numeric" required>
         </div>
         <div class="form-group">
-          <label>الحالة | Condition</label>
-          <select name="condition" required>
+          <label for="editCondition"><%= t('market.condition') %></label>
+          <select name="condition" id="editCondition" required>
             <% ['NEW','LIKE_NEW','USED','GOOD','FAIR','FOR_PARTS'].forEach((c) => { %>
-              <option value="<%= c %>" <%= listing.condition === c ? 'selected' : '' %>><%= c %></option>
+              <option value="<%= c %>" <%= listing.condition === c ? 'selected' : '' %>><%= t('cond.' + c) %></option>
             <% }) %>
           </select>
         </div>
@@ -72,32 +72,32 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label>وسوم | Tags</label>
-          <input type="text" name="tags" value="<%= listing.tags?.join(', ') || '' %>">
+          <label for="editTags"><%= t('listing.tags') || (lang === 'ar' ? 'وسوم' : 'Tags') %></label>
+          <input id="editTags" type="text" name="tags" value="<%= listing.tags?.join(', ') || '' %>">
         </div>
         <div class="form-group">
-          <label>Specifications JSON</label>
-          <input type="text" name="specs" value="<%= listing.specs ? JSON.stringify(listing.specs) : '' %>">
+          <label for="editSpecs"><%= t('listing.specs') || 'Specifications JSON' %></label>
+          <input id="editSpecs" type="text" name="specs" value="<%= listing.specs ? JSON.stringify(listing.specs) : '' %>">
         </div>
         <div class="form-group" style="align-self:end;">
-          <label><input type="checkbox" name="negotiable" value="true" <%= listing.negotiable ? 'checked' : '' %>> قابل للتفاوض | Negotiable</label>
+          <label><input type="checkbox" name="negotiable" value="true" <%= listing.negotiable ? 'checked' : '' %>> <%= t('listing.negotiable') %></label>
         </div>
       </div>
 
       <div class="form-group">
-        <label>صور جديدة (اختياري) | New images (optional)</label>
-        <input type="file" name="images" accept="image/*" multiple>
+        <label for="editImages"><%= t('listing.new_images') || (lang === 'ar' ? 'صور جديدة (اختياري)' : 'New images (optional)') %></label>
+        <input id="editImages" type="file" name="images" accept="image/*" multiple>
       </div>
 
       <% if (listing.images?.length) { %>
-        <div class="image-preview-grid">
-          <% listing.images.forEach((img) => { %><img src="<%= img %>" alt="listing image"><% }) %>
+        <div class="image-preview-grid" role="group" aria-label="<%= t('listing.current_images') || (lang === 'ar' ? 'الصور الحالية' : 'Current images') %>">
+          <% listing.images.forEach((img, i) => { %><img src="<%= img %>" alt="<%= (listing.titleAr || listing.title) + ' — ' + (i + 1) %>" loading="lazy"><% }) %>
         </div>
       <% } %>
 
       <div style="display:flex; gap:8px; margin-top:12px;">
-        <button type="submit" class="btn btn-primary">حفظ التعديلات | Save Changes</button>
-        <a href="/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-outline">رجوع | Back</a>
+        <button type="submit" class="btn btn-primary"><%= t('ui.save') || (lang === 'ar' ? 'حفظ التعديلات' : 'Save Changes') %></button>
+        <a href="/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-outline"><%= t('ui.back') || (lang === 'ar' ? 'رجوع' : 'Back') %></a>
       </div>
     </form>
   </div>
@@ -113,12 +113,12 @@
     function renderSubs() {
       const id = categorySel.value;
       const category = categories.find((c) => c.id === id);
-      subSel.innerHTML = '<option value="">No subcategory</option>';
+      subSel.innerHTML = '<option value=""><%= lang === "ar" ? "بدون فئة فرعية" : "No subcategory" %></option>';
       if (!category || !category.subcategories) return;
       category.subcategories.forEach((sub) => {
         const opt = document.createElement('option');
         opt.value = sub.id;
-        opt.textContent = (sub.nameAr || sub.name) + ' / ' + sub.name;
+        opt.textContent = '<%= lang %>' === 'ar' ? (sub.nameAr || sub.name) : sub.name;
         if (sub.id === selectedSub) opt.selected = true;
         subSel.appendChild(opt);
       });

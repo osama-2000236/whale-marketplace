@@ -4,34 +4,35 @@
   <div class="container">
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <h1 class="page-title"><%= t('nav.my_orders') %></h1>
-      <div style="display:flex; gap:8px;">
-        <a href="/whale/orders?tab=buying" class="btn btn-sm <%= tab === 'buying' ? 'btn-primary' : 'btn-ghost' %>"><%= t('order.tab_buying') %></a>
-        <a href="/whale/orders?tab=selling" class="btn btn-sm <%= tab === 'selling' ? 'btn-primary' : 'btn-ghost' %>"><%= t('order.tab_selling') %></a>
+      <div style="display:flex; gap:8px;" role="tablist" aria-label="<%= t('nav.my_orders') %>">
+        <a href="/whale/orders?tab=buying" class="btn btn-sm <%= tab === 'buying' ? 'btn-primary' : 'btn-ghost' %>" role="tab" aria-selected="<%= tab === 'buying' %>"><%= t('order.tab_buying') %></a>
+        <a href="/whale/orders?tab=selling" class="btn btn-sm <%= tab === 'selling' ? 'btn-primary' : 'btn-ghost' %>" role="tab" aria-selected="<%= tab === 'selling' %>"><%= t('order.tab_selling') %></a>
       </div>
     </div>
 
     <div class="panel-card">
       <% if (orders.length) { %>
         <table class="data-table">
+          <caption class="sr-only"><%= t('nav.my_orders') %> — <%= tab === 'buying' ? t('order.tab_buying') : t('order.tab_selling') %></caption>
           <thead>
             <tr>
-              <th><%= t('order.number') %></th>
-              <th><%= t('order.item') %></th>
-              <th><%= tab === 'selling' ? t('order.buyer') : t('order.seller') %></th>
-              <th><%= t('order.amount') %></th>
-              <th><%= t('order.status') %></th>
-              <th><%= t('order.created') %></th>
-              <th><%= t('order.actions') %></th>
+              <th scope="col"><%= t('order.number') %></th>
+              <th scope="col"><%= t('order.item') %></th>
+              <th scope="col"><%= tab === 'selling' ? t('order.buyer') : t('order.seller') %></th>
+              <th scope="col"><%= t('order.amount') %></th>
+              <th scope="col"><%= t('order.status') %></th>
+              <th scope="col"><%= t('order.created') %></th>
+              <th scope="col"><%= t('order.actions') %></th>
             </tr>
           </thead>
           <tbody>
             <% orders.forEach((order) => { %>
               <tr>
                 <td><%= order.orderNumber %></td>
-                <td dir="auto"><%= order.listing.title %></td>
+                <td dir="auto"><%= order.listing.titleAr || order.listing.title %></td>
                 <td><%= tab === 'selling' ? order.buyer.username : order.seller.username %></td>
                 <td><%= order.amount.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</td>
-                <td><span class="status-badge status-<%= order.orderStatus %>"><%= t('status.' + order.orderStatus) %></span></td>
+                <td><%- include('../partials/status-badge', { status: order.orderStatus }) %></td>
                 <td><%= new Date(order.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></td>
                 <td><a href="/whale/orders/<%= order.id %>"><%= t('ui.open') %></a></td>
               </tr>
@@ -39,7 +40,13 @@
           </tbody>
         </table>
       <% } else { %>
-        <p class="muted"><%= t('order.no_orders') %></p>
+        <%- include('../partials/empty-state', {
+          icon: '📦',
+          title: t('order.no_orders'),
+          subtitle: tab === 'buying' ? t('order.empty_buying') : t('order.empty_selling'),
+          ctaText: tab === 'buying' ? t('ui.browse') : t('ui.sell'),
+          ctaHref: tab === 'buying' ? '/whale' : '/whale/sell'
+        }) %>
       <% } %>
     </div>
   </div>

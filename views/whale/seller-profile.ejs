@@ -16,11 +16,11 @@
         </div>
       </div>
 
-      <div class="profile-stats" style="margin-top:10px;">
-        <div class="profile-stat"><div class="val"><%= profile.totalSales || 0 %></div><div class="lbl"><%= t('seller.total_sales') %></div></div>
-        <div class="profile-stat"><div class="val"><%= Number(profile.averageRating || 0).toFixed(1) %></div><div class="lbl"><%= t('dashboard.avg_rating') %></div></div>
-        <div class="profile-stat"><div class="val"><%= profile.reviewCount || 0 %></div><div class="lbl"><%= t('listing.reviews') %></div></div>
-        <div class="profile-stat"><div class="val"><%= listings.length %></div><div class="lbl"><%= t('seller.active_listings') %></div></div>
+      <div class="profile-stats" role="group" aria-label="<%= t('seller.stats') || (lang === 'ar' ? 'إحصائيات البائع' : 'Seller stats') %>" style="margin-top:10px;">
+        <div class="profile-stat" aria-label="<%= t('seller.total_sales') %>: <%= profile.totalSales || 0 %>"><div class="val"><%= profile.totalSales || 0 %></div><div class="lbl"><%= t('seller.total_sales') %></div></div>
+        <div class="profile-stat" aria-label="<%= t('dashboard.avg_rating') %>: <%= Number(profile.averageRating || 0).toFixed(1) %>"><div class="val"><%= Number(profile.averageRating || 0).toFixed(1) %></div><div class="lbl"><%= t('dashboard.avg_rating') %></div></div>
+        <div class="profile-stat" aria-label="<%= t('listing.reviews') %>: <%= profile.reviewCount || 0 %>"><div class="val"><%= profile.reviewCount || 0 %></div><div class="lbl"><%= t('listing.reviews') %></div></div>
+        <div class="profile-stat" aria-label="<%= t('seller.active_listings') %>: <%= listings.length %>"><div class="val"><%= listings.length %></div><div class="lbl"><%= t('seller.active_listings') %></div></div>
       </div>
 
       <% if (profile.bio || profile.bioAr) { %>
@@ -30,36 +30,34 @@
 
     <div class="panel-card" style="margin-top:12px;">
       <h3><%= t('seller.all') %></h3>
-      <div class="listing-grid" style="margin-top:8px;">
-        <% listings.forEach((listing) => { %>
-          <a class="listing-card" href="/whale/listing/<%= listing.slug || listing.id %>">
-            <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= listing.title %>" class="listing-img">
-            <div class="listing-body">
-              <div class="listing-price"><%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</div>
-              <div class="listing-title" dir="auto"><%= listing.title %></div>
-            </div>
-          </a>
-        <% }) %>
-      </div>
+      <% if (listings.length) { %>
+        <div class="listing-grid" style="margin-top:8px;">
+          <% listings.forEach((listing) => { %>
+            <a class="listing-card" href="/whale/listing/<%= listing.slug || listing.id %>">
+              <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" alt="<%= listing.titleAr || listing.title %>" class="listing-img" loading="lazy">
+              <div class="listing-body">
+                <div class="listing-price"><%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</div>
+                <div class="listing-title" dir="auto"><%= listing.titleAr || listing.title %></div>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <%- include('../partials/empty-state', {
+          icon: '📦',
+          title: t('seller.no_listings') || (lang === 'ar' ? 'لا توجد إعلانات' : 'No listings yet')
+        }) %>
+      <% } %>
     </div>
 
     <div class="panel-card" style="margin-top:12px;">
       <h3><%= t('listing.reviews') %></h3>
       <% if (reviews.length) { %>
         <% reviews.forEach((review) => { %>
-          <article class="panel-card whale-review-card">
-            <div style="display:flex; justify-content:space-between; gap:10px;">
-              <strong><%= review.reviewer.username %></strong>
-              <small><%= new Date(review.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></small>
-            </div>
-            <div class="stars"><%- '★'.repeat(review.rating) %><%- '☆'.repeat(5 - review.rating) %></div>
-            <% if (review.isVerified) { %><span class="verified-seller"><%= t('listing.verified_p') %></span><% } %>
-            <% if (review.title) { %><h4 dir="auto" style="margin-top:8px;"><%= review.title %></h4><% } %>
-            <% if (review.body) { %><p dir="auto"><%= review.body %></p><% } %>
-          </article>
+          <%- include('../partials/review-card', { review, lang }) %>
         <% }) %>
       <% } else { %>
-        <p class="muted"><%= t('seller.no_reviews') %></p>
+        <p class="muted" style="padding:12px 0;"><%= t('seller.no_reviews') %></p>
       <% } %>
     </div>
   </div>
