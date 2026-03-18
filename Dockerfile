@@ -7,10 +7,10 @@ RUN npm ci --production
 
 COPY . .
 
-RUN npm run seed
+RUN npx prisma generate
 
 EXPOSE 3000
 
 ENV NODE_ENV=production
 
-CMD ["node", "server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
