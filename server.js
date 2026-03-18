@@ -3,6 +3,15 @@
  * Node.js + Express + Prisma
  */
 
+// Catch fatal errors that would otherwise kill the process silently
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('UNHANDLED REJECTION:', reason);
+});
+
 try { require('dotenv').config(); } catch (_) { /* dotenv unavailable in production — env vars set by platform */ }
 
 const express = require('express');
