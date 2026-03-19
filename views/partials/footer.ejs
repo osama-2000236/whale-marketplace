@@ -1,72 +1,44 @@
 <footer class="site-footer">
-  <div class="footer-inner">
-    <div class="footer-col footer-brand">
-      <div class="footer-logo">
-        <svg width="28" height="28" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-          <ellipse cx="26" cy="30" rx="18" ry="13" fill="var(--c-ocean)"/>
-          <ellipse cx="16" cy="26" rx="10" ry="9" fill="var(--c-ocean)"/>
-          <circle cx="13" cy="24" r="2.5" fill="white"/>
-          <path d="M42 32 Q50 24 52 30 Q48 34 44 35 Z" fill="var(--c-wave)"/>
-          <path d="M42 34 Q50 42 52 37 Q48 33 44 32 Z" fill="var(--c-wave)"/>
-        </svg>
-        <span class="footer-brand-name"><%= t('app.name') %></span>
-      </div>
-      <p class="footer-tagline"><%= t('footer.tagline') %></p>
-      <div class="footer-trust">
-        <span class="footer-trust-badge">🔒 <%= t('trust.secure') %></span>
-        <span class="footer-trust-badge">🐳 <%= t('trust.protection') %></span>
-      </div>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <h3>🐳 Whale · الحوت</h3>
+      <p><%= t('app.tagline') %></p>
+      <p class="trust-text"><%= t('app.trust_promise') %></p>
     </div>
-
-    <div class="footer-col">
-      <h4 class="footer-col-title"><%= t('footer.marketplace') %></h4>
-      <ul class="footer-links">
-        <li><a href="/whale"><%= t('nav.marketplace') %></a></li>
-        <li><a href="/whale/sell"><%= t('market.add_listing') %></a></li>
-        <li><a href="/whale/my-listings"><%= t('nav.my_listings') %></a></li>
-        <li><a href="/whale/orders"><%= t('nav.my_orders') %></a></li>
-        <li><a href="/pricing"><%= t('footer.pricing') %></a></li>
+    <div class="footer-links">
+      <h4><%= t('footer.marketplace') %></h4>
+      <ul>
+        <li><a href="/whale"><%= t('nav.home') %></a></li>
+        <li><a href="/whale/sell"><%= t('whale.sell_now') %></a></li>
+        <li><a href="/pricing"><%= t('nav.pricing') %></a></li>
       </ul>
     </div>
-
-    <div class="footer-col">
-      <h4 class="footer-col-title"><%= t('nav.help') %></h4>
-      <ul class="footer-links">
-        <li><a href="/forum"><%= t('footer.forum') %></a></li>
-        <li><a href="/safety"><%= t('footer.safety') %></a></li>
-        <li><a href="/buyer-protection"><%= t('legal.buyer_protection_title') %></a></li>
-        <li><a href="/contact"><%= t('footer.contact') %></a></li>
-        <li><a href="/about"><%= t('footer.about') %></a></li>
+    <div class="footer-links">
+      <h4><%= t('footer.help') %></h4>
+      <ul>
+        <li><a href="/forum"><%= t('nav.forum') %></a></li>
+        <li><a href="/safety"><%= t('nav.safety') %></a></li>
+        <li><a href="/buyer-protection"><%= t('nav.buyer_protection') %></a></li>
+        <li><a href="/contact"><%= t('nav.contact') %></a></li>
+        <li><a href="/about"><%= t('nav.about') %></a></li>
       </ul>
     </div>
-
-    <div class="footer-col">
-      <h4 class="footer-col-title"><%= t('footer.contact') %></h4>
-      <ul class="footer-links">
-        <li>
-          <a href="https://wa.me/<%= process.env.WHATSAPP_NUMBER || '' %>" target="_blank" rel="noopener">
-            💬 <%= t('footer.contact_wa') %> — <%= process.env.WHATSAPP_NUMBER || 'WHATSAPP_NUMBER' %>
-          </a>
-        </li>
-        <li>
-          <a href="mailto:<%= process.env.CONTACT_EMAIL || 'contact@whale.ps' %>">
-            ✉ <%= t('footer.contact_email') %> — <%= process.env.CONTACT_EMAIL || 'CONTACT_EMAIL' %>
-          </a>
-        </li>
-        <li><span>📍 <%= t('contact.location') %></span></li>
-      </ul>
+    <div class="footer-contact">
+      <h4><%= t('footer.contact') %></h4>
+      <% if (whatsappNumber) { %>
+      <a href="https://wa.me/<%= whatsappNumber %>" target="_blank" rel="noopener">WhatsApp</a>
+      <% } %>
+      <% if (typeof config !== 'undefined' && config.contact) { %>
+      <p><%= config.contact.email || '' %></p>
+      <% } %>
     </div>
   </div>
-
   <div class="footer-bottom">
-    <div class="footer-bottom-inner">
-      <span><%= t('app.copyright') %></span>
-      <div class="footer-legal-links">
-        <a href="/terms"><%= t('footer.terms') %></a>
-        <a href="/privacy"><%= t('footer.privacy') %></a>
-      </div>
+    <p><%= t('app.copyright') %></p>
+    <div class="footer-legal">
+      <a href="/terms"><%= t('nav.terms') %></a>
+      <a href="/privacy"><%= t('nav.privacy') %></a>
     </div>
   </div>
 </footer>
-
 <%- include('foot') %>

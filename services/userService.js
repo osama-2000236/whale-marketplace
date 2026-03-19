@@ -1,348 +1,204 @@
-const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
-const { parseLimit, createCursorResponse } = require('../utils/pagination');
+const bcrypt = require('bcryptjs');
 
-async function registerUser(payload) {
-  const username = String(payload.username || '').trim().toLowerCase();
-  const email = String(payload.email || '').trim().toLowerCase();
-  const password = String(payload.password || '');
+const SALT_ROUNDS = 12;
 
-  if (!username || !email || !password) {
-    throw new Error('username, email, and password are required');
+async function registerUser({ username, email, password, avatar, bio, pcSpecs }) {
+  if (!username || username.length < 3 || username.length > 30) {
+    throw new Error('Username must be 3-30 characters');
   }
-
-  if (username.length < 3 || username.length > 30) {
-    throw new Error('username must be between 3 and 30 characters');
-  }
-
   if (!/^[a-z0-9_]+$/.test(username)) {
-    throw new Error('username can only contain lowercase letters, numbers, and underscore');
+    throw new Error('Username can only contain lowercase letters, numbers, and underscores');
   }
+  if (!email) throw new Error('Email is required');
+  if (!password || password.length < 8) throw new Error('Password must be at least 8 characters');
 
-  if (password.length < 8) {
-    throw new Error('password must be at least 8 characters');
-  }
-
-  const exists = await prisma.user.findFirst({
-    where: {
-      OR: [{ username }, { email }]
-    }
+  const normalizedEmail = email.trim().toLowerCase();
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ username }, { email: normalizedEmail }] },
   });
-
-  if (exists) {
-    throw new Error('username or email already exists');
+  if (existing) {
+    if (existing.username === username) throw new Error('Username already taken');
+    throw new Error('Email already registered');
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
-
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
   const user = await prisma.user.create({
     data: {
       username,
-      email,
+      email: normalizedEmail,
       passwordHash,
-      avatar: payload.avatar || null,
-      bio: payload.bio || null,
-      pcSpecs: payload.pcSpecs || null,
-      role: 'MEMBER'
+      avatar: avatar || null,
+      bio: bio || null,
+      pcSpecs: pcSpecs || null,
     },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      reputationPoints: true,
-      isVerified: true,
-      isBanned: true,
-      createdAt: true,
-      lastSeenAt: true
-    }
   });
 
-  return user;
+  const { passwordHash: _, ...safe } = user;
+  return safe;
 }
 
 async function authenticateUser(identifier, password) {
-  const value = String(identifier || '').trim().toLowerCase();
-  if (!value || !password) {
-    throw new Error('invalid credentials');
-  }
+  if (!identifier || !password) throw new Error('Email/username and password are required');
 
+  const normalized = identifier.trim().toLowerCase();
   const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: value }, { username: value }]
-    }
+    where: { OR: [{ email: normalized }, { username: normalized }] },
   });
 
-  if (!user || user.isBanned) {
-    throw new Error('invalid credentials');
-  }
+  if (!user) throw new Error('Invalid credentials');
+  if (user.isBanned) throw new Error('Account is banned');
 
-  const matched = await bcrypt.compare(password, user.passwordHash);
-  if (!matched) {
-    throw new Error('invalid credentials');
-  }
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) throw new Error('Invalid credentials');
 
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    avatar: user.avatar,
-    bio: user.bio,
-    pcSpecs: user.pcSpecs,
-    role: user.role,
-    reputation: user.reputation,
-    reputationPoints: user.reputationPoints,
-    isVerified: user.isVerified,
-    isBanned: user.isBanned,
-    createdAt: user.createdAt,
-    lastSeenAt: user.lastSeenAt
-  };
+  const { passwordHash: _, ...safe } = user;
+  return safe;
 }
 
 async function getCurrentUser(userId) {
   if (!userId) return null;
-
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      id: true,
-      username: true,
-      email: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      reputationPoints: true,
-      isVerified: true,
-      isBanned: true,
-      createdAt: true,
-      lastSeenAt: true
-    }
+      id: true, username: true, email: true, avatar: true, bio: true,
+      pcSpecs: true, role: true, reputation: true, reputationPoints: true,
+      isVerified: true, isBanned: true, createdAt: true, lastSeenAt: true,
+    },
   });
+  return user;
 }
 
 async function findByUsername(username) {
-  const normalized = String(username || '').trim().toLowerCase();
-  if (!normalized) return null;
-  return prisma.user.findUnique({ where: { username: normalized } });
+  return prisma.user.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
+  });
 }
 
 async function ensureAdminFromEnv() {
-  const adminUsername = (process.env.ADMIN_USERNAME || 'admin').toLowerCase();
-  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@pcgaming.local').toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD || 'PcGaming@2024';
+  const username = process.env.ADMIN_USERNAME;
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  if (!username || !email || !password) return;
 
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
-
-  return prisma.user.upsert({
-    where: { username: adminUsername },
-    update: {
-      email: adminEmail,
-      passwordHash,
-      role: 'ADMIN',
-      isVerified: true,
-      isBanned: false
-    },
-    create: {
-      username: adminUsername,
-      email: adminEmail,
-      passwordHash,
-      role: 'ADMIN',
-      isVerified: true,
-      isBanned: false,
-      bio: 'حساب الإدارة | Admin account'
-    }
+  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+  await prisma.user.upsert({
+    where: { email },
+    create: { username, email, passwordHash, role: 'ADMIN', isVerified: true },
+    update: { passwordHash, role: 'ADMIN' },
   });
 }
 
 async function getUserProfileByUsername(username, viewerId, options = {}) {
-  const limit = parseLimit(options.limit, 10, 20);
-
-  const user = await prisma.user.findUnique({
-    where: { username: String(username).toLowerCase() },
+  const limit = Math.min(options.limit || 10, 20);
+  const user = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
     select: {
-      id: true,
-      username: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      createdAt: true,
-      _count: {
-        select: {
-          followers: true,
-          following: true,
-          posts: true,
-          listings: true
-        }
-      }
-    }
+      id: true, username: true, email: true, avatar: true, bio: true,
+      pcSpecs: true, role: true, reputation: true, reputationPoints: true,
+      isVerified: true, createdAt: true, lastSeenAt: true,
+      _count: { select: { followers: true, following: true, posts: true, sellerListings: true } },
+    },
   });
+  if (!user) return null;
 
-  if (!user) {
-    return null;
+  let isFollowing = false;
+  if (viewerId && viewerId !== user.id) {
+    const follow = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId: viewerId, followingId: user.id } },
+    });
+    isFollowing = Boolean(follow);
   }
 
-  const [isFollowing, posts, listings] = await Promise.all([
-    viewerId
-      ? prisma.follow.findUnique({
-          where: {
-            followerId_followingId: {
-              followerId: viewerId,
-              followingId: user.id
-            }
-          }
-        })
-      : null,
-    prisma.post.findMany({
-      where: { authorId: user.id },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
-            role: true
-          }
-        },
-        room: {
-          select: {
-            id: true,
-            name: true,
-            nameAr: true,
-            slug: true
-          }
-        }
-      }
-    }),
-    prisma.marketplaceListing.findMany({
-      where: {
-        sellerId: user.id,
-        status: 'ACTIVE'
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 6
-    })
-  ]);
+  const posts = await prisma.post.findMany({
+    where: { authorId: user.id },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    include: {
+      author: { select: { id: true, username: true, avatar: true } },
+      room: { select: { id: true, name: true, nameAr: true, slug: true } },
+      _count: { select: { comments: true } },
+    },
+  });
+
+  const listings = await prisma.marketListing.findMany({
+    where: { sellerId: user.id, status: 'ACTIVE' },
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+    include: { category: true },
+  });
 
   return {
     ...user,
-    isFollowing: Boolean(isFollowing),
+    followersCount: user._count.followers,
+    followingCount: user._count.following,
+    postsCount: user._count.posts,
+    listingsCount: user._count.sellerListings,
+    isFollowing,
     posts,
-    listings
+    listings,
   };
 }
 
 async function updateMyProfile(userId, data) {
-  if (!userId) throw new Error('Authentication required');
-
-  const payload = {
-    bio: data.bio,
-    pcSpecs: data.pcSpecs || undefined
-  };
-
-  if (data.avatar) {
-    payload.avatar = data.avatar;
-  }
+  const updateData = {};
+  if (data.bio !== undefined) updateData.bio = data.bio;
+  if (data.avatar !== undefined) updateData.avatar = data.avatar;
+  if (data.pcSpecs !== undefined) updateData.pcSpecs = data.pcSpecs;
 
   return prisma.user.update({
     where: { id: userId },
-    data: payload,
+    data: updateData,
     select: {
-      id: true,
-      username: true,
-      email: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      reputationPoints: true,
-      isVerified: true,
-      createdAt: true
-    }
+      id: true, username: true, email: true, avatar: true, bio: true,
+      pcSpecs: true, role: true, isVerified: true,
+    },
   });
 }
 
 async function followUser(followerId, followingUsername) {
-  const following = await prisma.user.findUnique({
-    where: { username: String(followingUsername).toLowerCase() },
-    select: { id: true }
+  const target = await prisma.user.findFirst({
+    where: { username: { equals: followingUsername, mode: 'insensitive' } },
   });
-
-  if (!following) throw new Error('User not found');
-  if (following.id === followerId) throw new Error('Cannot follow yourself');
+  if (!target) throw new Error('User not found');
+  if (target.id === followerId) throw new Error('Cannot follow yourself');
 
   const existing = await prisma.follow.findUnique({
-    where: {
-      followerId_followingId: {
-        followerId,
-        followingId: following.id
-      }
-    }
+    where: { followerId_followingId: { followerId, followingId: target.id } },
   });
 
   if (existing) {
     await prisma.follow.delete({
-      where: {
-        followerId_followingId: {
-          followerId,
-          followingId: following.id
-        }
-      }
+      where: { followerId_followingId: { followerId, followingId: target.id } },
     });
-
     return { following: false };
   }
 
-  await prisma.follow.create({
-    data: {
-      followerId,
-      followingId: following.id
-    }
-  });
-
+  await prisma.follow.create({ data: { followerId, followingId: target.id } });
   await prisma.notification.create({
     data: {
-      userId: following.id,
+      userId: target.id,
       type: 'FOLLOW',
+      message: `${(await prisma.user.findUnique({ where: { id: followerId }, select: { username: true } })).username} started following you`,
       referenceId: followerId,
-      referenceType: 'user'
-    }
-  });
+      referenceType: 'user',
+    },
+  }).catch(() => {});
 
   return { following: true };
 }
 
 async function listUsers(query) {
-  const q = String(query || '').trim();
-  if (!q) return [];
-
+  if (!query) return [];
   return prisma.user.findMany({
     where: {
       OR: [
-        { username: { contains: q, mode: 'insensitive' } },
-        { bio: { contains: q, mode: 'insensitive' } }
-      ]
+        { username: { contains: query, mode: 'insensitive' } },
+        { bio: { contains: query, mode: 'insensitive' } },
+      ],
     },
-    orderBy: { createdAt: 'desc' },
+    select: { id: true, username: true, avatar: true, bio: true, isVerified: true },
     take: 15,
-    select: {
-      id: true,
-      username: true,
-      avatar: true,
-      bio: true,
-      role: true,
-      reputation: true
-    }
   });
 }
 
@@ -351,12 +207,9 @@ async function getUserRooms(userId, limit = 6) {
     where: { userId },
     orderBy: { joinedAt: 'desc' },
     take: limit,
-    include: {
-      room: true
-    }
+    include: { room: true },
   });
-
-  return memberships.map((item) => item.room);
+  return memberships.map((m) => m.room);
 }
 
 async function getFollowersCount(userId) {
@@ -364,16 +217,7 @@ async function getFollowersCount(userId) {
 }
 
 module.exports = {
-  registerUser,
-  authenticateUser,
-  getCurrentUser,
-  findByUsername,
-  ensureAdminFromEnv,
-  getUserProfileByUsername,
-  updateMyProfile,
-  followUser,
-  listUsers,
-  getUserRooms,
-  getFollowersCount,
-  createCursorResponse
+  registerUser, authenticateUser, getCurrentUser, findByUsername,
+  ensureAdminFromEnv, getUserProfileByUsername, updateMyProfile,
+  followUser, listUsers, getUserRooms, getFollowersCount,
 };

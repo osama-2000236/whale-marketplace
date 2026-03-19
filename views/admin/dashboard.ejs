@@ -1,82 +1,59 @@
 <%- include('partials/admin-header') %>
-
-<div class="admin-header-bar">
-  <h1>📊 Dashboard</h1>
-  <a href="/admin/products/add" class="btn btn-primary">+ Add Product</a>
-</div>
-
-<div class="stats-grid">
-  <div class="stat-card"><div class="stat-number"><%= stats.total %></div><div class="stat-label">Total Products</div></div>
-  <div class="stat-card stat-green"><div class="stat-number"><%= stats.inStock %></div><div class="stat-label">In Stock</div></div>
-  <div class="stat-card stat-red"><div class="stat-number"><%= stats.outOfStock %></div><div class="stat-label">Out of Stock</div></div>
-  <div class="stat-card stat-blue"><div class="stat-number"><%= stats.featured %></div><div class="stat-label">Featured</div></div>
-</div>
-
-<div class="stats-grid">
-  <div class="stat-card"><div class="stat-number"><%= listingStats.active %></div><div class="stat-label">Active Listings</div></div>
-  <div class="stat-card stat-green"><div class="stat-number"><%= listingStats.sold %></div><div class="stat-label">Sold Listings</div></div>
-  <div class="stat-card stat-red"><div class="stat-number"><%= listingStats.removed %></div><div class="stat-label">Removed Listings</div></div>
-</div>
-
-<div class="admin-grid-2">
-  <div class="admin-card">
-    <h3>Products by Category</h3>
-    <div class="category-stats">
-      <% categories.forEach(cat => { %>
-      <div class="cat-stat-row">
-        <span><%= cat.icon %> <%= cat.nameAr %></span>
-        <span class="cat-count"><%= categoryCounts[cat.id] || 0 %></span>
-      </div>
-      <% }) %>
+<div class="admin-page">
+  <h1><%= t('admin.dashboard') %></h1>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value"><%= stats.totalUsers || 0 %></div>
+      <div class="stat-label"><%= t('admin.total_users') %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= stats.totalListings || 0 %></div>
+      <div class="stat-label"><%= t('admin.total_listings') %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= stats.totalOrders || 0 %></div>
+      <div class="stat-label"><%= t('admin.total_orders') %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= stats.proUsers || 0 %></div>
+      <div class="stat-label"><%= t('admin.pro_users') %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= stats.totalProducts || 0 %></div>
+      <div class="stat-label"><%= t('admin.total_products') %></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value"><%= stats.activeDisputes || 0 %></div>
+      <div class="stat-label"><%= t('admin.active_disputes') %></div>
     </div>
   </div>
-  <div class="admin-card">
-    <h3>Recent Products</h3>
-    <div class="recent-list">
-      <% recentProducts.forEach(p => { %>
-      <div class="recent-item">
-        <img src="<%= p.image %>" alt="" width="40" height="40" onerror="this.src='/images/products/placeholder.svg'">
-        <div>
-          <strong><%= p.nameAr %></strong>
-          <span><%= config.currency %> <%= p.price.toLocaleString() %></span>
-        </div>
-        <a href="/admin/products/edit/<%= p.id %>" class="btn btn-sm btn-outline">Edit</a>
-      </div>
+
+  <% if (typeof recentOrders !== 'undefined' && recentOrders.length) { %>
+  <h2><%= t('admin.recent_orders') %></h2>
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th><%= t('whale.buyer') %></th>
+        <th><%= t('whale.seller') %></th>
+        <th><%= t('whale.amount') %></th>
+        <th><%= t('whale.status') %></th>
+        <th><%= t('admin.date') %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% recentOrders.forEach(order => { %>
+      <tr>
+        <td><%= order.orderNumber %></td>
+        <td><%= order.buyer ? order.buyer.username : '—' %></td>
+        <td><%= order.seller ? order.seller.username : '—' %></td>
+        <td>&#8362;<%= order.amount %></td>
+        <td><span class="status-badge status-<%= {PENDING:'warning',COMPLETED:'success',CANCELLED:'danger',SHIPPED:'info'}[order.orderStatus] || 'neutral' %>"><%= order.orderStatus %></span></td>
+        <td><%= timeAgo(order.createdAt) %></td>
+      </tr>
       <% }) %>
-    </div>
-  </div>
+    </tbody>
+  </table>
+  <% } %>
 </div>
-
-<div class="admin-card">
-  <h3>Marketplace Moderation</h3>
-  <div class="recent-list">
-    <% if (recentListings && recentListings.length) { %>
-      <% recentListings.forEach(l => { %>
-      <div class="recent-item">
-        <img src="<%= l.images && l.images[0] ? l.images[0] : '/images/products/placeholder.svg' %>" alt="" width="40" height="40" onerror="this.src='/images/products/placeholder.svg'">
-        <div>
-          <strong><%= l.titleAr || l.title %></strong>
-          <span><%= l.seller.username %> • <%= l.status %> • ₪ <%= l.price %></span>
-        </div>
-        <a href="/admin/listings" class="btn btn-sm btn-outline">Review</a>
-      </div>
-      <% }) %>
-    <% } else { %>
-      <p>No listings found.</p>
-    <% } %>
-  </div>
-</div>
-
-<div class="admin-card">
-  <h3>Quick Links</h3>
-  <div class="quick-links">
-    <a href="/admin/products/add" class="quick-link">➕ Add New Product</a>
-    <a href="/admin/products" class="quick-link">📦 Manage Products</a>
-    <a href="/admin/listings" class="quick-link">🛒 Moderate Listings</a>
-    <a href="/admin/settings" class="quick-link">⚙️ Site Settings</a>
-    <a href="/" target="_blank" class="quick-link">🌐 View Website</a>
-    <a href="/api/products" target="_blank" class="quick-link">📡 API Endpoint</a>
-  </div>
-</div>
-
 <%- include('partials/admin-footer') %>

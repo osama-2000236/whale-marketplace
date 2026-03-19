@@ -1,78 +1,52 @@
-<%- include('../partials/header') %>
-
-<section class="page-section profile-page">
-  <div class="container">
-    <div class="profile-hero">
-      <div class="profile-cover"></div>
-      <div class="profile-main">
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head><%- include('../partials/head') %></head>
+<body class="<%= bodyClass %>">
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="page-container">
+    <div class="profile-header">
+      <div class="profile-avatar">
         <%- include('../partials/avatar', { user: profile, size: 'lg' }) %>
-        <div>
-          <h1><%= profile.username %></h1>
-          <p><%= profile.bio || 'لا يوجد نبذة | No bio yet' %></p>
-          <div class="profile-stats">
-            <span><strong><%= profile._count.followers %></strong> Followers</span>
-            <span><strong><%= profile._count.following %></strong> Following</span>
-            <span><strong><%= profile._count.posts %></strong> Posts</span>
-          </div>
+      </div>
+      <div class="profile-info">
+        <h1><%= profile.username %></h1>
+        <% if (profile.bio) { %><p class="profile-bio"><%= profile.bio %></p><% } %>
+        <div class="profile-stats">
+          <span><strong><%= profile._count ? profile._count.followers : 0 %></strong> <%= t('profile.followers') %></span>
+          <span><strong><%= profile._count ? profile._count.following : 0 %></strong> <%= t('profile.following') %></span>
         </div>
-
-        <% if (currentUser && currentUser.username !== profile.username) { %>
-          <form method="POST" action="/u/<%= profile.username %>/follow">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn <%= profile.isFollowing ? 'btn-outline' : 'btn-primary' %>"><%= profile.isFollowing ? 'إلغاء المتابعة | Unfollow' : 'متابعة | Follow' %></button>
-          </form>
+        <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.id !== profile.id) { %>
+        <form method="post" action="/u/<%= profile.username %>/follow" class="inline-form">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn <%= typeof isFollowing !== 'undefined' && isFollowing ? 'btn-outline' : 'btn-primary' %>">
+            <%= typeof isFollowing !== 'undefined' && isFollowing ? t('profile.unfollow') : t('profile.follow') %>
+          </button>
+        </form>
         <% } %>
+        <p class="profile-joined"><%= t('profile.joined') %> <%= new Date(profile.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-US', { year: 'numeric', month: 'long' }) %></p>
       </div>
     </div>
 
-    <div class="profile-layout">
-      <aside class="profile-side panel-card">
-        <h3>مواصفات الجهاز | PC Specs</h3>
-        <% if (profile.pcSpecs) { %>
-          <ul class="simple-list">
-            <li>CPU: <%= profile.pcSpecs.cpu || '-' %></li>
-            <li>GPU: <%= profile.pcSpecs.gpu || '-' %></li>
-            <li>RAM: <%= profile.pcSpecs.ram || '-' %></li>
-            <li>Storage: <%= profile.pcSpecs.storage || '-' %></li>
-          </ul>
-        <% } else { %>
-          <p class="muted">لا توجد بيانات | No specs</p>
-        <% } %>
-      </aside>
-
-      <main class="profile-content">
-        <div class="profile-tabs">
-          <a href="/u/<%= profile.username %>?tab=posts" class="<%= tab === 'posts' ? 'active' : '' %>">Posts</a>
-          <a href="/u/<%= profile.username %>?tab=listings" class="<%= tab === 'listings' ? 'active' : '' %>">Listings</a>
-          <a href="/u/<%= profile.username %>?tab=builds" class="<%= tab === 'builds' ? 'active' : '' %>">Builds (Future)</a>
-        </div>
-
-        <% if (tab === 'listings') { %>
-          <div class="market-grid">
-            <% if (profile.listings && profile.listings.length) { %>
-              <% profile.listings.forEach((listing) => { %>
-                <%- include('../partials/listing-card', { listing }) %>
-              <% }) %>
-            <% } else { %>
-              <p class="muted">لا توجد إعلانات | No listings</p>
-            <% } %>
-          </div>
-        <% } else if (tab === 'builds') { %>
-          <div class="panel-card">
-            <p>قسم التجميعات قيد التطوير | Builds tab is coming soon.</p>
-          </div>
-        <% } else { %>
-          <% if (profile.posts && profile.posts.length) { %>
-            <% profile.posts.forEach((post) => { %>
-              <%- include('../partials/post-card', { post }) %>
-            <% }) %>
-          <% } else { %>
-            <p class="muted">لا توجد منشورات | No posts</p>
-          <% } %>
-        <% } %>
-      </main>
+    <% if (typeof listings !== 'undefined' && listings.length) { %>
+    <h2><%= t('profile.listings') %></h2>
+    <div class="listings-grid">
+      <% listings.forEach(listing => { %>
+        <%- include('../partials/listing-card', { listing: listing }) %>
+      <% }) %>
     </div>
-  </div>
-</section>
+    <% } %>
 
+    <% if (typeof posts !== 'undefined' && posts.length) { %>
+    <h2><%= t('profile.posts') %></h2>
+    <div class="posts-list">
+      <% posts.forEach(post => { %>
+        <%- include('../partials/post-card', { post: post }) %>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</main>
 <%- include('../partials/footer') %>
+</body>
+</html>

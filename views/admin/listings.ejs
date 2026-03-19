@@ -1,49 +1,50 @@
 <%- include('partials/admin-header') %>
+<div class="admin-page">
+  <h1><%= t('admin.listings') %></h1>
 
-<div class="admin-header-bar">
-  <h1>🛒 Marketplace Moderation</h1>
-</div>
-
-<div class="admin-table-wrapper">
+  <% if (typeof listings !== 'undefined' && listings.length) { %>
   <table class="admin-table">
     <thead>
       <tr>
-        <th>Image</th>
-        <th>Listing</th>
-        <th>Seller</th>
-        <th>Price</th>
-        <th>Status</th>
-        <th>Created</th>
-        <th>Action</th>
+        <th><%= t('admin.image') %></th>
+        <th><%= t('admin.title') %></th>
+        <th><%= t('admin.seller') %></th>
+        <th><%= t('admin.price') %></th>
+        <th><%= t('admin.status') %></th>
+        <th><%= t('admin.actions') %></th>
       </tr>
     </thead>
     <tbody>
-      <% if (listings && listings.length) { %>
-        <% listings.forEach((listing) => { %>
-          <tr>
-            <td><img src="<%= listing.images && listing.images[0] ? listing.images[0] : '/images/products/placeholder.svg' %>" width="50" height="50" style="border-radius:6px;object-fit:cover"></td>
-            <td><a href="/marketplace/<%= listing.id %>" target="_blank"><%= listing.titleAr || listing.title %></a><br><small><%= listing.category %> - <%= listing.location %></small></td>
-            <td><%= listing.seller.username %></td>
-            <td>₪ <%= Number(listing.price).toLocaleString() %></td>
-            <td><%= listing.status %></td>
-            <td><%= new Date(listing.createdAt).toLocaleDateString('ar-PS') %></td>
-            <td>
-              <% if (listing.status !== 'REMOVED') { %>
-                <form method="POST" action="/admin/listings/<%= listing.id %>/remove" onsubmit="return confirm('Remove this listing?')">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-sm btn-danger">Remove</button>
-                </form>
-              <% } else { %>
-                <span style="color:#888">Removed</span>
-              <% } %>
-            </td>
-          </tr>
-        <% }) %>
-      <% } else { %>
-        <tr><td colspan="7">No listings found.</td></tr>
-      <% } %>
+      <% listings.forEach(listing => { %>
+      <tr>
+        <td><img src="<%= listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png' %>" alt="" class="thumb-sm"></td>
+        <td><a href="/whale/listing/<%= listing.slug || listing.id %>"><%= listing.title %></a></td>
+        <td><%= listing.seller ? listing.seller.username : '—' %></td>
+        <td>&#8362;<%= listing.price %></td>
+        <td><span class="status-badge status-<%= {active:'success',sold:'warning',suspended:'danger',draft:'neutral'}[listing.status] || 'neutral' %>"><%= listing.status %></span></td>
+        <td>
+          <% if (listing.status === 'active') { %>
+          <form method="post" action="/admin/whale/listings/<%= listing.id %>/suspend" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-sm btn-outline btn-danger"><%= t('admin.suspend') %></button>
+          </form>
+          <% } else if (listing.status === 'suspended') { %>
+          <form method="post" action="/admin/whale/listings/<%= listing.id %>/unsuspend" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-sm btn-outline"><%= t('admin.unsuspend') %></button>
+          </form>
+          <% } %>
+          <form method="post" action="/admin/whale/listings/<%= listing.id %>/delete" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-sm btn-outline btn-danger" onclick="return confirm('Delete?')"><%= t('admin.delete') %></button>
+          </form>
+        </td>
+      </tr>
+      <% }) %>
     </tbody>
   </table>
+  <% } else { %>
+  <div class="empty-state"><h3><%= t('admin.no_listings') %></h3></div>
+  <% } %>
 </div>
-
 <%- include('partials/admin-footer') %>

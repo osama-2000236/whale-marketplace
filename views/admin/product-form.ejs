@@ -1,124 +1,59 @@
 <%- include('partials/admin-header') %>
+<div class="admin-page">
+  <h1><%= typeof product !== 'undefined' && product ? t('admin.edit_product') : t('admin.add_product') %></h1>
 
-<div class="admin-header-bar">
-  <h1><%= product && product.id ? '✏️ Edit Product' : '➕ Add Product' %></h1>
-  <a href="/admin/products" class="btn btn-outline">← Back to Products</a>
+  <form method="post" action="<%= typeof product !== 'undefined' && product ? '/admin/products/' + product.id + '/edit' : '/admin/products' %>" enctype="multipart/form-data" class="whale-form">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label><%= t('admin.name') %></label>
+        <input type="text" name="name" value="<%= typeof product !== 'undefined' && product ? product.name : '' %>" required>
+      </div>
+      <div class="form-group">
+        <label><%= t('admin.name_ar') %></label>
+        <input type="text" name="nameAr" value="<%= typeof product !== 'undefined' && product ? (product.nameAr || '') : '' %>" dir="rtl">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label><%= t('admin.description') %></label>
+        <textarea name="description" rows="3"><%= typeof product !== 'undefined' && product ? product.description : '' %></textarea>
+      </div>
+      <div class="form-group">
+        <label><%= t('admin.description_ar') %></label>
+        <textarea name="descriptionAr" rows="3" dir="rtl"><%= typeof product !== 'undefined' && product ? (product.descriptionAr || '') : '' %></textarea>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label><%= t('admin.category') %></label>
+        <input type="text" name="category" value="<%= typeof product !== 'undefined' && product ? (product.category || '') : '' %>">
+      </div>
+      <div class="form-group">
+        <label><%= t('admin.price') %> (&#8362;)</label>
+        <input type="number" name="price" value="<%= typeof product !== 'undefined' && product ? product.price : '' %>" min="0" step="0.01" required>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label><%= t('admin.image') %></label>
+      <input type="file" name="image" accept="image/*">
+      <% if (typeof product !== 'undefined' && product && product.image) { %>
+      <img src="<%= product.image %>" alt="" class="thumb-sm" style="margin-top:8px;">
+      <% } %>
+    </div>
+
+    <div class="form-group checkbox-group">
+      <label><input type="checkbox" name="featured" <%= typeof product !== 'undefined' && product && product.featured ? 'checked' : '' %>> <%= t('admin.featured') %></label>
+    </div>
+    <div class="form-group checkbox-group">
+      <label><input type="checkbox" name="isActive" <%= (typeof product === 'undefined' || !product || product.isActive) ? 'checked' : '' %>> <%= t('admin.active') %></label>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg"><%= typeof product !== 'undefined' && product ? t('admin.save_changes') : t('admin.create') %></button>
+  </form>
 </div>
-
-<% if (error) { %>
-<div class="alert alert-error"><%= error %></div>
-<% } %>
-
-<form method="POST" action="/admin/products/<%= product && product.id ? 'edit/' + product.id : 'add' %>?_csrf=<%= encodeURIComponent(csrfToken || '') %>" enctype="multipart/form-data" class="product-form">
-  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-  <div class="form-grid">
-    <div class="form-main">
-      <div class="admin-card">
-        <h3>Product Info</h3>
-        <div class="form-group">
-          <label for="nameAr">Name (Arabic) *</label>
-          <input type="text" id="nameAr" name="nameAr" value="<%= product ? product.nameAr : '' %>" required placeholder="اسم المنتج بالعربي">
-        </div>
-        <div class="form-group">
-          <label for="name">Name (English)</label>
-          <input type="text" id="name" name="name" value="<%= product ? product.name : '' %>" placeholder="Product name in English">
-        </div>
-        <div class="form-group">
-          <label for="description">Description (Arabic)</label>
-          <textarea id="description" name="description" rows="3" placeholder="وصف المنتج"><%= product ? product.description : '' %></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="category">Category *</label>
-            <select id="category" name="category" required>
-              <option value="">-- Select --</option>
-              <% categories.forEach(cat => { %>
-              <option value="<%= cat.id %>" <%= product && product.category === cat.id ? 'selected' : '' %>><%= cat.icon %> <%= cat.nameAr %></option>
-              <% }) %>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="badge">Badge</label>
-            <input type="text" id="badge" name="badge" value="<%= product ? product.badge : '' %>" placeholder="مثل: جديد، عرض خاص">
-          </div>
-        </div>
-      </div>
-
-      <div class="admin-card">
-        <h3>Pricing</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="price">Price (₪) *</label>
-            <input type="number" id="price" name="price" value="<%= product ? product.price : '' %>" required min="0" step="0.01">
-          </div>
-          <div class="form-group">
-            <label for="oldPrice">Old Price (₪) <small>leave empty if no discount</small></label>
-            <input type="number" id="oldPrice" name="oldPrice" value="<%= product && product.oldPrice ? product.oldPrice : '' %>" min="0" step="0.01">
-          </div>
-        </div>
-      </div>
-
-      <div class="admin-card">
-        <h3>Specifications</h3>
-        <p class="form-hint">Add product specs (key/value pairs)</p>
-        <div id="specs-container">
-          <% if (product && product.specs) { %>
-            <% Object.entries(product.specs).forEach(([key, val]) => { %>
-            <div class="spec-row">
-              <input type="text" name="specKey" value="<%= key %>" placeholder="Key (e.g. processor)">
-              <input type="text" name="specValue" value="<%= val %>" placeholder="Value (e.g. Intel i7)">
-              <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>
-            </div>
-            <% }) %>
-          <% } %>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline" onclick="addSpecRow()">+ Add Spec</button>
-      </div>
-    </div>
-
-    <div class="form-sidebar">
-      <div class="admin-card">
-        <h3>Image</h3>
-        <% if (product && product.image) { %>
-        <img src="<%= product.image %>" alt="Current" class="preview-image" onerror="this.src='/images/products/placeholder.svg'">
-        <% } %>
-        <div class="form-group">
-          <label for="image">Upload Image</label>
-          <input type="file" id="image" name="image" accept="image/*">
-          <small>Max 5MB. JPG, PNG, WebP</small>
-        </div>
-      </div>
-
-      <div class="admin-card">
-        <h3>Status</h3>
-        <div class="form-group checkbox-group">
-          <label><input type="checkbox" name="inStock" <%= !product || product.inStock ? 'checked' : '' %>> In Stock</label>
-        </div>
-        <div class="form-group checkbox-group">
-          <label><input type="checkbox" name="featured" <%= product && product.featured ? 'checked' : '' %>> Featured</label>
-        </div>
-      </div>
-
-      <div class="admin-card">
-        <button type="submit" class="btn btn-primary btn-block btn-lg"><%= product && product.id ? '💾 Update Product' : '➕ Create Product' %></button>
-        <a href="/admin/products" class="btn btn-outline btn-block" style="margin-top:0.5rem">Cancel</a>
-      </div>
-    </div>
-  </div>
-</form>
-
-<script>
-function addSpecRow() {
-  const container = document.getElementById('specs-container');
-  const row = document.createElement('div');
-  row.className = 'spec-row';
-  row.innerHTML = `
-    <input type="text" name="specKey" placeholder="Key (e.g. processor)">
-    <input type="text" name="specValue" placeholder="Value (e.g. Intel i7)">
-    <button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">×</button>
-  `;
-  container.appendChild(row);
-}
-</script>
-
 <%- include('partials/admin-footer') %>

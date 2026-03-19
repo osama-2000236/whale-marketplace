@@ -1,187 +1,119 @@
 const express = require('express');
-const { marked } = require('marked');
-const DOMPurify = require('isomorphic-dompurify');
-
-const { requireAuth, optionalAuth } = require('../middleware/auth');
-const forumService = require('../services/forumService');
-const prisma = require('../lib/prisma');
-
 const router = express.Router();
+const { requireAuth } = require('../middleware/auth');
+const forumService = require('../services/forumService');
+const { sanitizeText, sanitizeTags } = require('../utils/sanitize');
+const { marked } = require('marked');
+const createDOMPurify = require('isomorphic-dompurify');
+const DOMPurify = createDOMPurify;
 
-// Sanitize markdown body -> safe HTML
-function renderBody(raw) {
-  return DOMPurify.sanitize(marked.parse(raw || ''), {
-    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'code', 'pre', 'ul', 'ol', 'li', 'blockquote', 'a', 'h3', 'h4'],
-    ALLOWED_ATTR: ['href', 'target']
-  });
+const SAFE_TAGS = ['p', 'br', 'strong', 'em', 'code', 'pre', 'ul', 'ol', 'li', 'blockquote', 'a', 'h3', 'h4'];
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  const raw = marked.parse(text);
+  return DOMPurify.sanitize(raw, { ALLOWED_TAGS: SAFE_TAGS, ALLOWED_ATTR: ['href', 'target', 'rel'] });
 }
 
-// GET /forum — category listing (guest allowed)
-router.get('/', optionalAuth, async (req, res, next) => {
+router.get('/', async (req, res, next) => {
   try {
     const categories = await forumService.getCategories();
-    return res.render('forum/index', {
-      title: 'Forum',
-      categories
-    });
-  } catch (error) {
-    return next(error);
-  }
+    res.render('forum/index', { title: res.locals.t('forum.title'), categories });
+  } catch (e) { next(e); }
 });
 
-// GET /forum/:slug — threads in category (guest allowed)
-router.get('/:slug', optionalAuth, async (req, res, next) => {
+router.get('/:slug', async (req, res, next) => {
   try {
     const result = await forumService.getThreadsByCategory(req.params.slug, req.query.cursor);
-    if (!result) return res.status(404).render('404');
-
-    return res.render('forum/category', {
-      title: `${result.category.nameAr || result.category.name} | Forum`,
-      ...result,
-      csrfToken: req.csrfToken ? req.csrfToken() : ''
-    });
-  } catch (error) {
-    return next(error);
-  }
+    if (!result) return res.status(404).render('404', { title: 'Not Found' });
+    res.render('forum/category', { title: result.category.name, ...result });
+  } catch (e) { next(e); }
 });
 
-// GET /forum/:slug/new — create thread form (auth required)
 router.get('/:slug/new', requireAuth, async (req, res, next) => {
   try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = require('../lib/prisma');
     const category = await prisma.forumCategory.findUnique({ where: { slug: req.params.slug } });
-    if (!category) return res.status(404).render('404');
-
-    return res.render('forum/new-thread', {
-      title: 'New Forum Thread',
-      category,
-      csrfToken: req.csrfToken()
-    });
-  } catch (error) {
-    return next(error);
-  }
+    if (!category) return res.status(404).render('404', { title: 'Not Found' });
+    res.render('forum/new-thread', { title: 'New Thread', category });
+  } catch (e) { next(e); }
 });
 
-// POST /forum/:slug/new — submit new thread
 router.post('/:slug/new', requireAuth, async (req, res, next) => {
-  const { title, body, tags } = req.body;
   try {
+    const prisma = require('../lib/prisma');
     const category = await prisma.forumCategory.findUnique({ where: { slug: req.params.slug } });
-    if (!category) return res.status(404).render('404');
+    if (!category) return res.status(404).render('404', { title: 'Not Found' });
 
-    if (!title || title.trim().length < 5) {
-      return res.redirect(`/forum/${req.params.slug}/new?error=title`);
-    }
+    const title = sanitizeText(req.body.title, 200);
+    const body = sanitizeText(req.body.body, 10000);
+    if (title.length < 5) return res.render('forum/new-thread', { title: 'New Thread', category, error: 'Title must be at least 5 characters' });
+    if (body.length < 10) return res.render('forum/new-thread', { title: 'New Thread', category, error: 'Body must be at least 10 characters' });
 
-    if (!body || body.trim().length < 10) {
-      return res.redirect(`/forum/${req.params.slug}/new?error=body`);
-    }
-
-    const tagArr = typeof tags === 'string'
-      ? tags
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean)
-          .slice(0, 5)
-      : [];
-
-    const thread = await forumService.createThread(req.session.userId, category.id, {
-      title: title.trim(),
-      body: body.trim(),
-      tags: tagArr
+    const thread = await forumService.createThread(req.user.id, category.id, {
+      title, body, tags: sanitizeTags(req.body.tags),
     });
-
-    return res.redirect(`/forum/${req.params.slug}/${thread.slug}`);
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error(error);
-    if (String(error.message).toLowerCase().includes('unique')) {
-      return res.redirect(`/forum/${req.params.slug}/new?error=slug`);
-    }
-    return next(error);
-  }
+    res.redirect(`/forum/${req.params.slug}/${thread.slug}`);
+  } catch (e) { next(e); }
 });
 
-// GET /forum/:slug/:threadSlug — view thread (guest allowed)
-router.get('/:slug/:threadSlug', optionalAuth, async (req, res, next) => {
+router.get('/:slug/:threadSlug', async (req, res, next) => {
   try {
     const thread = await forumService.getThread(req.params.threadSlug);
-    if (!thread) return res.status(404).render('404');
+    if (!thread) return res.status(404).render('404', { title: 'Not Found' });
 
-    await forumService.incrementThreadViews(thread.id);
+    forumService.incrementThreadViews(thread.id);
 
-    // Render markdown bodies
-    thread.bodyHtml = renderBody(thread.body);
-    thread.replies.forEach((reply) => {
-      reply.bodyHtml = renderBody(reply.body);
-      reply.children.forEach((child) => {
-        child.bodyHtml = renderBody(child.body);
-      });
-    });
-
-    return res.render('forum/thread', {
-      title: thread.title,
-      thread,
-      csrfToken: req.csrfToken ? req.csrfToken() : ''
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-// POST /forum/:slug/:threadSlug/reply — post reply (auth required)
-router.post('/:slug/:threadSlug/reply', requireAuth, async (req, res, next) => {
-  const { body, parentId } = req.body;
-  try {
-    const thread = await prisma.forumThread.findUnique({ where: { slug: req.params.threadSlug } });
-    if (!thread) return res.status(404).json({ error: 'not_found' });
-
-    if (!body || body.trim().length < 3) {
-      return res.redirect(`/forum/${req.params.slug}/${req.params.threadSlug}?error=body`);
-    }
-
-    let safeParentId = null;
-    if (parentId) {
-      const parent = await prisma.forumReply.findUnique({ where: { id: parentId } });
-      if (parent && parent.threadId === thread.id && !parent.parentId) {
-        safeParentId = parentId;
+    // Render markdown for thread body and replies
+    thread.renderedBody = renderMarkdown(thread.body);
+    for (const reply of thread.replies) {
+      reply.renderedBody = renderMarkdown(reply.body);
+      for (const child of reply.children || []) {
+        child.renderedBody = renderMarkdown(child.body);
       }
     }
 
-    await forumService.createReply(req.session.userId, thread.id, {
-      body: body.trim(),
-      parentId: safeParentId
-    });
+    res.render('forum/thread', { title: thread.title, thread });
+  } catch (e) { next(e); }
+});
 
-    return res.redirect(`/forum/${req.params.slug}/${req.params.threadSlug}#replies`);
-  } catch (error) {
-    return next(error);
+router.post('/:slug/:threadSlug/reply', requireAuth, async (req, res, next) => {
+  try {
+    const thread = await forumService.getThread(req.params.threadSlug);
+    if (!thread) return res.status(404).render('404', { title: 'Not Found' });
+
+    const body = sanitizeText(req.body.body, 5000);
+    if (body.length < 3) return res.redirect(`/forum/${req.params.slug}/${req.params.threadSlug}?error=body_too_short`);
+
+    let parentId = req.body.parentId || null;
+    // Validate parent is top-level
+    if (parentId) {
+      const parent = thread.replies.find((r) => r.id === parentId);
+      if (!parent) parentId = null;
+    }
+
+    await forumService.createReply(req.user.id, thread.id, { body, parentId });
+    res.redirect(`/forum/${req.params.slug}/${req.params.threadSlug}`);
+  } catch (e) { next(e); }
+});
+
+router.post('/reply/:replyId/like', requireAuth, async (req, res) => {
+  try {
+    const result = await forumService.toggleReplyLike(req.params.replyId, req.user.id);
+    res.json(result);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 
-// POST /forum/reply/:replyId/like — AJAX like toggle
-router.post('/reply/:replyId/like', requireAuth, async (req, res, next) => {
+router.post('/reply/:replyId/accept', requireAuth, async (req, res) => {
   try {
-    const result = await forumService.toggleReplyLike(req.params.replyId, req.session.userId);
-    if (!result) return res.status(404).json({ error: 'not_found' });
-
-    return res.json({
-      likesCount: result.likesCount,
-      liked: Array.isArray(result.likedBy) ? result.likedBy.includes(req.session.userId) : false
-    });
-  } catch (error) {
-    return next(error);
-  }
-});
-
-// POST /forum/reply/:replyId/accept — mark as solution
-router.post('/reply/:replyId/accept', requireAuth, async (req, res, next) => {
-  try {
-    const result = await forumService.acceptReply(req.params.replyId, req.session.userId);
-    if (result.error) return res.status(403).json(result);
-
-    return res.json({ ok: true });
-  } catch (error) {
-    return next(error);
+    const result = await forumService.acceptReply(req.params.replyId, req.user.id);
+    if (result.error) return res.status(400).json(result);
+    res.json(result);
+  } catch (e) {
+    res.status(400).json({ error: e.message });
   }
 });
 

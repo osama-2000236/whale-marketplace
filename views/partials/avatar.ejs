@@ -1,14 +1,7 @@
-<%
-  const avatarUrl = (user && user.avatar) ? user.avatar : null;
-  const avatarSize = size || 'md';
-  const isOnline = typeof online !== 'undefined' ? Boolean(online) : false;
-  const initials = user && user.username ? user.username.slice(0, 2).toUpperCase() : 'PG';
-%>
-<span class="avatar avatar-<%= avatarSize %> <%= isOnline ? 'online' : '' %>">
-  <% if (avatarUrl) { %>
-    <img src="<%= avatarUrl %>" alt="<%= user.username %>" loading="lazy" onerror="this.style.display='none'; this.parentElement.classList.add('avatar-fallback')">
-    <span class="avatar-initials"><%= initials %></span>
+<% if (typeof avatarUser !== 'undefined' && avatarUser) { %>
+  <% if (avatarUser.avatar) { %>
+  <img src="<%= avatarUser.avatar %>" alt="<%= avatarUser.username %>" class="avatar <%= typeof avatarSize !== 'undefined' ? avatarSize : 'avatar-md' %>">
   <% } else { %>
-    <span class="avatar-initials"><%= initials %></span>
+  <span class="avatar avatar-initials <%= typeof avatarSize !== 'undefined' ? avatarSize : 'avatar-md' %>"><%= avatarUser.username.charAt(0).toUpperCase() %></span>
   <% } %>
-</span>
+<% } %>

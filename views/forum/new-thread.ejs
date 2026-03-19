@@ -1,33 +1,44 @@
-<%- include('../partials/header') %>
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head><%- include('../partials/head') %></head>
+<body class="<%= bodyClass %>">
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="form-page">
+    <h1><%= t('forum.new_thread') %></h1>
 
-<section class="page-section">
-  <div class="container" style="max-width: 900px;">
-    <h1 class="page-title">موضوع جديد | New Thread</h1>
-    <div class="panel-card">
-      <h3><%= category.nameAr || category.name %></h3>
+    <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+    <% } %>
 
-      <form method="POST" action="/forum/<%= category.slug %>/new" class="auth-form">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-        <div class="form-group">
-          <label>العنوان | Title</label>
-          <input type="text" name="title" minlength="5" required placeholder="RTX 4060 ولا RTX 4060 Ti؟">
-        </div>
-
-        <div class="form-group">
-          <label>المحتوى (يدعم Markdown) | Body (Markdown supported)</label>
-          <textarea name="body" rows="8" minlength="10" required placeholder="اكتب التفاصيل الكاملة هنا..."></textarea>
-        </div>
-
-        <div class="form-group">
-          <label>الوسوم | Tags (comma separated)</label>
-          <input type="text" name="tags" placeholder="gpu, build, budget">
-        </div>
-
-        <button type="submit" class="btn btn-primary">نشر الموضوع | Publish Thread</button>
-      </form>
-    </div>
+    <form method="post" action="/forum/new" class="whale-form">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-group">
+        <label><%= t('forum.category') %></label>
+        <select name="categoryId" required>
+          <option value="">— <%= t('forum.select_category') %> —</option>
+          <% if (typeof categories !== 'undefined') { categories.forEach(cat => { %>
+          <option value="<%= cat.id %>" <%= (typeof selectedCategory !== 'undefined' && selectedCategory === cat.slug) ? 'selected' : '' %>><%= lang === 'ar' && cat.nameAr ? cat.nameAr : cat.name %></option>
+          <% }) } %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label><%= t('forum.thread_title') %></label>
+        <input type="text" name="title" required maxlength="200">
+      </div>
+      <div class="form-group">
+        <label><%= t('forum.body') %></label>
+        <textarea name="body" rows="8" required placeholder="<%= t('forum.body_placeholder') %>"></textarea>
+        <small class="form-hint"><%= t('forum.markdown_supported') %></small>
+      </div>
+      <div class="form-group">
+        <label><%= t('forum.tags') %> (<%= t('auth.optional') %>)</label>
+        <input type="text" name="tags" placeholder="<%= t('forum.tags_hint') %>">
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg"><%= t('forum.create_thread') %></button>
+    </form>
   </div>
-</section>
-
+</main>
 <%- include('../partials/footer') %>
+</body>
+</html>

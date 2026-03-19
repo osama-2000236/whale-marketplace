@@ -1,23 +1,24 @@
-<%- include('../partials/header', { title: t('safety.title') + ' — Whale' }) %>
-<main class="container section">
-  <div style="max-width:680px;margin:0 auto">
-    <h1 class="page-title"><%= t('safety.title') %></h1>
-    <p style="color:var(--c-mist);margin-bottom:28px;font-size:15px"><%= t('safety.intro') %></p>
-
-    <% for (let i = 1; i <= 5; i += 1) { %>
-      <div class="card" style="padding:20px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start">
-        <div style="width:40px;height:40px;border-radius:50%;background:var(--c-sky);color:var(--c-ocean);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0"><%= i %></div>
-        <div>
-          <div style="font-size:15px;font-weight:700;color:var(--c-ink);margin-bottom:5px"><%= t('safety.t' + i) %></div>
-          <div style="font-size:14px;color:var(--c-slate);line-height:1.7"><%= t('safety.d' + i) %></div>
-        </div>
-      </div>
-    <% } %>
-
-    <div style="margin-top:28px;background:var(--c-teal-lt);border:1px solid rgba(14,147,131,.2);border-radius:var(--r-md);padding:18px;text-align:center">
-      <div style="font-size:22px;margin-bottom:8px">🐳</div>
-      <div style="font-size:14px;font-weight:700;color:var(--c-teal)"><%= t('app.trust_promise') %></div>
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head><%- include('../partials/head') %></head>
+<body class="<%= bodyClass %>">
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="page-container content-page">
+    <h1><%= t('pages.safety_title') %></h1>
+    <div class="content-body">
+      <p><%= t('pages.safety_intro') %></p>
+      <h2><%= t('pages.safety_tips_title') %></h2>
+      <ul>
+        <li><%= t('pages.safety_tip_1') %></li>
+        <li><%= t('pages.safety_tip_2') %></li>
+        <li><%= t('pages.safety_tip_3') %></li>
+        <li><%= t('pages.safety_tip_4') %></li>
+        <li><%= t('pages.safety_tip_5') %></li>
+      </ul>
     </div>
   </div>
 </main>
 <%- include('../partials/footer') %>
+</body>
+</html>

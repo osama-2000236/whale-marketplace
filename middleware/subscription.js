@@ -1,10 +1,5 @@
 const prisma = require('../lib/prisma');
-const emailService = require('../services/emailService');
 
-/**
- * Checks if user has an active Pro subscription
- * (either trial or paid)
- */
 async function getSubStatus(userId) {
   if (!userId) return { isPro: false, sub: null };
   const sub = await prisma.subscription.findUnique({ where: { userId } });
@@ -12,15 +7,10 @@ async function getSubStatus(userId) {
   const now = new Date();
   const isPro =
     sub.plan === 'pro' &&
-    ((sub.paidUntil && sub.paidUntil > now) ||
-      (sub.trialEndsAt && sub.trialEndsAt > now));
+    ((sub.paidUntil && sub.paidUntil > now) || (sub.trialEndsAt && sub.trialEndsAt > now));
   return { isPro, sub };
 }
 
-/**
- * requirePro — gates Pro-only routes.
- * Stores returnTo in session so user is redirected back after upgrade.
- */
 async function requirePro(req, res, next) {
   try {
     if (!req.session.userId) {
@@ -38,10 +28,6 @@ async function requirePro(req, res, next) {
   }
 }
 
-/**
- * injectSubStatus — adds isPro + sub to res.locals for every view.
- * Mount this GLOBALLY in server.js after session middleware.
- */
 async function injectSubStatus(req, res, next) {
   try {
     if (req.session.userId) {
@@ -49,16 +35,13 @@ async function injectSubStatus(req, res, next) {
       res.locals.isPro = isPro;
       res.locals.subscription = sub;
 
-      // Update lastSeenAt (throttled — only if >5 min since last update)
+      // Throttle lastSeenAt updates (every 5 minutes)
       const user = req.user;
       if (user && user.id) {
         const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
         if (!user.lastSeenAt || new Date(user.lastSeenAt) < fiveMinAgo) {
           prisma.user
-            .update({
-              where: { id: user.id },
-              data: { lastSeenAt: new Date() }
-            })
+            .update({ where: { id: user.id }, data: { lastSeenAt: new Date() } })
             .catch(() => {});
         }
       }
@@ -66,20 +49,16 @@ async function injectSubStatus(req, res, next) {
       res.locals.isPro = false;
       res.locals.subscription = null;
     }
-
     return next();
   } catch (error) {
     return next(error);
   }
 }
 
-/**
- * Cron job — run once at server startup.
- * Downgrades expired Pro subscriptions to free at midnight.
- */
 function startSubscriptionCron() {
   const cron = require('node-cron');
 
+  // Daily midnight: downgrade expired Pro subscriptions
   cron.schedule('0 0 * * *', async () => {
     try {
       const now = new Date();
@@ -87,116 +66,80 @@ function startSubscriptionCron() {
         where: {
           plan: 'pro',
           paidUntil: { lt: now },
-          OR: [{ trialEndsAt: null }, { trialEndsAt: { lt: now } }]
+          OR: [{ trialEndsAt: null }, { trialEndsAt: { lt: now } }],
         },
-        data: { plan: 'free' }
+        data: { plan: 'free' },
       });
-      // eslint-disable-next-line no-console
-      console.log(`[CRON] Downgraded ${result.count} expired Pro subscriptions`);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('[CRON] Pro downgrade job failed:', error.message);
+      if (result.count > 0) console.log(`[CRON] Downgraded ${result.count} expired Pro subscriptions`);
+    } catch (e) {
+      console.error('[CRON] Downgrade error:', e.message);
     }
   });
 
-  // 3-day warning notification job
+  // Daily 9am: warn users about expiring subscriptions
   cron.schedule('0 9 * * *', async () => {
     try {
       const now = new Date();
-      const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+      const threeDays = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
       const expiring = await prisma.subscription.findMany({
         where: {
           plan: 'pro',
           OR: [
-            { paidUntil: { gte: now, lte: threeDaysFromNow } },
-            { trialEndsAt: { gte: now, lte: threeDaysFromNow } }
-          ]
+            { paidUntil: { gte: now, lte: threeDays } },
+            { trialEndsAt: { gte: now, lte: threeDays } },
+          ],
         },
-        include: {
-          user: { select: { id: true, email: true, username: true } }
-        }
+        include: { user: { select: { id: true, email: true, username: true } } },
       });
-
       for (const sub of expiring) {
-        const expiry = sub.paidUntil || sub.trialEndsAt;
-        const daysLeft = Math.max(0, Math.ceil((new Date(expiry) - now) / (1000 * 60 * 60 * 24)));
-
-        // eslint-disable-next-line no-await-in-loop
-        await prisma.notification
-          .create({
-            data: {
-              userId: sub.userId,
-              type: 'SYSTEM',
-              message: `⚡ اشتراكك Pro ينتهي خلال ${daysLeft} أيام — Your Pro subscription expires in ${daysLeft} days`
-            }
-          })
-          .catch(() => {});
-
-        if (sub.user?.email) {
-          // eslint-disable-next-line no-await-in-loop
-          await emailService.sendTrialEnding(sub.user, daysLeft).catch(() => {});
-        }
+        await prisma.notification.create({
+          data: {
+            userId: sub.userId,
+            type: 'SYSTEM',
+            message: 'اشتراكك Pro سينتهي قريباً. جدد الآن لتستمر بالبيع بدون حدود.',
+          },
+        }).catch(() => {});
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('[CRON] Expiry warning job failed:', error.message);
+      if (expiring.length > 0) console.log(`[CRON] Warned ${expiring.length} expiring subscriptions`);
+    } catch (e) {
+      console.error('[CRON] Expiry warning error:', e.message);
     }
   });
 
-  // Auto-complete stale shipped orders after N days without buyer confirmation
-  const autoCompleteDays = parseInt(process.env.AUTO_COMPLETE_DAYS || '14', 10);
+  // Daily 10am: auto-complete stale shipped orders
   cron.schedule('0 10 * * *', async () => {
     try {
+      const autoCompleteDays = parseInt(process.env.AUTO_COMPLETE_DAYS || '14', 10);
       const cutoff = new Date(Date.now() - autoCompleteDays * 24 * 60 * 60 * 1000);
       const staleOrders = await prisma.order.findMany({
         where: {
           orderStatus: { in: ['SHIPPED', 'DELIVERED'] },
-          updatedAt: { lt: cutoff }
-        }
+          updatedAt: { lt: cutoff },
+        },
       });
-
       for (const order of staleOrders) {
-        // eslint-disable-next-line no-await-in-loop
         await prisma.$transaction(async (tx) => {
           await tx.order.update({
             where: { id: order.id },
             data: {
               orderStatus: 'COMPLETED',
               paymentStatus: 'released',
-              confirmedAt: new Date()
-            }
+              confirmedAt: new Date(),
+            },
           });
-
           await tx.orderEvent.create({
-            data: {
-              orderId: order.id,
-              event: 'completed',
-              note: `Auto-completed after ${autoCompleteDays} days without buyer confirmation`
-            }
+            data: { orderId: order.id, event: 'auto_completed', note: `Auto-completed after ${autoCompleteDays} days` },
           });
-
           await tx.sellerProfile.upsert({
             where: { userId: order.sellerId },
-            create: {
-              userId: order.sellerId,
-              totalSales: 1,
-              totalRevenue: order.amount
-            },
-            update: {
-              totalSales: { increment: 1 },
-              totalRevenue: { increment: order.amount }
-            }
+            create: { userId: order.sellerId, totalSales: 1, totalRevenue: order.amount },
+            update: { totalSales: { increment: 1 }, totalRevenue: { increment: order.amount } },
           });
-        });
+        }).catch((e) => console.error(`[CRON] Auto-complete order ${order.id} failed:`, e.message));
       }
-
-      if (staleOrders.length > 0) {
-        // eslint-disable-next-line no-console
-        console.log(`[CRON] Auto-completed ${staleOrders.length} stale orders`);
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('[CRON] Whale auto-complete job failed:', error.message);
+      if (staleOrders.length > 0) console.log(`[CRON] Auto-completed ${staleOrders.length} stale orders`);
+    } catch (e) {
+      console.error('[CRON] Auto-complete error:', e.message);
     }
   });
 }

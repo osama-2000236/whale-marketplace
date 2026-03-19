@@ -1,281 +1,214 @@
 const prisma = require('../lib/prisma');
-const axios = require('axios');
 const crypto = require('crypto');
+const axios = require('axios');
 
 const PROVIDER = process.env.PAYMENT_PROVIDER || 'paymob';
 
-// ─── PAYMOB ───────────────────────────────────────────────────────────────
+// ─── PAYMOB ──────────────────────────────────────────────────────────────────
 
 async function paymobGetAuthToken() {
-  const res = await axios.post('https://accept.paymob.com/api/auth/tokens', {
-    api_key: process.env.PAYMOB_API_KEY
+  const { data } = await axios.post('https://accept.paymob.com/api/auth/tokens', {
+    api_key: process.env.PAYMOB_API_KEY,
   });
-  return res.data.token;
+  return data.token;
 }
 
 async function paymobCreateOrder(authToken, amountCents, internalPaymentId) {
-  const res = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
+  const { data } = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
     auth_token: authToken,
     delivery_needed: false,
     amount_cents: amountCents,
     currency: 'EGP',
     merchant_order_id: internalPaymentId,
-    items: [{ name: 'PC Gaming Pro', amount_cents: amountCents, quantity: 1 }]
+    items: [],
   });
-  return res.data.id;
+  return data.id;
 }
 
 async function paymobGetPaymentKey(authToken, paymobOrderId, amountCents, user) {
-  const res = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
+  const { data } = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
     auth_token: authToken,
-    amount_cents: amountCents,
-    expiration: 3600,
     order_id: paymobOrderId,
-    billing_data: {
-      first_name: user.username || 'Player',
-      last_name: 'PS',
-      email: user.email || 'player@pcgaming.ps',
-      phone_number: '+970000000000',
-      apartment: 'NA',
-      floor: 'NA',
-      street: 'NA',
-      building: 'NA',
-      city: 'Tulkarem',
-      country: 'PS',
-      state: 'PS',
-      postal_code: '00000'
-    },
+    amount_cents: amountCents,
     currency: 'EGP',
+    expiration: 3600,
     integration_id: parseInt(process.env.PAYMOB_INTEGRATION_ID, 10),
-    lock_order_when_paid: false
+    billing_data: {
+      first_name: user.username || 'Whale',
+      last_name: 'User',
+      email: user.email || 'customer@whale.ps',
+      phone_number: '01000000000',
+      apartment: 'NA', floor: 'NA', building: 'NA', street: 'NA',
+      shipping_method: 'NA', postal_code: 'NA', city: 'NA', state: 'NA', country: 'PS',
+    },
   });
-  return res.data.token;
+  return data.token;
 }
 
-/**
- * Full Paymob session: returns { iframeUrl }
- */
 async function createPaymobSession(user, planMonths) {
-  const priceNIS = parseInt(process.env.SUBSCRIPTION_PRICE_NIS || 20, 10) * planMonths;
-  const priceEGP = parseInt(process.env.SUBSCRIPTION_PRICE_EGP || 170, 10) * planMonths;
-  const amountCents = priceEGP * 100;
+  const priceEgp = parseInt(process.env.SUBSCRIPTION_PRICE_EGP || '170', 10) * planMonths;
+  const amountCents = priceEgp * 100;
 
-  // Create pending payment record first — use its ID as merchant_order_id
   const payment = await prisma.payment.create({
     data: {
       userId: user.id,
       provider: 'paymob',
-      amount: priceNIS,
-      currency: 'NIS',
+      amount: priceEgp,
+      currency: 'EGP',
+      planMonths,
       status: 'pending',
-      planMonths
-    }
+    },
   });
 
   const authToken = await paymobGetAuthToken();
   const paymobOrderId = await paymobCreateOrder(authToken, amountCents, payment.id);
-
-  await prisma.payment.update({
-    where: { id: payment.id },
-    data: { providerPaymentId: String(paymobOrderId) }
-  });
-
   const paymentKey = await paymobGetPaymentKey(authToken, paymobOrderId, amountCents, user);
-  const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${paymentKey}`;
+
+  const iframeId = process.env.PAYMOB_IFRAME_ID;
+  const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentKey}`;
 
   return { iframeUrl, paymentId: payment.id };
 }
 
-/**
- * Verify Paymob HMAC webhook signature.
- */
 function verifyPaymobHmac(obj, receivedHmac) {
+  const secret = process.env.PAYMOB_HMAC_SECRET;
+  if (!secret) return false;
+
   const fields = [
-    'amount_cents',
-    'created_at',
-    'currency',
-    'error_occured',
-    'has_parent_transaction',
-    'id',
-    'integration_id',
-    'is_3d_secure',
-    'is_auth',
-    'is_capture',
-    'is_refunded',
-    'is_standalone_payment',
-    'is_voided',
-    'order',
-    'owner',
-    'pending',
-    'source_data.pan',
-    'source_data.sub_type',
-    'source_data.type',
-    'success'
+    'amount_cents', 'created_at', 'currency', 'error_occured',
+    'has_parent_transaction', 'id', 'integration_id', 'is_3d_secure',
+    'is_auth', 'is_capture', 'is_refunded', 'is_standalone_payment',
+    'is_voided', 'order', 'owner', 'pending',
+    'source_data.pan', 'source_data.sub_type', 'source_data.type', 'success',
   ];
 
-  const str = fields
-    .map((f) => {
-      const val = f.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
-      return val !== undefined ? String(val) : '';
-    })
-    .join('');
+  const concatenated = fields.map((f) => {
+    const keys = f.split('.');
+    let val = obj;
+    for (const k of keys) val = val?.[k];
+    return String(val ?? '');
+  }).join('');
 
-  const hmac = crypto.createHmac('sha512', process.env.PAYMOB_HMAC_SECRET || '').update(str).digest('hex');
-  return hmac === receivedHmac;
+  const computed = crypto.createHmac('sha512', secret).update(concatenated).digest('hex');
+  return computed === receivedHmac;
 }
 
-// ─── PAYPAL ───────────────────────────────────────────────────────────────
-
-const PAYPAL_BASE = process.env.PAYPAL_MODE === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+// ─── PAYPAL ──────────────────────────────────────────────────────────────────
 
 async function paypalGetToken() {
-  const res = await axios.post(
-    `${PAYPAL_BASE}/v1/oauth2/token`,
+  const mode = process.env.PAYPAL_MODE === 'live' ? 'api-m' : 'api-m.sandbox';
+  const { data } = await axios.post(
+    `https://${mode}.paypal.com/v1/oauth2/token`,
     'grant_type=client_credentials',
     {
       auth: { username: process.env.PAYPAL_CLIENT_ID, password: process.env.PAYPAL_CLIENT_SECRET },
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     }
   );
-  return res.data.access_token;
+  return data.access_token;
 }
 
 async function createPaypalOrder(user, planMonths) {
-  const priceNIS = parseInt(process.env.SUBSCRIPTION_PRICE_NIS || 20, 10) * planMonths;
-  const unitUSD = parseFloat(process.env.SUBSCRIPTION_PRICE_USD || 6);
-  const priceUSD = (unitUSD * planMonths).toFixed(2);
-  const baseUrl = process.env.BASE_URL || process.env.SITE_URL || 'http://localhost:3000';
+  const priceUsd = parseInt(process.env.SUBSCRIPTION_PRICE_USD || '6', 10) * planMonths;
 
   const payment = await prisma.payment.create({
     data: {
       userId: user.id,
       provider: 'paypal',
-      amount: priceNIS,
-      currency: 'NIS',
+      amount: priceUsd,
+      currency: 'USD',
+      planMonths,
       status: 'pending',
-      planMonths
-    }
+    },
   });
 
   const token = await paypalGetToken();
-  const res = await axios.post(
-    `${PAYPAL_BASE}/v2/checkout/orders`,
+  const mode = process.env.PAYPAL_MODE === 'live' ? 'api-m' : 'api-m.sandbox';
+  const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
+
+  const { data } = await axios.post(
+    `https://${mode}.paypal.com/v2/checkout/orders`,
     {
       intent: 'CAPTURE',
-      purchase_units: [
-        {
-          custom_id: payment.id,
-          description: `PC Gaming Pro — ${planMonths} شهر / month`,
-          amount: { currency_code: 'USD', value: priceUSD }
-        }
-      ],
+      purchase_units: [{
+        amount: { currency_code: 'USD', value: String(priceUsd) },
+        custom_id: payment.id,
+      }],
       application_context: {
-        return_url: `${baseUrl}/payment/paypal/success`,
-        cancel_url: `${baseUrl}/payment/paypal/cancel`,
-        brand_name: 'PC Gaming Tulkarem',
-        user_action: 'PAY_NOW'
-      }
+        return_url: `${siteUrl}/payment/paypal/success`,
+        cancel_url: `${siteUrl}/payment/paypal/cancel`,
+      },
     },
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
   );
 
-  const approveUrl = res.data.links.find((l) => l.rel === 'approve').href;
-  await prisma.payment.update({
-    where: { id: payment.id },
-    data: { providerPaymentId: res.data.id }
-  });
-
+  const approveUrl = data.links.find((l) => l.rel === 'approve')?.href;
   return { approveUrl, paymentId: payment.id };
 }
 
 async function capturePaypalOrder(orderId) {
   const token = await paypalGetToken();
-  const res = await axios.post(
-    `${PAYPAL_BASE}/v2/checkout/orders/${orderId}/capture`,
+  const mode = process.env.PAYPAL_MODE === 'live' ? 'api-m' : 'api-m.sandbox';
+  const { data } = await axios.post(
+    `https://${mode}.paypal.com/v2/checkout/orders/${orderId}/capture`,
     {},
-    { headers: { Authorization: `Bearer ${token}` } }
+    { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
   );
-  return res.data;
+  return data;
 }
 
-// ─── SHARED ACTIVATION ───────────────────────────────────────────────────
+// ─── SHARED ──────────────────────────────────────────────────────────────────
 
-/**
- * Activate Pro after successful payment.
- * Call this from both Paymob webhook and PayPal capture.
- */
 async function activateSubscription(userId, planMonths, paymentId, rawData) {
-  const now = new Date();
-  const paidUntil = new Date(now);
+  const paidUntil = new Date();
   paidUntil.setMonth(paidUntil.getMonth() + planMonths);
 
-  await prisma.payment.update({
-    where: { id: paymentId },
-    data: { status: 'success', metadata: rawData }
-  });
+  if (paymentId) {
+    await prisma.payment.update({
+      where: { id: paymentId },
+      data: { status: 'success', metadata: rawData || null },
+    });
+  }
 
   await prisma.subscription.upsert({
     where: { userId },
     create: { userId, plan: 'pro', paidUntil, lastPaymentId: paymentId },
-    update: { plan: 'pro', paidUntil, lastPaymentId: paymentId }
+    update: { plan: 'pro', paidUntil, lastPaymentId: paymentId },
   });
 
-  await prisma.notification
-    .create({
-      data: {
-        userId,
-        type: 'SYSTEM',
-        message: `✅ تم تفعيل اشتراك Pro! الوصول حتى ${paidUntil.toLocaleDateString('ar-PS')} — Pro subscription activated! Valid until ${paidUntil.toLocaleDateString('en-GB')}`
-      }
-    })
-    .catch(() => {});
+  await prisma.notification.create({
+    data: { userId, type: 'SYSTEM', message: '🎉 تم تفعيل اشتراك Pro بنجاح!' },
+  }).catch(() => {});
 }
 
-/**
- * Admin manual activation (no payment required — cash/bank transfer).
- */
 async function adminActivateManual(userId, planMonths, adminNote) {
-  const now = new Date();
-  const paidUntil = new Date(now);
+  const paidUntil = new Date();
   paidUntil.setMonth(paidUntil.getMonth() + planMonths);
 
   const payment = await prisma.payment.create({
     data: {
       userId,
       provider: 'manual',
-      amount: parseInt(process.env.SUBSCRIPTION_PRICE_NIS || 20, 10) * planMonths,
+      amount: 0,
       currency: 'NIS',
-      status: 'success',
       planMonths,
-      metadata: { note: adminNote, activatedBy: 'admin', activatedAt: now.toISOString() }
-    }
+      status: 'success',
+      metadata: { adminNote: adminNote || 'Manual activation' },
+    },
   });
 
   await prisma.subscription.upsert({
     where: { userId },
     create: { userId, plan: 'pro', paidUntil, lastPaymentId: payment.id },
-    update: { plan: 'pro', paidUntil, lastPaymentId: payment.id }
+    update: { plan: 'pro', paidUntil, lastPaymentId: payment.id },
   });
-
-  await prisma.notification
-    .create({
-      data: {
-        userId,
-        type: 'SYSTEM',
-        message: `✅ تم تفعيل اشتراك Pro يدوياً! — Pro manually activated by admin. Valid until ${paidUntil.toLocaleDateString('en-GB')}`
-      }
-    })
-    .catch(() => {});
 
   return { paidUntil };
 }
 
 module.exports = {
-  createPaymobSession,
-  verifyPaymobHmac,
-  createPaypalOrder,
-  capturePaypalOrder,
-  activateSubscription,
-  adminActivateManual,
-  PROVIDER
+  createPaymobSession, verifyPaymobHmac,
+  createPaypalOrder, capturePaypalOrder,
+  activateSubscription, adminActivateManual,
+  PROVIDER,
 };
