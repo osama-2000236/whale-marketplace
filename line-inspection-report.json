@@ -1,0 +1,1285 @@
+{
+  "generatedAt": "2026-03-19T09:19:08.134Z",
+  "filesScanned": 129,
+  "totalLines": 16751,
+  "summary": {
+    "bySeverity": {
+      "high": 0,
+      "medium": 17,
+      "low": 141
+    },
+    "byRule": {
+      "quality.todo-fixme": 11,
+      "quality.long-line": 76,
+      "quality.console": 54,
+      "performance.sync-fs": 16,
+      "security.unsafe-inline-csp": 1
+    }
+  },
+  "findings": [
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "lib\\i18n.js",
+      "line": 242,
+      "snippet": "'checkout.err_phone': { ar: 'أدخل رقم جوال فلسطيني بصيغة 05XX-XXX-XXX', en: 'Enter a Palestinian mobile number as 05XX-XXX-XXX' },"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "lib\\i18n.js",
+      "line": 492,
+      "snippet": "en: 'Whale was born in Tulkarem, Palestine. Our goal is to build the first trusted marketplace serving Palestinians and Arab city residents — where anyone can buy and sell safely, without fear of fraud.'"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "lib\\i18n.js",
+      "line": 497,
+      "snippet": "en: 'We believe every person in Palestine and Arab cities deserves a safe, easy-to-use digital marketplace. Whale protects your money, verifies sellers, and ensures your product arrives.'"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "lib\\i18n.js",
+      "line": 542,
+      "snippet": "'safety.d1': { ar: 'أموالك محفوظة فقط عند الدفع عبر الموقع. التحويل المباشر لا يوفر أي حماية.', en: 'Your money is protected only when paying through the site. Direct transfer provides no protection.' },"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "lib\\i18n.js",
+      "line": 544,
+      "snippet": "'safety.d2': { ar: 'اقرأ التقييمات وعدد المبيعات. البائعون الموثقون ✓ تحققنا من هويتهم.', en: 'Read reviews and sales count. Verified sellers ✓ have had their identity confirmed.' },"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "lib\\i18n.js",
+      "line": 606,
+      "snippet": "console.warn(`[i18n] Missing key: ${key}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "lib\\passport.js",
+      "line": 130,
+      "snippet": "console.warn('[OAuth] Google strategy disabled: missing env vars');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "lib\\passport.js",
+      "line": 150,
+      "snippet": "console.warn('[OAuth] Facebook strategy disabled: missing env vars');"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "lib\\passport.js",
+      "line": 154,
+      "snippet": "&& fs.existsSync(process.env.APPLE_PRIVATE_KEY_PATH)) {"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "lib\\passport.js",
+      "line": 189,
+      "snippet": "console.warn('[OAuth] Apple strategy disabled: missing env vars/key file');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "lib\\prisma.js",
+      "line": 26,
+      "snippet": "console.error('[Prisma Error]', e.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "lib\\prisma.js",
+      "line": 34,
+      "snippet": "console.warn(`[Prisma Slow] ${e.query.slice(0, 120)}... took ${e.duration}ms`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "lib\\prisma.js",
+      "line": 40,
+      "snippet": "console.warn('[Prisma Warn]', e.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "middleware\\subscription.js",
+      "line": 65,
+      "snippet": "console.warn('[lastSeenAt] update failed:', e.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "middleware\\subscription.js",
+      "line": 100,
+      "snippet": "console.log(`[CRON] Downgraded ${result.count} expired Pro subscriptions`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "middleware\\subscription.js",
+      "line": 103,
+      "snippet": "console.error('[CRON] Pro downgrade job failed:', error.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "middleware\\subscription.js",
+      "line": 147,
+      "snippet": "console.error('[CRON] Expiry warning job failed:', error.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "middleware\\subscription.js",
+      "line": 200,
+      "snippet": "console.log(`[CRON] Auto-completed ${staleOrders.length} stale orders`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "middleware\\subscription.js",
+      "line": 204,
+      "snippet": "console.error('[CRON] Whale auto-complete job failed:', error.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "routes\\admin.js",
+      "line": 322,
+      "snippet": "console.error(err);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "routes\\admin.js",
+      "line": 339,
+      "snippet": "console.error(err);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "routes\\forum.js",
+      "line": 96,
+      "snippet": "console.error(error);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "routes\\payment.js",
+      "line": 59,
+      "snippet": "console.error('[Payment start error]', err.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "routes\\payment.js",
+      "line": 126,
+      "snippet": "console.error('[PayPal capture error]', err.message);"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\check-secrets.js",
+      "line": 66,
+      "snippet": "const entries = fs.readdirSync(dir, { withFileTypes: true });"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\check-secrets.js",
+      "line": 87,
+      "snippet": "const content = fs.readFileSync(filePath, 'utf8');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\check-secrets.js",
+      "line": 97,
+      "snippet": "console.error("
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\check-secrets.js",
+      "line": 107,
+      "snippet": "console.log('🔍 Scanning for hardcoded secrets...\\n');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\check-secrets.js",
+      "line": 115,
+      "snippet": "console.log(`\\n📁 Scanned ${fileCount} files.`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\check-secrets.js",
+      "line": 118,
+      "snippet": "console.error(`\\n🚨 Found ${violationCount} potential secret(s) in source code!`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\check-secrets.js",
+      "line": 119,
+      "snippet": "console.error('   Remove them and use environment variables instead.\\n');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\check-secrets.js",
+      "line": 122,
+      "snippet": "console.log('✅ No hardcoded secrets found.\\n');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\claude-check.js",
+      "line": 28,
+      "snippet": "console.error(`[claude-check] ${error.message}`);"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 690,
+      "snippet": "fs.writeFileSync(OUTPUT_JSON, JSON.stringify(report, null, 2), 'utf8');"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 691,
+      "snippet": "fs.writeFileSync(OUTPUT_MD, toMarkdown(report), 'utf8');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 693,
+      "snippet": "console.log(`Saved JSON report: ${OUTPUT_JSON}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 694,
+      "snippet": "console.log(`Saved Markdown report: ${OUTPUT_MD}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 695,
+      "snippet": "console.log(`Discovered routes: ${report.totalRoutes}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 696,
+      "snippet": "console.log(`Requests executed: ${report.totalRequests}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 697,
+      "snippet": "console.log(`500 responses: ${summary['500'] || 0}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\full-path-coverage.js",
+      "line": 706,
+      "snippet": "console.error('Coverage runner failed:', error);"
+    },
+    {
+      "ruleId": "security.unsafe-inline-csp",
+      "severity": "medium",
+      "description": "CSP allows unsafe-inline scripts/styles",
+      "file": "scripts\\line-inspection.js",
+      "line": 58,
+      "snippet": "test: (line) => /'unsafe-inline'/.test(line)"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "scripts\\line-inspection.js",
+      "line": 67,
+      "snippet": "id: 'quality.todo-fixme',"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "scripts\\line-inspection.js",
+      "line": 69,
+      "snippet": "description: 'TODO/FIXME/HACK marker present',"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "scripts\\line-inspection.js",
+      "line": 70,
+      "snippet": "test: (line) => /\\b(TODO|FIXME|HACK|XXX)\\b/i.test(line)"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\line-inspection.js",
+      "line": 99,
+      "snippet": "const entries = fs.readdirSync(dir, { withFileTypes: true });"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\line-inspection.js",
+      "line": 116,
+      "snippet": "const text = fs.readFileSync(abs, 'utf8');"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\line-inspection.js",
+      "line": 193,
+      "snippet": ".filter((abs) => fs.existsSync(abs))"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\line-inspection.js",
+      "line": 214,
+      "snippet": "fs.writeFileSync(OUTPUT_JSON, JSON.stringify(report, null, 2), 'utf8');"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "scripts\\line-inspection.js",
+      "line": 215,
+      "snippet": "fs.writeFileSync(OUTPUT_MD, markdown(report), 'utf8');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\line-inspection.js",
+      "line": 217,
+      "snippet": "console.log(`Saved JSON report: ${OUTPUT_JSON}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\line-inspection.js",
+      "line": 218,
+      "snippet": "console.log(`Saved Markdown report: ${OUTPUT_MD}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\line-inspection.js",
+      "line": 219,
+      "snippet": "console.log(`Files scanned: ${report.filesScanned}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\line-inspection.js",
+      "line": 220,
+      "snippet": "console.log(`Total lines scanned: ${report.totalLines}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "scripts\\line-inspection.js",
+      "line": 221,
+      "snippet": "console.log(`Findings: ${report.findings.length}`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "services\\emailService.js",
+      "line": 85,
+      "snippet": "console.warn(`[Email] Skipped \"${subject}\" to ${to} (no configured provider)`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "services\\emailService.js",
+      "line": 88,
+      "snippet": "console.error(`[Email] Failed \"${subject}\" to ${to}: ${err.message}`);"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 98,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${BASE_URL}/whale/sell\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">أضف إعلانك الأول</a></di"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 99,
+      "snippet": "<div style=\"margin-top:12px;padding-top:10px;border-top:1px solid #E8F4FC;color:#8BA4B4;font-size:13px;direction:ltr;text-align:left\">Welcome to Whale. Your account is ready and your 30-day Pro trial is active.</div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 111,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${BASE_URL}/whale/orders/${order.id}\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">تتبع طلبك<"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 112,
+      "snippet": "<div style=\"margin-top:12px;padding-top:10px;border-top:1px solid #E8F4FC;color:#8BA4B4;font-size:13px;direction:ltr;text-align:left\">Order ${order.orderNumber} placed successfully.</div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 124,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${BASE_URL}/whale/orders/${order.id}\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">تأكيد الطل"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 136,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${BASE_URL}/whale/orders/${order.id}\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">متابعة الط"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 151,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${BASE_URL}/whale/orders/${order.id}\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">تتبع الطلب"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 162,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${BASE_URL}/whale/orders/${order.id}\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">عرض الطلب<"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 173,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${BASE_URL}/upgrade\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">ترقية الحساب</a></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\emailService.js",
+      "line": 184,
+      "snippet": "<div style=\"text-align:center\"><a href=\"${resetUrl}\" style=\"display:inline-block;background:#0A4B6E;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700\">إعادة التعيين</a></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\searchService.js",
+      "line": 28,
+      "snippet": "ts_headline('simple', coalesce(name, '') || ' ' || coalesce(\"nameAr\", '') || ' ' || coalesce(description, '') || ' ' || coalesce(\"descriptionAr\", ''), plainto_tsquery('simple', ${q})) AS snippet"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\searchService.js",
+      "line": 30,
+      "snippet": "WHERE to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(\"nameAr\", '') || ' ' || coalesce(description, '') || ' ' || coalesce(\"descriptionAr\", '')) @@ plainto_tsquery('simple', ${q})"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\searchService.js",
+      "line": 39,
+      "snippet": "ts_headline('simple', coalesce(title, '') || ' ' || coalesce(\"titleAr\", '') || ' ' || coalesce(description, '') || ' ' || coalesce(\"descriptionAr\", ''), plainto_tsquery('simple', ${q})) AS snippet"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "services\\searchService.js",
+      "line": 42,
+      "snippet": "AND to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(\"titleAr\", '') || ' ' || coalesce(description, '') || ' ' || coalesce(\"descriptionAr\", '')) @@ plainto_tsquery('simple', ${q})"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "services\\userService.js",
+      "line": 164,
+      "snippet": "console.warn('[SECURITY] ADMIN_PASSWORD not set — using insecure default. Set ADMIN_PASSWORD in env.');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "services\\whaleService.js",
+      "line": 480,
+      "snippet": "console.error('[Email] sendOrderPlaced failed:', err.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "services\\whaleService.js",
+      "line": 520,
+      "snippet": "console.error('[Email] sendOrderConfirmed failed:', err.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "services\\whaleService.js",
+      "line": 565,
+      "snippet": "console.error('[Email] sendOrderShipped failed:', err.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "services\\whaleService.js",
+      "line": 627,
+      "snippet": "console.error('[Email] sendOrderCompleted failed:', err.message);"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "utils\\dataStore.js",
+      "line": 28,
+      "snippet": "if (!fs.existsSync(DATA_DIR)) {"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "utils\\dataStore.js",
+      "line": 31,
+      "snippet": "if (!fs.existsSync(this.filePath)) {"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "utils\\dataStore.js",
+      "line": 32,
+      "snippet": "fs.writeFileSync(this.filePath, JSON.stringify([], null, 2));"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "utils\\dataStore.js",
+      "line": 39,
+      "snippet": "const raw = fs.readFileSync(this.filePath, 'utf-8');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\dataStore.js",
+      "line": 42,
+      "snippet": "console.error(`Error reading ${this.collection}:`, err.message);"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "utils\\dataStore.js",
+      "line": 50,
+      "snippet": "fs.writeFileSync(this.filePath, JSON.stringify(data, null, 2));"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\dataStore.js",
+      "line": 53,
+      "snippet": "console.error(`Error writing ${this.collection}:`, err.message);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 219,
+      "snippet": "console.log('🌱 Seeding products...');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 224,
+      "snippet": "console.log(`  Found ${existing.length} existing products. Clearing...`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 231,
+      "snippet": "console.log(`  ✅ Created: ${created.nameAr} (${created.id})`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 234,
+      "snippet": "console.log(`\\n🎉 Done! ${sampleProducts.length} products created.`);"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 235,
+      "snippet": "console.log('\\nAdmin login:');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 236,
+      "snippet": "console.log('  URL: http://localhost:3000/admin');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 237,
+      "snippet": "console.log('  Username: admin');"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\seed.js",
+      "line": 238,
+      "snippet": "console.log('  Password: PcGaming@2024');"
+    },
+    {
+      "ruleId": "performance.sync-fs",
+      "severity": "medium",
+      "description": "Synchronous filesystem call on runtime path",
+      "file": "utils\\upload.js",
+      "line": 18,
+      "snippet": "if (!fs.existsSync(tmpDir)) {"
+    },
+    {
+      "ruleId": "quality.console",
+      "severity": "low",
+      "description": "Console usage in non-test file",
+      "file": "utils\\upload.js",
+      "line": 74,
+      "snippet": "console.warn('Cloudinary upload failed, fallback to local:', error.message);"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\about.ejs",
+      "line": 9,
+      "snippet": "<p>نحن متخصصون في بيع وتجميع أجهزة الكمبيوتر واللابتوبات والاكسسوارات بأفضل الأسعار في <%= config.location.cityAr %>. نقدم خدمات صيانة وتطوير الأجهزة بأيدي فنيين محترفين.</p>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\dashboard.ejs",
+      "line": 56,
+      "snippet": "<img src=\"<%= l.images && l.images[0] ? l.images[0] : '/images/products/placeholder.svg' %>\" alt=\"\" width=\"40\" height=\"40\" onerror=\"this.src='/images/products/placeholder.svg'\">"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\listings.ejs",
+      "line": 24,
+      "snippet": "<td><img src=\"<%= listing.images && listing.images[0] ? listing.images[0] : '/images/products/placeholder.svg' %>\" width=\"50\" height=\"50\" style=\"border-radius:6px;object-fit:cover\"></td>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\listings.ejs",
+      "line": 25,
+      "snippet": "<td><a href=\"/marketplace/<%= listing.id %>\" target=\"_blank\"><%= listing.titleAr || listing.title %></a><br><small><%= listing.category %> - <%= listing.location %></small></td>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\product-form.ejs",
+      "line": 12,
+      "snippet": "<form method=\"POST\" action=\"/admin/products/<%= product && product.id ? 'edit/' + product.id : 'add' %>?_csrf=<%= encodeURIComponent(csrfToken || '') %>\" enctype=\"multipart/form-data\" class=\"product-form\">"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\products.ejs",
+      "line": 35,
+      "snippet": "<td><strong><%= config.currency %> <%= p.price.toLocaleString() %></strong><% if(p.oldPrice) { %><br><s style=\"color:#888\"><%= config.currency %> <%= p.oldPrice.toLocaleString() %></s><% } %></td>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\products.ejs",
+      "line": 36,
+      "snippet": "<td><button onclick=\"toggleField('<%= p.id %>','inStock')\" class=\"toggle-btn <%= p.inStock ? 'on' : 'off' %>\" id=\"stock-<%= p.id %>\"><%= p.inStock ? '✅ Yes' : '❌ No' %></button></td>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\products.ejs",
+      "line": 37,
+      "snippet": "<td><button onclick=\"toggleField('<%= p.id %>','featured')\" class=\"toggle-btn <%= p.featured ? 'on' : 'off' %>\" id=\"feat-<%= p.id %>\"><%= p.featured ? '⭐ Yes' : '— No' %></button></td>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\admin\\qr.ejs",
+      "line": 34,
+      "snippet": "<a class=\"btn btn-sm btn-outline\" href=\"/admin/qr/download-general?url=<%= encodeURIComponent(item.url) %>&label=<%= encodeURIComponent(item.label) %>\">تنزيل PNG | Download PNG</a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\auth\\login.ejs",
+      "line": 74,
+      "snippet": "<path d=\"M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 "
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\auth\\login.ejs",
+      "line": 89,
+      "snippet": "<path d=\"M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\auth\\register.ejs",
+      "line": 73,
+      "snippet": "<path d=\"M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 "
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\auth\\register.ejs",
+      "line": 88,
+      "snippet": "<path d=\"M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\marketplace\\detail.ejs",
+      "line": 7,
+      "snippet": "<img src=\"<%= listing.images && listing.images[0] ? listing.images[0] : '/images/products/placeholder.svg' %>\" alt=\"<%= listing.titleAr || listing.title %>\" class=\"listing-main-image\">"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\marketplace\\form.ejs",
+      "line": 108,
+      "snippet": "<button type=\"submit\" class=\"btn btn-primary\" <%= !listing && !isPro ? 'disabled' : '' %>><%= listing && listing.id ? 'حفظ التعديلات | Save Changes' : 'نشر الإعلان | Post Listing' %></button>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\pages\\contact.ejs",
+      "line": 16,
+      "snippet": "style=\"display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;padding:8px 18px;border-radius:var(--r-sm);font-size:13px;font-weight:700;text-decoration:none\""
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\pages\\contact.ejs",
+      "line": 24,
+      "snippet": "<div style=\"width:52px;height:52px;border-radius:var(--r-md);background:var(--c-sky);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0\">✉</div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\pages\\pricing.ejs",
+      "line": 20,
+      "snippet": "<div style=\"text-align:center;font-size:12px;font-weight:700;color:var(--c-teal);padding:10px;background:var(--c-teal-lt);border-radius:var(--r-sm)\"><%= t('pricing.current') %></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\pages\\pricing.ejs",
+      "line": 25,
+      "snippet": "<div style=\"position:absolute;top:-12px;inset-inline-start:50%;transform:translateX(-50%);background:var(--c-ocean);color:#fff;font-size:11px;font-weight:700;padding:3px 14px;border-radius:20px;white-space:nowrap\"><%= la"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\pages\\pricing.ejs",
+      "line": 37,
+      "snippet": "<div style=\"text-align:center;font-size:12px;font-weight:700;color:var(--c-ocean);padding:10px;background:var(--c-sky);border-radius:var(--r-sm)\"><%= t('pricing.current') %></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\pages\\pricing.ejs",
+      "line": 39,
+      "snippet": "<a href=\"/upgrade\" style=\"display:block;text-align:center;background:var(--c-ocean);color:#fff;padding:13px;border-radius:var(--r-sm);font-size:14px;font-weight:700;text-decoration:none\"><%= t('pricing.cta') %> →</a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\pages\\safety.ejs",
+      "line": 9,
+      "snippet": "<div style=\"width:40px;height:40px;border-radius:50%;background:var(--c-sky);color:var(--c-ocean);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;flex-shrink:0\"><%= i %></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\listing-card.ejs",
+      "line": 84,
+      "snippet": "<div class=\"listing-location\">📍 <%= cardCity %><% if (typeof timeAgo === 'function' && listing.createdAt) { %> · <span class=\"listing-time\" data-dynamic-time><%= timeAgo(listing.createdAt) %></span><% } %></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 30,
+      "snippet": "<svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.35-4.35\"/></svg>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 53,
+      "snippet": "<svg class=\"theme-icon theme-icon-sun\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"><circle cx=\"12\" cy=\"12\" r=\"4.2\"/><path d=\"M12 2.5v2.2M12 19.3v2.2M4.7 4.7l1.6 1.6M17."
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 54,
+      "snippet": "<svg class=\"theme-icon theme-icon-moon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M21 14.8A9 9 0 1 1 9.2 3a7.2 7.2 0 0 0 11.8 11.8Z\"/></svg>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 70,
+      "snippet": "<button type=\"button\" class=\"nav-icon-btn nav-notification-trigger\" aria-label=\"<%= t('nav.notifications') %>\" aria-haspopup=\"true\" aria-expanded=\"false\" data-notification-toggle>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 71,
+      "snippet": "<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9\"/><path d=\"M13.73 21a2 2 0 0 1-3.46 0\"/></svg>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 109,
+      "snippet": "<svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"9\" cy=\"21\" r=\"1\"/><circle cx=\"20\" cy=\"21\" r=\"1\"/><path d=\"M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 155,
+      "snippet": "<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z\"/><polyline points=\"9,22 9,12 15,12 15,22\"/></svg>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 159,
+      "snippet": "<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"9\" cy=\"21\" r=\"1\"/><circle cx=\"20\" cy=\"21\" r=\"1\"/><path d=\"M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 167,
+      "snippet": "<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z\"/></svg>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 172,
+      "snippet": "<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/></svg>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\navbar.ejs",
+      "line": 178,
+      "snippet": "<svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><line x1=\"19\" y1=\"8\" x2=\"19\" y2=\"14\"/><"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\product-card.ejs",
+      "line": 18,
+      "snippet": "<a href=\"https://wa.me/<%= whatsappNumber %>?text=مرحبا، أريد الاستفسار عن: <%= encodeURIComponent(product.nameAr) %>\" target=\"_blank\" class=\"btn btn-primary btn-sm\">📱 اطلب الآن</a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\trust-box.ejs",
+      "line": 14,
+      "snippet": "<div class=\"trust-item\">🔒 <strong><%= typeof t === 'function' ? t('trust.secure') : 'Secure Payment' %></strong><br><%= typeof t === 'function' ? t('trust.secure_d') : 'Encrypted card payment' %></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\trust-box.ejs",
+      "line": 15,
+      "snippet": "<div class=\"trust-item\">🚚 <strong><%= typeof t === 'function' ? t('trust.shipping') : 'Reliable Shipping' %></strong><br><%= typeof t === 'function' ? t('trust.shipping_d') : 'Verified shipping companies' %></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\trust-box.ejs",
+      "line": 16,
+      "snippet": "<div class=\"trust-item\">✅ <strong><%= typeof t === 'function' ? t('trust.protection') : 'Buyer Protection' %></strong><br><%= typeof t === 'function' ? t('trust.protection_d') : 'Money held until delivery confirmed' %></"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\partials\\trust-box.ejs",
+      "line": 17,
+      "snippet": "<div class=\"trust-item\">⭐ <strong><%= typeof t === 'function' ? t('trust.reviews') : 'Real Reviews' %></strong><br><%= typeof t === 'function' ? t('trust.reviews_d') : 'From verified buyers only' %></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\product-detail.ejs",
+      "line": 48,
+      "snippet": "<a href=\"https://wa.me/<%= whatsappNumber %>?text=مرحبا، أريد طلب: <%= encodeURIComponent(product.nameAr) %> - السعر: <%= product.price %> شيكل\" target=\"_blank\" class=\"btn btn-primary btn-lg\">📱 اطلب عبر واتساب</a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\profile\\user-profile.ejs",
+      "line": 22,
+      "snippet": "<button type=\"submit\" class=\"btn <%= profile.isFollowing ? 'btn-outline' : 'btn-primary' %>\"><%= profile.isFollowing ? 'إلغاء المتابعة | Unfollow' : 'متابعة | Follow' %></button>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\rooms\\index.ejs",
+      "line": 45,
+      "snippet": "<a href=\"/rooms?<%= searchQuery ? 'q=' + encodeURIComponent(searchQuery) + '&' : '' %>cursor=<%= pageInfo.nextCursor %>\" class=\"btn btn-outline\">تحميل المزيد | Load More</a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\cart.ejs",
+      "line": 36,
+      "snippet": "<img src=\"<%= item.listing.images[0] || '/images/products/placeholder.svg' %>\" alt=\"<%= item.listing.titleAr || item.listing.title %>\" class=\"whale-cart-item-image\" loading=\"lazy\">"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\checkout.ejs",
+      "line": 107,
+      "snippet": "<input id=\"buyerCitySearch\" type=\"search\" class=\"search-input whale-city-search\" placeholder=\"<%= t('checkout.search_city') %>\" aria-label=\"<%= t('checkout.search_city') %>\">"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\index.ejs",
+      "line": 224,
+      "snippet": "<span><%= cat.icon %> <%= lang === 'ar' ? cat.nameAr : cat.name %> (<%= (categoryCounts[cat.slug] || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %>)</span>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\index.ejs",
+      "line": 370,
+      "snippet": "<button type=\"button\" class=\"btn btn-ghost whale-filters-open whale-filters-open-inline\" aria-label=\"<%= t('market.filters_open') %>\">☰ <%= t('market.filters_open') %></button>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\index.ejs",
+      "line": 450,
+      "snippet": "<span class=\"stars\"><%- '★'.repeat(Math.round(listing.seller.sellerProfile.averageRating)) %><%- '☆'.repeat(5 - Math.round(listing.seller.sellerProfile.averageRating)) %></span>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\listing.ejs",
+      "line": 96,
+      "snippet": "<button type=\"button\" class=\"whale-thumb-btn <%= index === 0 ? 'active' : '' %>\" data-image=\"<%= thumbImage.src %>\" aria-label=\"<%= `${listing.title} ${index + 1}` %>\">"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\listing.ejs",
+      "line": 301,
+      "snippet": "<a href=\"<%= waLink %>\" target=\"_blank\" rel=\"noopener\" class=\"btn btn-wa btn-full whale-wa-btn whale-mt-sm\" data-id=\"<%= listing.id %>\">💬 <%= t('listing.whatsapp') %></a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\listing.ejs",
+      "line": 307,
+      "snippet": "<button type=\"button\" class=\"btn btn-ghost btn-full whale-save-detail whale-mt-sm\" data-id=\"<%= listing.id %>\" data-saved=\"<%= isSaved ? '1' : '0' %>\"> <%= isSaved ? '♥' : '♡' %> <span><%= savedLabel %></span></button>"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "views\\whale\\order-detail.ejs",
+      "line": 28,
+      "snippet": "<!-- TODO: move display:block to CSS class -->"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\order-detail.ejs",
+      "line": 42,
+      "snippet": "<a href=\"<%= shippingCo.trackingUrl.replace('{trackingNumber}', encodeURIComponent(order.trackingNumber)) %>\" target=\"_blank\" rel=\"noopener\"><%= t('order.track') %></a>"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "views\\whale\\order-detail.ejs",
+      "line": 89,
+      "snippet": "<!-- TODO: move display:inline-block to CSS class -->"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "views\\whale\\orders.ejs",
+      "line": 5,
+      "snippet": "<!-- TODO: move flex layout to CSS class -->"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "views\\whale\\orders.ejs",
+      "line": 8,
+      "snippet": "<!-- TODO: move flex layout to CSS class -->"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\orders.ejs",
+      "line": 10,
+      "snippet": "<a href=\"/whale/orders?tab=buying\" class=\"btn btn-sm <%= tab === 'buying' ? 'btn-primary' : 'btn-ghost' %>\" role=\"tab\" aria-selected=\"<%= tab === 'buying' %>\"><%= t('order.tab_buying') %></a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\orders.ejs",
+      "line": 11,
+      "snippet": "<a href=\"/whale/orders?tab=selling\" class=\"btn btn-sm <%= tab === 'selling' ? 'btn-primary' : 'btn-ghost' %>\" role=\"tab\" aria-selected=\"<%= tab === 'selling' %>\"><%= t('order.tab_selling') %></a>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\sell.ejs",
+      "line": 29,
+      "snippet": "<textarea id=\"sellDescriptionAr\" name=\"descriptionAr\" rows=\"4\" dir=\"rtl\" placeholder=\"<%= t('listing.description_ar') || (lang === 'ar' ? 'الوصف بالعربي' : 'Arabic description') %>\"></textarea>"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "views\\whale\\seller-profile.ejs",
+      "line": 10,
+      "snippet": "<!-- TODO: move flex layout to CSS class -->"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "views\\whale\\seller-profile.ejs",
+      "line": 14,
+      "snippet": "<!-- TODO: move margin:0 reset to CSS -->"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\seller-profile.ejs",
+      "line": 22,
+      "snippet": "<div class=\"profile-stat\" aria-label=\"<%= t('seller.total_sales') %>: <%= profile.totalSales || 0 %>\"><div class=\"val\"><%= profile.totalSales || 0 %></div><div class=\"lbl\"><%= t('seller.total_sales') %></div></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\seller-profile.ejs",
+      "line": 23,
+      "snippet": "<div class=\"profile-stat\" aria-label=\"<%= t('dashboard.avg_rating') %>: <%= Number(profile.averageRating || 0).toFixed(1) %>\"><div class=\"val\"><%= Number(profile.averageRating || 0).toFixed(1) %></div><div class=\"lbl\"><%"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\seller-profile.ejs",
+      "line": 24,
+      "snippet": "<div class=\"profile-stat\" aria-label=\"<%= t('listing.reviews') %>: <%= profile.reviewCount || 0 %>\"><div class=\"val\"><%= profile.reviewCount || 0 %></div><div class=\"lbl\"><%= t('listing.reviews') %></div></div>"
+    },
+    {
+      "ruleId": "quality.long-line",
+      "severity": "low",
+      "description": "Line length exceeds 180 characters",
+      "file": "views\\whale\\seller-profile.ejs",
+      "line": 25,
+      "snippet": "<div class=\"profile-stat\" aria-label=\"<%= t('seller.active_listings') %>: <%= listings.length %>\"><div class=\"val\"><%= listings.length %></div><div class=\"lbl\"><%= t('seller.active_listings') %></div></div>"
+    },
+    {
+      "ruleId": "quality.todo-fixme",
+      "severity": "low",
+      "description": "TODO/FIXME/HACK marker present",
+      "file": "views\\whale\\seller-profile.ejs",
+      "line": 62,
+      "snippet": "<!-- TODO: move padding:12px 0 to CSS class -->"
+    }
+  ]
+}

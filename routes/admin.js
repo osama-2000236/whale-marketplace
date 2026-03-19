@@ -200,7 +200,7 @@ router.post('/products/edit/:id', requireAdmin, upload.single('image'), async (r
 
       if (product.image && !product.image.includes('placeholder') && product.image.startsWith('/')) {
         const oldPath = path.join(__dirname, '..', 'public', product.image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+        try { await fs.promises.unlink(oldPath); } catch { /* file already gone */ }
       }
     }
 
@@ -222,7 +222,7 @@ router.post('/products/delete/:id', requireAdmin, async (req, res) => {
     if (product) {
       if (product.image && !product.image.includes('placeholder') && product.image.startsWith('/')) {
         const imgPath = path.join(__dirname, '..', 'public', product.image);
-        if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+        try { await fs.promises.unlink(imgPath); } catch { /* file already gone */ }
       }
       await productService.deleteProduct(req.params.id);
     }
@@ -582,9 +582,9 @@ router.post('/whale/resolve-dispute', requireAdmin, async (req, res) => {
   }
 });
 
-router.get('/settings', requireAdmin, (_req, res) => {
+router.get('/settings', requireAdmin, async (_req, res) => {
   const configPath = path.join(__dirname, '..', 'data', 'config.json');
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  const config = JSON.parse(await fs.promises.readFile(configPath, 'utf-8'));
   res.render('admin/settings', {
     title: 'Site Settings',
     siteConfig: config,
@@ -592,10 +592,10 @@ router.get('/settings', requireAdmin, (_req, res) => {
   });
 });
 
-router.post('/settings', requireAdmin, (req, res) => {
+router.post('/settings', requireAdmin, async (req, res) => {
   try {
     const configPath = path.join(__dirname, '..', 'data', 'config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+    const config = JSON.parse(await fs.promises.readFile(configPath, 'utf-8'));
 
     if (req.body.siteName) config.siteName = sanitizeText(req.body.siteName, 100);
     if (req.body.taglineAr) config.taglineAr = sanitizeText(req.body.taglineAr, 200);
@@ -608,7 +608,7 @@ router.post('/settings', requireAdmin, (req, res) => {
     if (req.body.cityAr) config.location.cityAr = sanitizeText(req.body.cityAr, 100);
     if (req.body.fullAddress) config.location.fullAddress = sanitizeText(req.body.fullAddress, 300);
 
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
     return res.redirect('/admin/settings?success=true');
   } catch (_error) {
     return res.redirect('/admin/settings');

@@ -26,7 +26,10 @@
     "test:ui:a11y": "playwright test --grep @accessibility",
     "test:ui:mobile": "playwright test --project=\"Mobile Chrome\" --project=\"Mobile Safari\"",
     "test:ui:visual": "playwright test --grep @visual",
-    "test:ui:perf": "playwright test --grep @performance"
+    "test:ui:perf": "playwright test --grep @performance",
+    "test:inspect": "node scripts/line-inspection.js",
+    "test:paths": "node scripts/full-path-coverage.js",
+    "test:secrets": "node scripts/check-secrets.js"
   },
   "keywords": [
     "pc-gaming",

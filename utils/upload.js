@@ -49,10 +49,12 @@ const upload = multer({
   }
 });
 
-function ensureDir(relativeDir) {
+async function ensureDir(relativeDir) {
   const absPath = path.join(__dirname, '..', 'public', relativeDir);
-  if (!fs.existsSync(absPath)) {
-    fs.mkdirSync(absPath, { recursive: true });
+  try {
+    await fs.promises.access(absPath);
+  } catch {
+    await fs.promises.mkdir(absPath, { recursive: true });
   }
   return absPath;
 }
@@ -73,7 +75,7 @@ async function storeOneFile(file, targetDir = 'uploads') {
     }
   }
 
-  const destinationDir = ensureDir(targetDir);
+  const destinationDir = await ensureDir(targetDir);
   const ext = path.extname(file.originalname || file.filename || '.jpg') || '.jpg';
   const fileName = `${Date.now()}-${uuidv4()}${ext.toLowerCase()}`;
   const destination = path.join(destinationDir, fileName);
