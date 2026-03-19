@@ -470,7 +470,7 @@
         </div>
 
         <% if (hasMore && nextCursor) { %>
-          <div style="margin-top:14px;">
+          <div class="whale-mt-lg">
             <a
               class="btn btn-ghost"
               href="/whale?<%= new URLSearchParams({
@@ -499,7 +499,7 @@
           </ol>
         </div>
 
-        <div class="card whale-side-card" style="margin-top:12px;">
+        <div class="card whale-side-card whale-mt-md">
           <h3><%= t('market.sell_cta_title') %></h3>
           <p class="muted"><%= t('market.sell_cta_body') %></p>
           <p class="whale-trust-inline">🔒 <%= t('app.trust_promise') %></p>
@@ -511,7 +511,7 @@
         </div>
 
         <% if (cityStats && cityStats.length) { %>
-          <div class="card whale-side-card" style="margin-top:12px;">
+          <div class="card whale-side-card whale-mt-md">
             <h3><%= t('home.near_you') %></h3>
             <div class="whale-city-list">
               <% cityStats.slice(0, 6).forEach((row) => { %>

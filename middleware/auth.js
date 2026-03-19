@@ -26,28 +26,30 @@ function sanitizeUser(user) {
 }
 
 async function hydrateUser(req, res) {
+  // Skip re-hydration if optionalAuth already populated req.user this request
+  if (req._userHydrated) return;
+
   if (!req.session) {
     req.user = null;
     res.locals.currentUser = null;
+    req._userHydrated = true;
     return;
   }
 
-  // توافق مع العلم القديم للإدارة
+  // Legacy admin flag without a real userId is no longer trusted.
+  // Admin access requires a valid userId linked to an ADMIN-role user in the DB.
   if (req.session.isAdmin && !req.session.userId) {
-    req.user = {
-      id: null,
-      username: req.session.adminUser || 'admin',
-      role: 'ADMIN',
-      isVerified: true,
-      isBanned: false
-    };
-    res.locals.currentUser = req.user;
+    req.session.isAdmin = false;
+    req.user = null;
+    res.locals.currentUser = null;
+    req._userHydrated = true;
     return;
   }
 
   if (!req.session.userId) {
     req.user = null;
     res.locals.currentUser = null;
+    req._userHydrated = true;
     return;
   }
 
@@ -74,11 +76,13 @@ async function hydrateUser(req, res) {
     req.session.userId = null;
     req.user = null;
     res.locals.currentUser = null;
+    req._userHydrated = true;
     return;
   }
 
   req.user = sanitizeUser(user);
   res.locals.currentUser = req.user;
+  req._userHydrated = true;
 }
 
 async function optionalAuth(req, res, next) {

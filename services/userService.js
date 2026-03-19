@@ -153,9 +153,19 @@ async function findByUsername(username) {
 async function ensureAdminFromEnv() {
   const adminUsername = (process.env.ADMIN_USERNAME || 'admin').toLowerCase();
   const adminEmail = (process.env.ADMIN_EMAIL || 'admin@pcgaming.local').toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD || 'PcGaming@2024';
+  const adminPassword = process.env.ADMIN_PASSWORD;
 
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
+  if (!adminPassword) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ADMIN_PASSWORD environment variable is required in production');
+    }
+    // Only allow a default in development/test environments
+    // eslint-disable-next-line no-console
+    console.warn('[SECURITY] ADMIN_PASSWORD not set — using insecure default. Set ADMIN_PASSWORD in env.');
+  }
+  const finalPassword = adminPassword || 'PcGaming@2024';
+
+  const passwordHash = await bcrypt.hash(finalPassword, 12);
 
   return prisma.user.upsert({
     where: { username: adminUsername },

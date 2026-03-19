@@ -1,0 +1,64 @@
+# ──────────────────────────────────────────────────────────────
+# Whale Marketplace — .dockerignore
+# Purpose: Exclude unnecessary files from Docker build context
+# ──────────────────────────────────────────────────────────────
+
+# Dependencies (rebuilt inside container via npm ci)
+node_modules/
+
+# Environment secrets
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# Tests
+__tests__/
+__uitests__/
+coverage/
+playwright-report/
+test-results/
+jest.config.js
+jest.setup.js
+playwright.config.js
+
+# Documentation
+*.md
+AGENTS.md
+AI_HANDOFF.md
+AI_PROMPT_TEMPLATE.md
+README.md
+MIGRATION.md
+
+# IDE / Editor
+.idea/
+.vscode/
+*.code-workspace
+.claude/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# User uploads (served from Cloudinary in production)
+public/uploads/
+
+# Logs
+*.log
+npm-debug.log*
+logs/
+
+# Build artifacts
+dist/
+build/
+
+# Railway
+.railway/
+railway.toml
+
+# Docker (prevent recursive copy)
+Dockerfile
+.dockerignore

@@ -59,7 +59,12 @@ async function injectSubStatus(req, res, next) {
               where: { id: user.id },
               data: { lastSeenAt: new Date() }
             })
-            .catch(() => {});
+            .catch((e) => {
+              // Log but don't block request — lastSeenAt is non-critical
+              if (process.env.NODE_ENV !== 'production') {
+                console.warn('[lastSeenAt] update failed:', e.message);
+              }
+            });
         }
       }
     } else {

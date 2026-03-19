@@ -80,7 +80,7 @@
           <label for="sellSpecs"><%= t('listing.specs') || 'Specifications JSON' %></label>
           <input id="sellSpecs" type="text" name="specs" placeholder='{"brand":"ASUS","ram":"16GB"}'>
         </div>
-        <div class="form-group" style="align-self:end;">
+        <div class="form-group whale-self-end">
           <label><input type="checkbox" name="negotiable" value="true"> <%= t('listing.negotiable') %></label>
         </div>
       </div>
@@ -97,7 +97,7 @@
 
 <script>
   (function () {
-    const categories = <%- JSON.stringify(categories) %>;
+    const categories = <%- JSON.stringify(categories).replace(/</g, '\\u003c').replace(/>/g, '\\u003e') %>;
     const categorySel = document.getElementById('sellCategory');
     const subSel = document.getElementById('sellSubcategory');
 

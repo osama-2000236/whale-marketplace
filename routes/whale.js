@@ -371,7 +371,7 @@ router.post('/sell', requireAuth, requirePro, upload.array('images', 6), async (
       city: sanitizeText(req.body.city, 100),
       price: sanitizeInt(req.body.price, { min: 1, max: 10000000 }),
       quantity: sanitizeInt(req.body.quantity, { min: 1, max: 9999, defaultVal: 1 }),
-      condition: req.body.condition,
+      condition: sanitizeText(req.body.condition, 20),
       tags: typeof req.body.tags === 'string' ? sanitizeTags(req.body.tags) : [],
       negotiable: req.body.negotiable === 'true',
       specs: parseJsonField(req.body.specs),
@@ -432,7 +432,7 @@ router.post('/listing/:id/edit', requireAuth, upload.array('images', 6), async (
       city: sanitizeText(req.body.city, 100),
       price: sanitizeInt(req.body.price, { min: 1, max: 10000000 }),
       quantity: sanitizeInt(req.body.quantity, { min: 1, max: 9999, defaultVal: 1 }),
-      condition: req.body.condition,
+      condition: sanitizeText(req.body.condition, 20),
       tags: typeof req.body.tags === 'string' ? sanitizeTags(req.body.tags) : [],
       negotiable: req.body.negotiable === 'true',
       specs: parseJsonField(req.body.specs),
@@ -618,22 +618,39 @@ router.post('/cart/checkout', requireAuth, async (req, res) => {
     const sanitizedShippingCo = sanitizeText(req.body.shippingCompany, 100);
 
     const orders = [];
+    const failedItems = [];
     for (const item of cart.items) {
-      // eslint-disable-next-line no-await-in-loop
-      const order = await svc.createOrder({
-        listingId: item.listingId,
-        buyerId: req.session.userId,
-        quantity: item.quantity,
-        paymentMethod,
-        shippingMethod,
-        shippingCompany: sanitizedShippingCo,
-        shippingAddress,
-        buyerNote: sanitizedNote
-      });
-      orders.push(order);
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const order = await svc.createOrder({
+          listingId: item.listingId,
+          buyerId: req.session.userId,
+          quantity: item.quantity,
+          paymentMethod,
+          shippingMethod,
+          shippingCompany: sanitizedShippingCo,
+          shippingAddress,
+          buyerNote: sanitizedNote
+        });
+        orders.push(order);
+      } catch (itemErr) {
+        logger.error('Cart item order failed', { listingId: item.listingId, error: itemErr.message });
+        failedItems.push(item.listingId);
+      }
     }
 
-    await cartService.clearCart(req);
+    if (orders.length === 0) {
+      return res.redirect('/whale/cart?error=all_items_failed');
+    }
+
+    // Only clear successfully ordered items from cart; keep failed ones
+    if (failedItems.length > 0) {
+      req.session.cart = (req.session.cart || []).filter(
+        (i) => failedItems.includes(i.listingId)
+      );
+    } else {
+      await cartService.clearCart(req);
+    }
 
     if (String(paymentMethod || '').toLowerCase() === 'card' && orders.length > 0) {
       req.session.pendingOrderId = orders[0].id;

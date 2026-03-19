@@ -11,8 +11,15 @@ COPY . .
 
 RUN npx prisma generate
 
+RUN addgroup -S whale && adduser -S whale -G whale
+
 ENV NODE_ENV=production
 ENV PORT=3000
+
+# Ensure upload directories are writable by the non-root user
+RUN mkdir -p /app/public/uploads/tmp && chown -R whale:whale /app/public/uploads
+
+USER whale
 
 EXPOSE ${PORT}
 

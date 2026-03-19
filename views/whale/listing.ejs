@@ -110,7 +110,7 @@
         <% } %>
       </div>
 
-      <div class="panel-card whale-detail-tabs" style="margin-top:12px;">
+      <div class="panel-card whale-detail-tabs whale-mt-md">
         <div class="tabs-row whale-tab-row">
           <button type="button" class="btn btn-ghost whale-tab-btn active" data-tab="desc"><%= t('listing.description') %></button>
           <button type="button" class="btn btn-ghost whale-tab-btn" data-tab="specs"><%= t('listing.specs') %></button>
@@ -168,7 +168,7 @@
             <% listing.reviews.forEach((review, index) => { %>
               <article class="panel-card whale-review-card" data-review-item data-rating="<%= review.rating %>" data-order="<%= index %>">
                 <div class="whale-review-head">
-                  <div style="display:flex; gap:8px; align-items:flex-start;">
+                  <div class="whale-review-header-layout">
                     <%- include('../partials/avatar', { user: review.reviewer, size: 'sm' }) %>
                     <div>
                       <strong><%= review.reviewer.username %></strong>
@@ -178,10 +178,10 @@
                   <small><%= new Date(review.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></small>
                 </div>
                 <% if (review.isVerified) { %>
-                  <div style="margin-top:6px;"><span class="verified-seller"><%= t('listing.verified_p') %></span></div>
+                  <div class="whale-review-verified"><span class="verified-seller"><%= t('listing.verified_p') %></span></div>
                 <% } %>
-                <% if (review.title) { %><h4 dir="auto" style="margin-top:8px;"><%= review.title %></h4><% } %>
-                <% if (review.body) { %><p dir="auto" style="margin-top:4px;"><%= review.body %></p><% } %>
+                <% if (review.title) { %><h4 dir="auto" class="whale-review-title-text"><%= review.title %></h4><% } %>
+                <% if (review.body) { %><p dir="auto" class="whale-review-body-text"><%= review.body %></p><% } %>
                 <div class="whale-review-actions">
                   <span><%= t('reviews.helpful') %></span>
                   <button type="button" class="whale-inline-vote" data-review-vote="yes"><%= t('reviews.yes') %></button>
@@ -199,16 +199,16 @@
         </div>
       </div>
 
-      <div class="panel-card" style="margin-top:12px;">
+      <div class="panel-card whale-mt-md">
         <h3><%= t('listing.similar') %></h3>
-        <div class="listing-grid" style="margin-top:10px;">
+        <div class="listing-grid whale-mt-sm">
           <% similar.forEach((item) => { %>
             <% const similarImage = imageSet((item.images && item.images[0]) || null, {
               widths: [210, 420, 630],
               aspectRatio: '4:3',
               sizes: '(max-width: 479px) 80px, (max-width: 719px) calc(100vw - 48px), 33vw'
             }); %>
-            <a href="/whale/listing/<%= item.slug || item.id %>" class="listing-card whale-similar-card" style="text-decoration:none;">
+            <a href="/whale/listing/<%= item.slug || item.id %>" class="listing-card whale-similar-card whale-text-no-decoration">
               <picture class="whale-card-picture">
                 <% if (similarImage.webpSrcset) { %>
                   <source type="image/webp" srcset="<%= similarImage.webpSrcset %>" sizes="<%= similarImage.sizes %>">
@@ -298,15 +298,15 @@
         <% } %>
 
         <% if (currentUser && waLink) { %>
-          <a href="<%= waLink %>" target="_blank" rel="noopener" class="btn btn-wa btn-full whale-wa-btn" style="margin-top:8px;" data-id="<%= listing.id %>">💬 <%= t('listing.whatsapp') %></a>
+          <a href="<%= waLink %>" target="_blank" rel="noopener" class="btn btn-wa btn-full whale-wa-btn whale-mt-sm" data-id="<%= listing.id %>">💬 <%= t('listing.whatsapp') %></a>
         <% } else if (!currentUser) { %>
-          <a href="/auth/register?reason=contact" class="btn btn-ghost btn-full" style="margin-top:8px;"><%= t('listing.register_contact') %></a>
+          <a href="/auth/register?reason=contact" class="btn btn-ghost btn-full whale-mt-sm"><%= t('listing.register_contact') %></a>
         <% } %>
 
         <% if (currentUser) { %>
-          <button type="button" class="btn btn-ghost btn-full whale-save-detail" data-id="<%= listing.id %>" data-saved="<%= isSaved ? '1' : '0' %>" style="margin-top:8px;"> <%= isSaved ? '♥' : '♡' %> <span><%= savedLabel %></span></button>
+          <button type="button" class="btn btn-ghost btn-full whale-save-detail whale-mt-sm" data-id="<%= listing.id %>" data-saved="<%= isSaved ? '1' : '0' %>"> <%= isSaved ? '♥' : '♡' %> <span><%= savedLabel %></span></button>
         <% } %>
-        <button type="button" class="btn btn-ghost btn-full whale-share-btn" style="margin-top:8px;">🔗 <%= t('ui.share') %></button>
+        <button type="button" class="btn btn-ghost btn-full whale-share-btn whale-mt-sm">🔗 <%= t('ui.share') %></button>
 
         <div class="seller-card">
           <div class="whale-seller-head">

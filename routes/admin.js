@@ -6,6 +6,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
 
 const { guestOnly, requireAdmin, optionalAuth } = require('../middleware/auth');
 const { authenticateUser } = require('../services/userService');
@@ -14,10 +15,20 @@ const marketplaceService = require('../services/marketplaceService');
 const referralService = require('../services/referralService');
 const paymentService = require('../services/paymentService');
 const { upload, storeOneFile } = require('../utils/upload');
+const { sanitizeText } = require('../utils/sanitize');
 const prisma = require('../lib/prisma');
 
 const router = express.Router();
 const categories = require('../data/categories.json');
+
+// Rate limiter for admin login — stricter than regular auth
+const adminLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many login attempts. Please try again later.'
+});
 
 function parseSpecs(body) {
   const specKeys = body.specKey || [];
@@ -43,7 +54,7 @@ router.get('/login', guestOnly, (req, res) => {
   });
 });
 
-router.post('/login', guestOnly, async (req, res) => {
+router.post('/login', guestOnly, adminLoginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -52,12 +63,23 @@ router.post('/login', guestOnly, async (req, res) => {
       throw new Error('Only admins can access this panel');
     }
 
+    // Capture returnTo before regeneration and validate it
+    const rawReturnTo = req.session.returnTo;
+    const returnTo = (rawReturnTo && typeof rawReturnTo === 'string' &&
+      rawReturnTo.startsWith('/admin') && !rawReturnTo.startsWith('//'))
+      ? rawReturnTo : '/admin';
+
+    // Regenerate session to prevent session fixation
+    await new Promise((resolve, reject) => {
+      req.session.regenerate((err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+
     req.session.userId = user.id;
     req.session.isAdmin = true;
     req.session.adminUser = user.username;
-
-    const returnTo = req.session.returnTo || '/admin';
-    delete req.session.returnTo;
 
     return res.redirect(returnTo);
   } catch (_error) {
@@ -561,7 +583,8 @@ router.post('/whale/resolve-dispute', requireAdmin, async (req, res) => {
 });
 
 router.get('/settings', requireAdmin, (_req, res) => {
-  const config = require('../data/config.json');
+  const configPath = path.join(__dirname, '..', 'data', 'config.json');
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
   res.render('admin/settings', {
     title: 'Site Settings',
     siteConfig: config,
@@ -574,16 +597,16 @@ router.post('/settings', requireAdmin, (req, res) => {
     const configPath = path.join(__dirname, '..', 'data', 'config.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 
-    if (req.body.siteName) config.siteName = req.body.siteName;
-    if (req.body.taglineAr) config.taglineAr = req.body.taglineAr;
-    if (req.body.description) config.description = req.body.description;
-    if (req.body.phone) config.contact.phone = req.body.phone;
-    if (req.body.email) config.contact.email = req.body.email;
-    if (req.body.whatsapp) config.contact.whatsapp = req.body.whatsapp;
-    if (req.body.facebook) config.social.facebook = req.body.facebook;
-    if (req.body.instagram) config.social.instagram = req.body.instagram;
-    if (req.body.cityAr) config.location.cityAr = req.body.cityAr;
-    if (req.body.fullAddress) config.location.fullAddress = req.body.fullAddress;
+    if (req.body.siteName) config.siteName = sanitizeText(req.body.siteName, 100);
+    if (req.body.taglineAr) config.taglineAr = sanitizeText(req.body.taglineAr, 200);
+    if (req.body.description) config.description = sanitizeText(req.body.description, 1000);
+    if (req.body.phone) config.contact.phone = sanitizeText(req.body.phone, 20);
+    if (req.body.email) config.contact.email = sanitizeText(req.body.email, 255);
+    if (req.body.whatsapp) config.contact.whatsapp = sanitizeText(req.body.whatsapp, 20);
+    if (req.body.facebook) config.social.facebook = sanitizeText(req.body.facebook, 200);
+    if (req.body.instagram) config.social.instagram = sanitizeText(req.body.instagram, 200);
+    if (req.body.cityAr) config.location.cityAr = sanitizeText(req.body.cityAr, 100);
+    if (req.body.fullAddress) config.location.fullAddress = sanitizeText(req.body.fullAddress, 300);
 
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
     return res.redirect('/admin/settings?success=true');

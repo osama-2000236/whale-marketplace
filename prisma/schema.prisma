@@ -364,7 +364,7 @@ model ForumThread {
   authorId    String
   author      User     @relation("ThreadAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   categoryId  String
-  category    ForumCategory @relation(fields: [categoryId], references: [id])
+  category    ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   replies     ForumReply[]
   views       Int      @default(0)
   replyCount  Int      @default(0)
@@ -389,7 +389,7 @@ model ForumReply {
   threadId   String
   thread     ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
   parentId   String?
-  parent     ForumReply?  @relation("NestedReplies", fields: [parentId], references: [id])
+  parent     ForumReply?  @relation("NestedReplies", fields: [parentId], references: [id], onDelete: SetNull)
   children   ForumReply[] @relation("NestedReplies")
   isAccepted Boolean  @default(false)
   likesCount Int      @default(0)

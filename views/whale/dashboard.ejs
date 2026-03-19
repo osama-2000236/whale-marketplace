@@ -2,7 +2,7 @@
 
 <section class="page-section whale-page">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;">
+    <div class="whale-flex-between">
       <h1 class="page-title"><%= t('dashboard.title') %></h1>
       <a href="/whale/my-listings" class="btn btn-ghost"><%= t('dashboard.manage_listings') %></a>
     </div>
@@ -10,19 +10,19 @@
     <div class="listing-grid whale-dashboard-stats">
       <div class="panel-card" aria-label="<%= t('dashboard.total_sales') %>: <%= profile?.totalSales || 0 %>">
         <div class="muted"><%= t('dashboard.total_sales') %></div>
-        <strong style="font-size:1.5rem;"><%= profile?.totalSales || 0 %></strong>
+        <strong class="whale-stat-value"><%= profile?.totalSales || 0 %></strong>
       </div>
       <div class="panel-card" aria-label="<%= t('dashboard.total_revenue') %>: <%= Number(profile?.totalRevenue || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪">
         <div class="muted"><%= t('dashboard.total_revenue') %></div>
-        <strong style="font-size:1.5rem;"><%= Number(profile?.totalRevenue || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</strong>
+        <strong class="whale-stat-value"><%= Number(profile?.totalRevenue || 0).toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</strong>
       </div>
       <div class="panel-card" aria-label="<%= t('dashboard.avg_rating') %>: <%= Number(profile?.averageRating || 0).toFixed(1) %>">
         <div class="muted"><%= t('dashboard.avg_rating') %></div>
-        <strong style="font-size:1.5rem;"><%= Number(profile?.averageRating || 0).toFixed(1) %> ★</strong>
+        <strong class="whale-stat-value"><%= Number(profile?.averageRating || 0).toFixed(1) %> ★</strong>
       </div>
       <div class="panel-card" aria-label="<%= t('dashboard.active_listings') %>: <%= activeListings %>">
         <div class="muted"><%= t('dashboard.active_listings') %></div>
-        <strong style="font-size:1.5rem;"><%= activeListings %></strong>
+        <strong class="whale-stat-value"><%= activeListings %></strong>
       </div>
     </div>
 
@@ -30,7 +30,7 @@
       <h3><%= t('dashboard.pending_orders') %></h3>
       <% const pendingRows = recentOrders.filter((o) => ['PENDING', 'SELLER_CONFIRMED', 'SHIPPED'].includes(o.orderStatus)); %>
       <% if (pendingRows.length) { %>
-        <table class="data-table" style="margin-top:8px;">
+        <table class="data-table whale-mt-sm">
           <caption class="sr-only"><%= t('dashboard.pending_orders') %></caption>
           <thead>
             <tr>
@@ -56,24 +56,24 @@
           </tbody>
         </table>
       <% } else { %>
-        <p class="muted" style="padding:12px 0;"><%= t('order.no_orders') %></p>
+        <p class="muted whale-py-sm"><%= t('order.no_orders') %></p>
       <% } %>
     </div>
 
-    <div class="panel-card" style="margin-top:12px;">
+    <div class="panel-card whale-mt-md">
       <h3><%= t('dashboard.recent_reviews') %></h3>
       <% if (recentReviews.length) { %>
         <% recentReviews.forEach((review) => { %>
           <%- include('../partials/review-card', { review, lang }) %>
         <% }) %>
       <% } else { %>
-        <p class="muted" style="padding:12px 0;"><%= t('seller.no_reviews') %></p>
+        <p class="muted whale-py-sm"><%= t('seller.no_reviews') %></p>
       <% } %>
     </div>
 
-    <div class="panel-card" style="margin-top:12px;">
+    <div class="panel-card whale-mt-md">
       <h3><%= t('dashboard.my_listings_preview') %></h3>
-      <div class="listing-grid" style="margin-top:8px;">
+      <div class="listing-grid whale-mt-sm">
         <% myListingsPreview.forEach((listing) => { %>
           <a class="listing-card card" href="/whale/listing/<%= listing.slug || listing.id %>">
             <img src="<%= listing.images[0] || '/images/products/placeholder.svg' %>" class="listing-img" alt="<%= listing.titleAr || listing.title %>" loading="lazy">

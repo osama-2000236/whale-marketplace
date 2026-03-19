@@ -23,6 +23,11 @@ function notFoundHandler(req, res) {
  * Global error handler — must be registered last.
  */
 function globalErrorHandler(err, req, res, _next) {
+  // If the response has already started streaming, delegate to Express default handler
+  if (res.headersSent) {
+    return _next(err);
+  }
+
   // CSRF token errors
   if (err.code === 'EBADCSRFTOKEN') {
     logger.warn('CSRF token validation failed', {

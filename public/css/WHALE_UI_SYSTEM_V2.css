@@ -34,6 +34,7 @@
     --ui-shadow-lift: 0 24px 60px rgba(16, 32, 45, 0.16);
     --ui-shadow-float: 0 18px 40px rgba(10, 75, 110, 0.18);
     --ui-ring: color-mix(in srgb, var(--ui-brand) 28%, transparent);
+    --ui-on-brand: #ffffff;
     --ui-hero-text: #ffffff;
     --ui-hero-text-soft: rgba(255, 255, 255, 0.9);
     --ui-hero-overlay: rgba(255, 255, 255, 0.12);
@@ -153,6 +154,7 @@
     --ui-shadow-lift: 0 28px 70px rgba(0, 0, 0, 0.48);
     --ui-shadow-float: 0 24px 56px rgba(0, 0, 0, 0.42);
     --ui-ring: color-mix(in srgb, var(--ui-brand) 38%, transparent);
+    --ui-on-brand: #ffffff;
     --ui-hero-text: #edf5fb;
     --ui-hero-text-soft: rgba(237, 245, 251, 0.88);
     --ui-hero-overlay: rgba(255, 255, 255, 0.06);
@@ -2029,7 +2031,7 @@
     display: grid;
     place-items: center;
     background: linear-gradient(135deg, var(--ui-brand), var(--ui-brand-strong));
-    color: #ffffff;
+    color: var(--ui-on-brand);
     box-shadow: 0 10px 24px color-mix(in srgb, var(--ui-brand) 32%, transparent);
   }
 
@@ -3073,7 +3075,7 @@
   html.dark .whale-field input:focus,
   html.dark .whale-field select:focus,
   html.dark .whale-field textarea:focus {
-    background: #243548;
+    background: color-mix(in srgb, var(--ui-surface-3) 80%, var(--ui-brand-soft));
     border-color: var(--ui-brand);
     box-shadow: 0 0 0 4px var(--ui-ring);
   }
@@ -3160,7 +3162,7 @@
   html.dark input[type="url"]:focus,
   html.dark textarea:focus,
   html.dark select:focus {
-    background: #243548 !important;
+    background: color-mix(in srgb, var(--ui-surface-3) 80%, var(--ui-brand-soft)) !important;
     border-color: var(--ui-brand) !important;
     box-shadow: 0 0 0 4px var(--ui-ring) !important;
     outline: none;
@@ -3203,7 +3205,7 @@
   /* Buttons in dark mode */
   html.dark .btn-primary {
     background: var(--ui-brand);
-    color: #ffffff;
+    color: var(--ui-on-brand);
   }
 
   html.dark .btn-primary:hover {
@@ -3212,7 +3214,7 @@
 
   html.dark .btn-danger {
     background: var(--ui-danger);
-    color: #ffffff;
+    color: var(--ui-on-brand);
   }
 
   html.dark .btn-ghost,
@@ -3436,6 +3438,12 @@
   .whale-mt-md { margin-top: 12px; }
   .whale-mt-lg { margin-top: 14px; }
   .whale-gap-sm { gap: 8px; }
+  .whale-stat-value { font-size: 1.5rem; }
+  .whale-py-sm { padding: 12px 0; }
+  .whale-flex-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .whale-text-no-decoration { text-decoration: none; }
+  .whale-max-w-md { max-width: 980px; }
+  .whale-self-end { align-self: end; }
 
   /* ── Listing detail inline style replacements ── */
   .whale-review-header-layout {

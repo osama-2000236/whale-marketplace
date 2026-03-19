@@ -10,6 +10,7 @@ process.on('uncaughtException', (err) => {
 });
 process.on('unhandledRejection', (reason) => {
   console.error('UNHANDLED REJECTION:', reason);
+  process.exit(1);
 });
 
 try { require('dotenv').config(); } catch (_) { /* dotenv unavailable in production — env vars set by platform */ }
@@ -27,6 +28,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const csrf = require('csurf');
 
+const pgSession = require('connect-pg-simple')(session);
 const prisma = require('./lib/prisma');
 const { optionalAuth } = require('./middleware/auth');
 const { injectSubStatus, startSubscriptionCron } = require('./middleware/subscription');
@@ -39,6 +41,7 @@ const { getDirection, startsWithArabic } = require('./utils/text');
 const { buildResponsiveImage } = require('./utils/images');
 const logger = require('./lib/logger');
 const { notFoundHandler, globalErrorHandler } = require('./middleware/errorHandler');
+const siteConfig = require('./data/config.json');
 
 /**
  * Validate that all critical environment variables are set before starting.
@@ -173,6 +176,11 @@ app.use(
     secret: sessionSecret || 'dev-only-secret-not-for-production',
     resave: false,
     saveUninitialized: false,
+    // Use PostgreSQL session store in production to avoid MemoryStore leak.
+    // Falls back to MemoryStore in development (acceptable for local dev).
+    ...(isProd && process.env.DATABASE_URL
+      ? { store: new pgSession({ conString: process.env.DATABASE_URL, createTableIfMissing: true, tableName: 'session' }) }
+      : {}),
     cookie: {
       secure: isProd,
       httpOnly: true,
@@ -183,6 +191,7 @@ app.use(
 );
 
 app.use(passport.initialize());
+app.use(passport.session());
 
 // Global rate limiter — always active, stricter in production
 app.use(
@@ -237,14 +246,12 @@ app.use((req, res, next) => {
 
 app.use(async (req, res, next) => {
   try {
-    const config = require('./data/config.json');
-
-    res.locals.config = config;
+    res.locals.config = siteConfig;
     res.locals.currentPath = req.path;
     res.locals.path = req.path;
     res.locals.currentUser = req.user || null;
     res.locals.isAdmin = Boolean(req.user && req.user.role === 'ADMIN') || Boolean(req.session?.isAdmin);
-    res.locals.whatsappNumber = process.env.WHATSAPP_NUMBER || config.contact.whatsapp;
+    res.locals.whatsappNumber = process.env.WHATSAPP_NUMBER || siteConfig.contact.whatsapp;
     res.locals.getDirection = getDirection;
     res.locals.startsWithArabic = startsWithArabic;
     res.locals.timeAgo = (value) => timeAgo(value, res.locals.lang || 'ar');

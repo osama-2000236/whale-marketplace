@@ -34,13 +34,15 @@ const upload = multer({
   },
   fileFilter: (_req, file, cb) => {
     // Strict allowlist — block SVG (XSS vector), BMP, TIFF, etc.
-    const allowed = /^image\/(png|jpe?g|gif|webp)$/;
+    const allowedMime = /^image\/(png|jpe?g|gif|webp)$/;
+    const allowedExt = /^\.(png|jpe?g|gif|webp)$/;
     const ext = path.extname(file.originalname || '').toLowerCase();
     const blockedExtensions = ['.svg', '.svgz', '.bmp', '.ico', '.tiff', '.tif'];
     if (blockedExtensions.includes(ext)) {
       return cb(new Error('This file type is not allowed'));
     }
-    if (allowed.test(file.mimetype)) {
+    // Require BOTH mimetype AND extension to match the allowlist
+    if (allowedMime.test(file.mimetype) && allowedExt.test(ext)) {
       return cb(null, true);
     }
     return cb(new Error('Only image uploads are allowed (PNG, JPG, GIF, WebP)'));

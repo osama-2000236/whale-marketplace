@@ -82,10 +82,51 @@ const oauthStartLimiter = rateLimit({
   message: { error: 'Too many auth requests' }
 });
 
+/**
+ * Validate that a returnTo URL is a safe relative path (not an open redirect).
+ * Rejects absolute URLs, protocol-relative URLs, and data: URLs.
+ */
+function safeReturnTo(url) {
+  if (!url || typeof url !== 'string') return '/whale';
+  const trimmed = url.trim();
+  // Must start with a single "/" and NOT "//" (protocol-relative)
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.startsWith('/\\')) {
+    // Also reject URLs with embedded control characters or newlines
+    if (/[\x00-\x1f]/.test(trimmed)) return '/whale';
+    return trimmed;
+  }
+  return '/whale';
+}
+
 function setUserSession(req, user) {
   req.session.userId = user.id;
   req.session.isAdmin = user.role === 'ADMIN';
   req.session.adminUser = user.role === 'ADMIN' ? user.username : null;
+}
+
+/**
+ * Regenerate the session to prevent session fixation attacks,
+ * then set user session data. Returns a Promise.
+ */
+function regenerateAndSetSession(req, user) {
+  return new Promise((resolve, reject) => {
+    // Preserve values that should survive regeneration
+    const pendingRef = req.session.pendingRef;
+    const returnTo = req.session.returnTo;
+    const lang = req.session.lang;
+    const cart = req.session.cart;
+
+    req.session.regenerate((err) => {
+      if (err) return reject(err);
+      // Restore preserved values
+      if (pendingRef) req.session.pendingRef = pendingRef;
+      if (returnTo) req.session.returnTo = returnTo;
+      if (lang) req.session.lang = lang;
+      if (cart) req.session.cart = cart;
+      setUserSession(req, user);
+      resolve();
+    });
+  });
 }
 
 function getOauthEnabled() {
@@ -114,7 +155,10 @@ async function finalizeOAuthLogin(req, res) {
     return res.redirect('/auth/login?error=auth_failed');
   }
 
-  setUserSession(req, req.user);
+  // Capture returnTo before regeneration
+  const returnTo = safeReturnTo(req.session.returnTo);
+
+  await regenerateAndSetSession(req, req.user);
   req.session.lang = req.session.lang || (process.env.DEFAULT_LANG === 'en' ? 'en' : 'ar');
 
   if (req.session.pendingRef) {
@@ -122,7 +166,6 @@ async function finalizeOAuthLogin(req, res) {
     delete req.session.pendingRef;
   }
 
-  const returnTo = req.session.returnTo || '/whale';
   delete req.session.returnTo;
   return res.redirect(returnTo);
 }
@@ -176,7 +219,7 @@ async function handleRegister(req, res, isApi) {
       delete req.session.pendingRef;
     }
 
-    setUserSession(req, user);
+    await regenerateAndSetSession(req, user);
     await emailService.sendWelcome(user).catch(() => {});
 
     if (isApi) {
@@ -235,13 +278,16 @@ async function handleLogin(req, res, isApi) {
   try {
     const user = await authenticateUser(identifier, req.body.password);
     clearFailedLogins(identifier);
-    setUserSession(req, user);
+
+    // Capture returnTo before session regeneration
+    const returnTo = safeReturnTo(req.session.returnTo);
+
+    await regenerateAndSetSession(req, user);
 
     if (isApi) {
       return res.json({ user });
     }
 
-    const returnTo = req.session.returnTo || '/whale';
     delete req.session.returnTo;
     return res.redirect(returnTo);
   } catch (error) {
