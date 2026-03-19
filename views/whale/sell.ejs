@@ -11,22 +11,22 @@
       <div class="form-row">
         <div class="form-group">
           <label for="sellTitle"><%= t('listing.title') || (lang === 'ar' ? 'العنوان' : 'Title') %></label>
-          <input id="sellTitle" type="text" name="title" minlength="3" required>
+          <input id="sellTitle" type="text" name="title" minlength="3" required placeholder="<%= t('listing.title') || (lang === 'ar' ? 'العنوان' : 'Title') %>">
         </div>
         <div class="form-group">
           <label for="sellTitleAr"><%= t('listing.title_ar') || (lang === 'ar' ? 'العنوان بالعربي' : 'Arabic title') %></label>
-          <input id="sellTitleAr" type="text" name="titleAr" dir="rtl">
+          <input id="sellTitleAr" type="text" name="titleAr" dir="rtl" placeholder="<%= t('listing.title_ar') || (lang === 'ar' ? 'العنوان بالعربي' : 'Arabic title') %>">
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="sellDescription"><%= t('listing.description') %></label>
-          <textarea id="sellDescription" name="description" rows="4" required></textarea>
+          <textarea id="sellDescription" name="description" rows="4" required placeholder="<%= t('listing.description') %>"></textarea>
         </div>
         <div class="form-group">
           <label for="sellDescriptionAr"><%= t('listing.description_ar') || (lang === 'ar' ? 'الوصف بالعربي' : 'Arabic description') %></label>
-          <textarea id="sellDescriptionAr" name="descriptionAr" rows="4" dir="rtl"></textarea>
+          <textarea id="sellDescriptionAr" name="descriptionAr" rows="4" dir="rtl" placeholder="<%= t('listing.description_ar') || (lang === 'ar' ? 'الوصف بالعربي' : 'Arabic description') %>"></textarea>
         </div>
       </div>
 
@@ -55,7 +55,7 @@
       <div class="form-row">
         <div class="form-group">
           <label for="sellPrice"><%= t('listing.price') || (lang === 'ar' ? 'السعر (₪)' : 'Price (₪)') %></label>
-          <input id="sellPrice" type="number" name="price" min="1" inputmode="numeric" required>
+          <input id="sellPrice" type="number" name="price" min="1" inputmode="numeric" required placeholder="0.00">
         </div>
         <div class="form-group">
           <label for="sellQuantity"><%= t('listing.quantity') || (lang === 'ar' ? 'الكمية' : 'Quantity') %></label>

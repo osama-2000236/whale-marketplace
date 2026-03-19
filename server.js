@@ -37,6 +37,42 @@ const notificationService = require('./services/notificationService');
 const { t } = require('./lib/i18n');
 const { getDirection, startsWithArabic } = require('./utils/text');
 const { buildResponsiveImage } = require('./utils/images');
+const logger = require('./lib/logger');
+const { notFoundHandler, globalErrorHandler } = require('./middleware/errorHandler');
+
+/**
+ * Validate that all critical environment variables are set before starting.
+ * In production, missing vars cause a fatal exit. In development, warnings are logged.
+ */
+function validateEnvVars() {
+  const required = [
+    'DATABASE_URL',
+    'SESSION_SECRET'
+  ];
+  const recommended = [
+    'BASE_URL',
+    'ADMIN_USERNAME',
+    'ADMIN_PASSWORD',
+    'ADMIN_EMAIL'
+  ];
+  const isProdCheck = process.env.NODE_ENV === 'production';
+
+  const missing = required.filter((key) => !process.env[key]);
+  const missingRecommended = recommended.filter((key) => !process.env[key]);
+
+  if (missing.length > 0 && isProdCheck) {
+    console.error(`FATAL: Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+  } else if (missing.length > 0) {
+    console.warn(`WARNING: Missing environment variables (required in production): ${missing.join(', ')}`);
+  }
+
+  if (missingRecommended.length > 0) {
+    console.warn(`INFO: Missing recommended environment variables: ${missingRecommended.join(', ')}`);
+  }
+}
+
+validateEnvVars();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -107,6 +143,9 @@ app.use(
 );
 
 app.use(compression());
+
+// Structured HTTP request logging
+app.use(logger.httpMiddleware());
 
 // CORS: restrict to known origins in production
 const corsOptions = isProd
@@ -262,35 +301,9 @@ app.use('/api', require('./routes/api'));
 app.use('/api/auth', authRoutes.apiRouter);
 app.use('/api/notifications', notificationRoutes.apiRouter);
 
-app.use((req, res) => {
-  res.status(404).render('404', { title: 'Page Not Found' });
-});
-
-app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    if (req.path.startsWith('/api/')) {
-      return res.status(403).json({ error: 'Invalid CSRF token' });
-    }
-
-    return res.status(403).render('error', {
-      title: 'CSRF Error',
-      message: 'جلسة غير صالحة، الرجاء تحديث الصفحة والمحاولة مجددا | Invalid session token, refresh and retry'
-    });
-  }
-
-  // Log full error server-side but never expose stack trace to client
-  // eslint-disable-next-line no-console
-  console.error('Server Error:', err.stack || err);
-
-  if (req.path.startsWith('/api/')) {
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-
-  return res.status(500).render('error', {
-    title: 'Server Error',
-    message: isProd ? 'Something went wrong' : err.message
-  });
-});
+// Centralized error handling
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 async function start() {
   try {

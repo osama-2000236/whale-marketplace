@@ -33,11 +33,17 @@ const upload = multer({
     fileSize: Number(process.env.MAX_FILE_SIZE || 5 * 1024 * 1024)
   },
   fileFilter: (_req, file, cb) => {
-    const allowed = /image\/(png|jpe?g|gif|webp|svg\+xml)/;
+    // Strict allowlist — block SVG (XSS vector), BMP, TIFF, etc.
+    const allowed = /^image\/(png|jpe?g|gif|webp)$/;
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const blockedExtensions = ['.svg', '.svgz', '.bmp', '.ico', '.tiff', '.tif'];
+    if (blockedExtensions.includes(ext)) {
+      return cb(new Error('This file type is not allowed'));
+    }
     if (allowed.test(file.mimetype)) {
       return cb(null, true);
     }
-    return cb(new Error('Only image uploads are allowed'));
+    return cb(new Error('Only image uploads are allowed (PNG, JPG, GIF, WebP)'));
   }
 });
 
@@ -55,7 +61,7 @@ async function storeOneFile(file, targetDir = 'uploads') {
   if (cloudinaryEnabled && cloudinary) {
     try {
       const result = await cloudinary.uploader.upload(file.path, {
-        folder: `pc-gaming/${targetDir}`
+        folder: `whale/${targetDir}`
       });
       fs.unlink(file.path, () => {});
       return result.secure_url;
@@ -80,15 +86,13 @@ async function storeFiles(files, targetDir = 'uploads', max = 6) {
   }
 
   const limited = files.slice(0, max);
-  const urls = [];
-
-  for (const file of limited) {
-    // eslint-disable-next-line no-await-in-loop
-    const url = await storeOneFile(file, targetDir);
-    if (url) urls.push(url);
-  }
-
-  return urls;
+  // Upload files in parallel for much faster performance
+  const results = await Promise.allSettled(
+    limited.map((file) => storeOneFile(file, targetDir))
+  );
+  return results
+    .filter((r) => r.status === 'fulfilled' && r.value)
+    .map((r) => r.value);
 }
 
 module.exports = {

@@ -12,7 +12,7 @@
 <section class="page-section whale-page">
   <div class="container">
     <h1 class="page-title"><%= t('checkout.title') %></h1>
-    <p class="muted whale-escrow-copy" style="margin-bottom:12px;">🐳 <%= t('checkout.escrow_d') %></p>
+    <p class="muted whale-escrow-copy" class="whale-mb-sm">🐳 <%= t('checkout.escrow_d') %></p>
 
     <div class="checkout-steps">
       <div class="checkout-step done">1. <%= t('checkout.s1') %></div>
@@ -51,26 +51,26 @@
           </div>
         </div>
 
-        <div class="form-row" style="margin-top:10px;">
+        <div class="form-row" class="whale-mt-sm">
           <div class="form-group">
             <label for="quantity"><%= t('checkout.quantity') %></label>
             <input id="quantity" type="number" name="quantity" min="1" max="<%= listing.quantity %>" value="1" required data-validate-field>
             <span class="whale-field-error" data-field-error="quantity" aria-live="polite"></span>
           </div>
-          <div class="form-group" style="grid-column: span 2;">
+          <div class="form-group" class="form-group-wide">
             <label for="buyerNote"><%= t('checkout.note') %></label>
             <input id="buyerNote" type="text" name="buyerNote" placeholder="<%= t('checkout.note') %>">
           </div>
         </div>
 
-        <h3 style="margin-top:14px;">2. <%= t('checkout.shipping') %></h3>
-        <div class="whale-radio-stack" style="margin-top:8px;">
+        <h3 class="whale-mt-md">2. <%= t('checkout.shipping') %></h3>
+        <div class="whale-radio-stack" class="whale-mt-xs">
           <label class="filter-option"><input type="radio" name="shippingMethod" value="company" checked><span><%= t('checkout.ship_company') %></span></label>
           <label class="filter-option"><input type="radio" name="shippingMethod" value="self_pickup"><span><%= t('checkout.ship_pickup') %></span></label>
           <label class="filter-option"><input type="radio" name="shippingMethod" value="hand_to_hand"><span><%= t('checkout.ship_hand') %></span></label>
         </div>
 
-        <div class="form-group" style="margin-top:8px;">
+        <div class="form-group" class="whale-mt-xs">
           <label for="shippingCompanySelect"><%= t('checkout.ship_company') %></label>
           <select name="shippingCompany" id="shippingCompanySelect">
             <% shippingCos.forEach((co) => { %>
@@ -81,10 +81,10 @@
           </select>
         </div>
 
-        <div class="form-row" style="margin-top:10px;">
+        <div class="form-row" class="whale-mt-sm">
           <div class="form-group">
             <label for="buyerName"><%= t('checkout.full_name') %></label>
-            <input id="buyerName" type="text" name="buyerName" autocomplete="name" required data-validate-field>
+            <input id="buyerName" type="text" name="buyerName" autocomplete="name" required placeholder="<%= t('checkout.full_name') %>" data-validate-field>
             <span class="whale-field-error" data-field-error="buyerName" aria-live="polite"></span>
           </div>
           <div class="form-group">
@@ -125,7 +125,7 @@
         </div>
         <label class="filter-option whale-save-address-check"><input type="checkbox" name="saveAddress" value="1"><span><%= t('checkout.save_address') %></span></label>
 
-        <h3 style="margin-top:14px;">3. <%= t('checkout.payment') %></h3>
+        <h3 class="whale-mt-md">3. <%= t('checkout.payment') %></h3>
         <label class="filter-option"><input type="radio" name="paymentMethod" value="card"><span>💳 <%= t('checkout.pay_card') %></span></label>
         <label class="filter-option"><input type="radio" name="paymentMethod" value="cod" checked><span>💵 <%= t('checkout.pay_cod') %></span></label>
         <div class="whale-card-fields" hidden>
@@ -185,7 +185,7 @@
           <span><%= t('checkout.total') %></span>
           <strong><span id="summaryTotal"><%= listing.price %></span> ₪</strong>
         </div>
-        <p class="muted whale-escrow-copy" style="margin-top:8px;"><%= t('checkout.escrow_d') %></p>
+        <p class="muted whale-escrow-copy" class="whale-mt-xs"><%= t('checkout.escrow_d') %></p>
       </aside>
     </div>
   </div>

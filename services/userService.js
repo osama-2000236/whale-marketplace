@@ -2,6 +2,23 @@ const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
 const { parseLimit, createCursorResponse } = require('../utils/pagination');
 
+/**
+ * Validate password strength.
+ * Requirements: min 8 chars, at least 1 uppercase letter, at least 1 number.
+ */
+function validatePassword(password) {
+  if (!password || password.length < 8) {
+    return { valid: false, message: 'Password must be at least 8 characters long' };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one uppercase letter' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one number' };
+  }
+  return { valid: true, message: null };
+}
+
 async function registerUser(payload) {
   const username = String(payload.username || '').trim().toLowerCase();
   const email = String(payload.email || '').trim().toLowerCase();
@@ -19,8 +36,9 @@ async function registerUser(payload) {
     throw new Error('username can only contain lowercase letters, numbers, and underscore');
   }
 
-  if (password.length < 8) {
-    throw new Error('password must be at least 8 characters');
+  const passwordCheck = validatePassword(password);
+  if (!passwordCheck.valid) {
+    throw new Error(passwordCheck.message);
   }
 
   const exists = await prisma.user.findFirst({
@@ -375,5 +393,6 @@ module.exports = {
   listUsers,
   getUserRooms,
   getFollowersCount,
-  createCursorResponse
+  createCursorResponse,
+  validatePassword
 };

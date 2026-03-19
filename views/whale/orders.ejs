@@ -2,8 +2,10 @@
 
 <section class="page-section whale-page">
   <div class="container">
+    <!-- TODO: move flex layout to CSS class -->
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
       <h1 class="page-title"><%= t('nav.my_orders') %></h1>
+      <!-- TODO: move flex layout to CSS class -->
       <div style="display:flex; gap:8px;" role="tablist" aria-label="<%= t('nav.my_orders') %>">
         <a href="/whale/orders?tab=buying" class="btn btn-sm <%= tab === 'buying' ? 'btn-primary' : 'btn-ghost' %>" role="tab" aria-selected="<%= tab === 'buying' %>"><%= t('order.tab_buying') %></a>
         <a href="/whale/orders?tab=selling" class="btn btn-sm <%= tab === 'selling' ? 'btn-primary' : 'btn-ghost' %>" role="tab" aria-selected="<%= tab === 'selling' %>"><%= t('order.tab_selling') %></a>

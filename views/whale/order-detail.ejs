@@ -13,18 +13,19 @@
     <div class="panel-card">
       <h1><%= t('order.number') %> #<%= order.orderNumber %></h1>
       <%- include('../partials/status-badge', { status: order.orderStatus }) %>
-      <p class="muted whale-escrow-copy" style="margin-top:8px;">🐳 <%= t('listing.escrow') %></p>
+      <p class="muted whale-escrow-copy whale-mt-sm">🐳 <%= t('listing.escrow') %></p>
     </div>
 
     <div class="whale-order-layout">
       <div class="panel-card">
         <h3><%= t('order.timeline') %></h3>
-        <div class="timeline" role="list" aria-label="<%= t('order.timeline') %>" style="margin-top:10px;">
+        <div class="timeline whale-mt-sm" role="list" aria-label="<%= t('order.timeline') %>">
           <% order.timeline.forEach((event, i) => { const isActive = event.event === order.orderStatus.toLowerCase(); %>
             <div class="timeline-event <%= isActive ? 'active' : '' %>" role="listitem" <%= isActive ? 'aria-current="step"' : '' %>>
               <div class="timeline-dot" aria-hidden="true"></div>
               <div class="timeline-content">
                 <strong><%= eventLabel(event.event) %></strong>
+                <!-- TODO: move display:block to CSS class -->
                 <span style="display:block;"><%= timeAgo(event.createdAt) %></span>
                 <% if (event.note) { %><p dir="auto"><%= event.note %></p><% } %>
               </div>
@@ -55,14 +56,14 @@
         </div>
 
         <% if (isSeller && order.orderStatus === 'PENDING') { %>
-          <form method="POST" action="/whale/orders/<%= order.id %>/confirm" style="margin-top:10px;">
+          <form method="POST" action="/whale/orders/<%= order.id %>/confirm" class="whale-mt-sm">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-primary btn-full"><%= t('ui.confirm') %></button>
           </form>
         <% } %>
 
         <% if (isSeller && order.orderStatus === 'SELLER_CONFIRMED') { %>
-          <form method="POST" action="/whale/orders/<%= order.id %>/ship" style="margin-top:10px;">
+          <form method="POST" action="/whale/orders/<%= order.id %>/ship" class="whale-mt-sm">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="form-group">
               <label for="trackingNumber"><%= t('order.tracking_number') %></label>
@@ -81,15 +82,16 @@
         <% } %>
 
         <% if (isBuyer && ['SHIPPED', 'DELIVERED', 'IN_TRANSIT'].includes(order.orderStatus)) { %>
-          <form method="POST" action="/whale/orders/<%= order.id %>/confirm-delivery" style="margin-top:10px;">
+          <form method="POST" action="/whale/orders/<%= order.id %>/confirm-delivery" class="whale-mt-sm">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-primary btn-full"><%= t('order.confirm_rcv') %></button>
           </form>
-          <a href="/buyer-protection" class="muted" style="display:inline-block; margin-top:8px;"><%= t('order.dispute') %></a>
+          <!-- TODO: move display:inline-block to CSS class -->
+          <a href="/buyer-protection" class="muted whale-mt-sm" style="display:inline-block;"><%= t('order.dispute') %></a>
         <% } %>
 
         <% if (isBuyer && order.orderStatus === 'COMPLETED' && !order.review) { %>
-          <form method="POST" action="/whale/orders/<%= order.id %>/review" style="margin-top:12px;">
+          <form method="POST" action="/whale/orders/<%= order.id %>/review" class="whale-mt-md">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="form-group">
               <label for="rating"><%= t('order.review_cta') %></label>
@@ -114,10 +116,10 @@
         <% } %>
 
         <% if (['PENDING', 'SELLER_CONFIRMED'].includes(order.orderStatus)) { %>
-          <form method="POST" action="/whale/orders/<%= order.id %>/cancel" style="margin-top:10px;">
+          <form method="POST" action="/whale/orders/<%= order.id %>/cancel" class="whale-mt-sm">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <input type="text" name="reason" placeholder="<%= t('order.cancel_reason') %>" required>
-            <button type="submit" class="btn btn-danger btn-full" style="margin-top:8px;"><%= t('order.cancel') %></button>
+            <button type="submit" class="btn btn-danger btn-full whale-mt-sm"><%= t('order.cancel') %></button>
           </form>
         <% } %>
       </aside>

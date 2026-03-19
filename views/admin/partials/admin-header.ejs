@@ -17,7 +17,10 @@
       <a href="/admin/subscriptions" class="<%= currentPath.includes('/admin/subscriptions') ? 'active' : '' %>">💳 Subs</a>
       <a href="/admin/settings" class="<%= currentPath.includes('/admin/settings') ? 'active' : '' %>">⚙️ Settings</a>
       <a href="/whale" target="_blank">🌐 View Site</a>
-      <a href="/admin/logout" class="logout-btn">🚪 Logout</a>
+      <form method="POST" action="/admin/logout" style="display:inline;margin:0;">
+        <input type="hidden" name="_csrf" value="<%= csrfToken || '' %>">
+        <button type="submit" class="logout-btn" style="background:none;border:none;cursor:pointer;font:inherit;color:inherit;padding:0;">Logout</button>
+      </form>
     </div>
   </nav>
   <main class="admin-main">

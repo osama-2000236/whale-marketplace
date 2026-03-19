@@ -1,5 +1,5 @@
 {
-  "name": "pc-gaming-website",
+  "name": "whale-marketplace",
   "version": "1.0.0",
   "description": "Full-stack website for PC Gaming - Tulkarem, Palestine. Computers, Laptops & Accessories.",
   "main": "server.js",
@@ -64,7 +64,8 @@
     "passport-google-oauth20": "^2.0.0",
     "qrcode": "^1.5.4",
     "slugify": "^1.6.8",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.1",

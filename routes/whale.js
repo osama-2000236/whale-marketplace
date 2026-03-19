@@ -8,6 +8,8 @@ const prisma = require('../lib/prisma');
 const { upload, storeFiles } = require('../utils/upload');
 const { sanitizeText, sanitizeInt, sanitizeTags } = require('../utils/sanitize');
 const { MemoryCache } = require('../utils/cache');
+const { validate, createListingSchema, buySchema, reviewSchema } = require('../lib/validation');
+const logger = require('../lib/logger');
 
 const router = express.Router();
 
@@ -163,8 +165,7 @@ router.get('/', optionalAuth, async (req, res) => {
       csrfToken: req.csrfToken()
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
+    logger.error('Marketplace browse failed', { error: err.message, stack: err.stack });
     return res.status(500).render('error', {
       title: res.locals.t('error.server'),
       message: res.locals.t('error.market_load')
@@ -302,8 +303,7 @@ router.get('/listing/:idOrSlug', optionalAuth, async (req, res) => {
       csrfToken: req.csrfToken()
     });
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
+    logger.error('Listing detail failed', { idOrSlug: req.params.idOrSlug, error: err.message });
     return res.status(500).render('error', {
       title: res.locals.t('error.server'),
       message: res.locals.t('error.listing_load')
@@ -379,8 +379,7 @@ router.post('/sell', requireAuth, requirePro, upload.array('images', 6), async (
     });
     return res.redirect(`/whale/listing/${listing.slug || listing.id}?created=1`);
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
+    logger.error('Create listing failed', { userId: req.session.userId, error: err.message });
     return res.redirect('/whale/sell?error=1');
   }
 });
@@ -441,8 +440,7 @@ router.post('/listing/:id/edit', requireAuth, upload.array('images', 6), async (
     });
     return res.redirect(`/whale/listing/${updated.slug || updated.id}?updated=1`);
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
+    logger.error('Edit listing failed', { listingId: req.params.id, error: err.message });
     return res.redirect(`/whale/listing/${req.params.id}/edit?error=1`);
   }
 });
@@ -528,16 +526,16 @@ router.post('/listing/:id/buy', requireAuth, async (req, res) => {
       buyerNote: sanitizeText(req.body.buyerNote, 1000)
     });
 
-    if (paymentMethod === 'card') {
+    if (req.body.paymentMethod === 'card') {
       req.session.pendingOrderId = order.id;
       return res.redirect(`/payment/start?orderId=${order.id}`);
     }
 
     return res.redirect(`/whale/orders/${order.id}?placed=1`);
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    return res.redirect(`/whale/listing/${req.params.id}/buy?error=${encodeURIComponent(err.message)}`);
+    logger.error('Order creation failed', { listingId: req.params.id, error: err.message });
+    // Never leak internal error messages to the client URL
+    return res.redirect(`/whale/listing/${req.params.id}/buy?error=order_failed`);
   }
 });
 
@@ -645,7 +643,7 @@ router.post('/cart/checkout', requireAuth, async (req, res) => {
     return res.redirect(`/whale/orders?placed=${orders.map((o) => o.orderNumber).join(',')}`);
   } catch (err) {
     // eslint-disable-next-line no-console
-    console.error('[Cart checkout error]', err);
+    logger.error('Cart checkout failed', { userId: req.session?.userId, error: err.message });
     return res.redirect('/whale/cart?error=checkout_failed');
   }
 });
@@ -686,9 +684,10 @@ router.get('/orders', requireAuth, async (req, res) => {
       csrfToken: req.csrfToken()
     });
   } catch (error) {
+    logger.error('Failed to load orders', { userId: req.session.userId, error: error.message });
     return res.status(500).render('error', {
       title: 'Server Error',
-      message: error.message
+      message: 'Failed to load orders'
     });
   }
 });
@@ -727,9 +726,10 @@ router.get('/orders/:id', requireAuth, async (req, res) => {
       csrfToken: req.csrfToken()
     });
   } catch (error) {
+    logger.error('Failed to load order', { orderId: req.params.id, userId: req.session.userId, error: error.message });
     return res.status(500).render('error', {
       title: 'Server Error',
-      message: error.message
+      message: 'Failed to load order'
     });
   }
 });
@@ -739,10 +739,8 @@ router.post('/orders/:id/confirm', requireAuth, async (req, res) => {
     await svc.sellerConfirmOrder(req.params.id, req.session.userId);
     return res.redirect(`/whale/orders/${req.params.id}`);
   } catch (error) {
-    return res.status(400).render('error', {
-      title: 'Error',
-      message: error.message
-    });
+    logger.error('Failed to confirm order', { orderId: req.params.id, userId: req.session.userId, error: error.message });
+    return res.redirect(`/whale/orders/${req.params.id}?error=confirm`);
   }
 });
 
@@ -755,10 +753,8 @@ router.post('/orders/:id/ship', requireAuth, async (req, res) => {
     });
     return res.redirect(`/whale/orders/${req.params.id}`);
   } catch (error) {
-    return res.status(400).render('error', {
-      title: 'Error',
-      message: error.message
-    });
+    logger.error('Failed to ship order', { orderId: req.params.id, userId: req.session.userId, error: error.message });
+    return res.redirect(`/whale/orders/${req.params.id}?error=ship`);
   }
 });
 
@@ -767,10 +763,8 @@ router.post('/orders/:id/confirm-delivery', requireAuth, async (req, res) => {
     await svc.buyerConfirmDelivery(req.params.id, req.session.userId);
     return res.redirect(`/whale/orders/${req.params.id}?confirmed=1`);
   } catch (error) {
-    return res.status(400).render('error', {
-      title: 'Error',
-      message: error.message
-    });
+    logger.error('Failed to confirm delivery', { orderId: req.params.id, userId: req.session.userId, error: error.message });
+    return res.redirect(`/whale/orders/${req.params.id}?error=confirm-delivery`);
   }
 });
 
@@ -780,10 +774,8 @@ router.post('/orders/:id/cancel', requireAuth, async (req, res) => {
     await svc.cancelOrder(req.params.id, req.session.userId, reason);
     return res.redirect(`/whale/orders/${req.params.id}`);
   } catch (error) {
-    return res.status(400).render('error', {
-      title: 'Error',
-      message: error.message
-    });
+    logger.error('Failed to cancel order', { orderId: req.params.id, userId: req.session.userId, error: error.message });
+    return res.redirect(`/whale/orders/${req.params.id}?error=cancel`);
   }
 });
 
@@ -798,10 +790,8 @@ router.post('/orders/:id/review', requireAuth, async (req, res) => {
     });
     return res.redirect(`/whale/orders/${req.params.id}?reviewed=1`);
   } catch (error) {
-    return res.status(400).render('error', {
-      title: 'Error',
-      message: error.message
-    });
+    logger.error('Failed to submit review', { orderId: req.params.id, userId: req.session.userId, error: error.message });
+    return res.redirect(`/whale/orders/${req.params.id}?error=review`);
   }
 });
 
@@ -821,9 +811,10 @@ router.get('/my-listings', requireAuth, async (req, res) => {
       csrfToken: req.csrfToken()
     });
   } catch (error) {
+    logger.error('Failed to load my listings', { userId: req.session.userId, error: error.message });
     return res.status(500).render('error', {
       title: 'Server Error',
-      message: error.message
+      message: 'Failed to load listings'
     });
   }
 });
@@ -837,9 +828,10 @@ router.get('/dashboard', requireAuth, async (req, res) => {
       csrfToken: req.csrfToken()
     });
   } catch (error) {
+    logger.error('Failed to load dashboard', { userId: req.session.userId, error: error.message });
     return res.status(500).render('error', {
       title: 'Server Error',
-      message: error.message
+      message: 'Failed to load dashboard'
     });
   }
 });
@@ -853,9 +845,10 @@ router.get('/saved', requireAuth, async (req, res) => {
       csrfToken: req.csrfToken()
     });
   } catch (error) {
+    logger.error('Failed to load saved listings', { userId: req.session.userId, error: error.message });
     return res.status(500).render('error', {
       title: 'Server Error',
-      message: error.message
+      message: 'Failed to load saved listings'
     });
   }
 });
@@ -892,9 +885,10 @@ router.get('/seller/:username', optionalAuth, async (req, res) => {
       reviews
     });
   } catch (error) {
+    logger.error('Failed to load seller profile', { username: req.params.username, error: error.message });
     return res.status(500).render('error', {
       title: 'Server Error',
-      message: error.message
+      message: 'Failed to load seller profile'
     });
   }
 });

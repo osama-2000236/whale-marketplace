@@ -17,7 +17,7 @@
       <svg class="logo-mark" width="30" height="30" viewBox="0 0 56 56" fill="none" aria-hidden="true">
         <ellipse cx="26" cy="30" rx="18" ry="13" fill="var(--c-ocean)"/>
         <ellipse cx="16" cy="26" rx="10" ry="9" fill="var(--c-ocean)"/>
-        <circle cx="13" cy="24" r="2.5" fill="white"/>
+        <circle cx="13" cy="24" r="2.5" fill="var(--ui-surface-1, #fff)"/>
         <circle cx="13.8" cy="23.2" r="1" fill="var(--c-deep)"/>
         <path d="M42 32 Q50 24 52 30 Q48 34 44 35 Z" fill="var(--c-wave)"/>
         <path d="M42 34 Q50 42 52 37 Q48 33 44 32 Z" fill="var(--c-wave)"/>
@@ -56,7 +56,7 @@
           </button>
         </form>
 
-        <form action="/prefs/lang" method="POST" style="display:inline;">
+        <form action="/prefs/lang" method="POST" class="nav-lang-form">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <input type="hidden" name="lang" value="<%= lang === 'ar' ? 'en' : 'ar' %>">
           <button type="submit" class="nav-lang-btn" aria-label="<%= lang==='ar' ? 'Switch to English' : 'التبديل إلى العربية' %>">
@@ -124,7 +124,7 @@
               <div class="av-name"><%= navUser.username %></div>
               <div class="av-email"><%= navUser.email %></div>
               <% if (isPro) { %>
-                <span class="badge badge-teal" style="margin-top:6px;font-size:10px">⚡ Pro</span>
+                <span class="badge badge-teal whale-mt-xs">⚡ Pro</span>
               <% } else { %>
                 <a href="/upgrade" class="av-upgrade"><%= t('nav.upgrade') %> →</a>
               <% } %>
@@ -135,7 +135,7 @@
             <a href="/whale/saved" class="av-link" role="menuitem">♡ <%= t('nav.saved') %></a>
             <a href="/whale/dashboard" class="av-link" role="menuitem">📊 <%= t('nav.dashboard') %></a>
             <div class="av-divider" role="separator"></div>
-            <form action="/auth/logout" method="POST" style="margin:0">
+            <form action="/auth/logout" method="POST" class="av-logout-form">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button type="submit" class="av-link av-logout" role="menuitem"><%= t('nav.logout') %></button>
             </form>

@@ -12,9 +12,61 @@ const {
 const referralService = require('../services/referralService');
 const emailService = require('../services/emailService');
 const { upload, storeOneFile } = require('../utils/upload');
+const { validate, registerSchema, loginSchema } = require('../lib/validation');
+const logger = require('../lib/logger');
 
 const webRouter = express.Router();
 const apiRouter = express.Router();
+
+// ── Account-level brute-force protection ──────────────────────────────
+// Tracks failed login attempts per account identifier (email/username).
+// After 5 failed attempts within 15 minutes, the account is temporarily locked.
+const loginAttemptsByAccount = new Map();
+const ACCOUNT_MAX_ATTEMPTS = 5;
+const ACCOUNT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function recordFailedLogin(identifier) {
+  const key = String(identifier || '').trim().toLowerCase();
+  if (!key) return;
+  const now = Date.now();
+  const record = loginAttemptsByAccount.get(key) || { attempts: 0, firstAttempt: now };
+  // Reset window if expired
+  if (now - record.firstAttempt > ACCOUNT_WINDOW_MS) {
+    record.attempts = 0;
+    record.firstAttempt = now;
+  }
+  record.attempts += 1;
+  loginAttemptsByAccount.set(key, record);
+}
+
+function clearFailedLogins(identifier) {
+  const key = String(identifier || '').trim().toLowerCase();
+  if (key) loginAttemptsByAccount.delete(key);
+}
+
+function isAccountLocked(identifier) {
+  const key = String(identifier || '').trim().toLowerCase();
+  if (!key) return false;
+  const record = loginAttemptsByAccount.get(key);
+  if (!record) return false;
+  // Reset window if expired
+  if (Date.now() - record.firstAttempt > ACCOUNT_WINDOW_MS) {
+    loginAttemptsByAccount.delete(key);
+    return false;
+  }
+  return record.attempts >= ACCOUNT_MAX_ATTEMPTS;
+}
+
+// Periodically clean up stale entries (every 10 minutes)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of loginAttemptsByAccount) {
+    if (now - record.firstAttempt > ACCOUNT_WINDOW_MS) {
+      loginAttemptsByAccount.delete(key);
+    }
+  }
+}, 10 * 60 * 1000).unref();
+
 const authWriteLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'test' ? 1000 : 25,
@@ -77,11 +129,26 @@ async function finalizeOAuthLogin(req, res) {
 
 async function handleRegister(req, res, isApi) {
   try {
+    // Validate input with Zod
+    const validation = validate(registerSchema, req.body);
+    if (!validation.success) {
+      const errorMsg = validation.firstError;
+      if (isApi) return res.status(400).json({ error: errorMsg, errors: validation.errors });
+      return res.status(400).render('auth/register', {
+        title: `${res.locals.t('register.title')} | Whale`,
+        error: errorMsg,
+        formData: { username: req.body.username, email: req.body.email, ref: req.body.ref || '' },
+        oauthEnabled: getOauthEnabled(),
+        query: req.query || {}
+      });
+    }
+    const { username, email, password } = validation.data;
+
     const avatar = req.file ? await storeOneFile(req.file, 'uploads/avatars') : null;
     const user = await registerUser({
-      username: req.body.username,
-      email: req.body.email,
-      password: req.body.password,
+      username,
+      email,
+      password,
       avatar
     });
 
@@ -137,8 +204,37 @@ async function handleRegister(req, res, isApi) {
 }
 
 async function handleLogin(req, res, isApi) {
+  // Validate input with Zod
+  const validation = validate(loginSchema, req.body);
+  if (!validation.success) {
+    const errorMsg = validation.firstError;
+    if (isApi) return res.status(400).json({ error: errorMsg, errors: validation.errors });
+    return res.status(400).render('auth/login', {
+      title: `${res.locals.t('login.title')} | Whale`,
+      error: errorMsg,
+      oauthEnabled: getOauthEnabled(),
+      query: req.query || {}
+    });
+  }
+  const identifier = validation.data.identifier;
+
+  // Check account-level lockout before attempting authentication
+  if (isAccountLocked(identifier)) {
+    const msg = 'Too many failed login attempts. Please try again later.';
+    if (isApi) {
+      return res.status(429).json({ error: msg });
+    }
+    return res.status(429).render('auth/login', {
+      title: `${res.locals.t('login.title')} | Whale`,
+      error: msg,
+      oauthEnabled: getOauthEnabled(),
+      query: req.query || {}
+    });
+  }
+
   try {
-    const user = await authenticateUser(req.body.identifier || req.body.email || req.body.username, req.body.password);
+    const user = await authenticateUser(identifier, req.body.password);
+    clearFailedLogins(identifier);
     setUserSession(req, user);
 
     if (isApi) {
@@ -149,6 +245,8 @@ async function handleLogin(req, res, isApi) {
     delete req.session.returnTo;
     return res.redirect(returnTo);
   } catch (error) {
+    recordFailedLogin(identifier);
+
     if (isApi) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

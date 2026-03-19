@@ -63,7 +63,7 @@ html.dark {
   --c-mist: #4A6072;
   --c-border: #30363D;
   --c-border2: #48535E;
-  --c-input: #0D1117;
+  --c-input: #1c2f42;
   --c-nav: rgba(13,17,23,.95);
   --shadow-sm: 0 1px 4px rgba(0,0,0,.4);
   --shadow-md: 0 4px 20px rgba(0,0,0,.5);
@@ -536,7 +536,7 @@ html[lang="en"] body { font-family: 'Plus Jakarta Sans',sans-serif; }
 .btn-wa { background: var(--c-wa); color: #fff; }
 .btn-wa:hover { filter: brightness(1.08); }
 .btn-danger { background: var(--c-red-lt); color: var(--c-red); border: 1px solid rgba(220,38,38,.25); }
-.btn-danger:hover { background: #FEE2E2; }
+.btn-danger:hover { background: var(--c-red-lt, #FEE2E2); }
 .link { color: var(--c-wave); text-decoration: none; font-weight: 500; }
 .link:hover { text-decoration: underline; }
 
@@ -842,7 +842,7 @@ body {
 }
 
 body.whale-site {
-  background: #F2F7FA;
+  background: var(--c-page, #F2F7FA);
   color: var(--ink);
   font-family: 'Plus Jakarta Sans', 'Tajawal', sans-serif;
   font-size: 14px;
@@ -936,7 +936,7 @@ a:hover {
   align-items: center;
   gap: 8px;
   height: 40px;
-  background: #EFF5FA;
+  background: var(--c-foam, #EFF5FA);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 0 14px;
@@ -1274,7 +1274,7 @@ a:hover {
 }
 
 .btn-danger:hover {
-  background: #ffd8d8;
+  background: var(--c-red-lt, #ffd8d8);
 }
 
 .btn-sm {
@@ -1399,13 +1399,13 @@ a:hover {
 }
 
 .data-table th {
-  background: #f5f9fc;
+  background: var(--c-foam, #f5f9fc);
   color: var(--slate);
   font-weight: 800;
 }
 
 .data-table tr:hover td {
-  background: #f9fcff;
+  background: var(--c-card2, #f9fcff);
 }
 
 /* ───────── Alerts / Toast ───────── */
@@ -1562,7 +1562,7 @@ a:hover {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   display: block;
-  background: #edf5fb;
+  background: var(--c-foam, #edf5fb);
 }
 
 .listing-body {
@@ -1628,6 +1628,12 @@ a:hover {
   border: 1px solid rgba(10, 95, 85, 0.22);
   padding: 1px 6px;
   border-radius: 6px;
+}
+
+html.dark .verified-seller {
+  color: var(--ui-success);
+  background: rgba(59, 208, 179, 0.12);
+  border-color: rgba(59, 208, 179, 0.25);
 }
 
 .badge-sponsored {
@@ -1835,6 +1841,70 @@ a:hover {
 .status-pill.free {
   background: #F3F4F6;
   color: #475467;
+}
+
+/* Dark mode status badges — use semi-transparent versions of the colors */
+html.dark .status-PENDING,
+html.dark .s-pending {
+  background: rgba(254, 243, 199, 0.12);
+  color: #f4b64c;
+}
+
+html.dark .status-SELLER_CONFIRMED,
+html.dark .s-confirmed {
+  background: rgba(59, 130, 246, 0.12);
+  color: #8eb8ff;
+}
+
+html.dark .status-SHIPPED,
+html.dark .s-shipped {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+}
+
+html.dark .status-IN_TRANSIT {
+  background: rgba(99, 102, 241, 0.1);
+  color: #a5b4fc;
+}
+
+html.dark .status-DELIVERED,
+html.dark .s-delivered,
+html.dark .status-COMPLETED,
+html.dark .s-completed {
+  background: rgba(34, 197, 94, 0.12);
+  color: #3bd0b3;
+}
+
+html.dark .status-CANCELLED,
+html.dark .s-cancelled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ff7b87;
+}
+
+html.dark .status-DISPUTED,
+html.dark .s-disputed {
+  background: rgba(244, 63, 94, 0.12);
+  color: #ff7b87;
+}
+
+html.dark .status-pill.active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #3bd0b3;
+}
+
+html.dark .status-pill.trial {
+  background: rgba(59, 130, 246, 0.12);
+  color: #8eb8ff;
+}
+
+html.dark .status-pill.expired {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ff7b87;
+}
+
+html.dark .status-pill.free {
+  background: rgba(156, 163, 175, 0.12);
+  color: #89a2b7;
 }
 
 .timeline {

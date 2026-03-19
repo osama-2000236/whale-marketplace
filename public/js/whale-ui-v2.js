@@ -51,18 +51,11 @@
       const nextThemeInput = form.querySelector('[data-theme-next]');
       const nextTheme = nextThemeInput?.value === 'dark' ? 'dark' : 'light';
 
-      if (!reducedMotion && document.startViewTransition) {
-        body.classList.add('whale-theme-transitioning');
-        await document.startViewTransition(async () => {
-          setTheme(nextTheme);
-          await nextFrame();
-        }).finished.catch(() => {});
-        window.setTimeout(() => body.classList.remove('whale-theme-transitioning'), 350);
-      } else {
-        body.classList.add('whale-theme-transitioning');
-        setTheme(nextTheme);
-        window.setTimeout(() => body.classList.remove('whale-theme-transitioning'), 350);
-      }
+      // Apply transition class, switch theme, then clean up.
+      // Keep it simple and fast — no View Transitions API overhead.
+      body.classList.add('whale-theme-transitioning');
+      setTheme(nextTheme);
+      window.setTimeout(() => body.classList.remove('whale-theme-transitioning'), 320);
 
       await persistTheme(nextTheme);
     });

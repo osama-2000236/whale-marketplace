@@ -118,6 +118,7 @@
     --c-border: var(--ui-border-soft);
     --c-border2: var(--ui-border-strong);
     --c-input: var(--ui-surface-1);
+    --c-input-dark: var(--ui-surface-2);
     --c-nav: var(--ui-navbar-bg);
   }
 
@@ -215,7 +216,8 @@
     --c-mist: var(--ui-ink-soft);
     --c-border: var(--ui-border-soft);
     --c-border2: var(--ui-border-strong);
-    --c-input: var(--ui-surface-1);
+    --c-input: #1c2f42;
+    --c-input-dark: #213a50;
     --c-nav: var(--ui-navbar-bg);
   }
 }
@@ -247,11 +249,26 @@
     line-height: var(--lh-arabic);
   }
 
-  body.whale-theme-transitioning,
-  body.whale-theme-transitioning *,
-  body.whale-theme-transitioning *::before,
-  body.whale-theme-transitioning *::after {
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, fill 0.3s ease, stroke 0.3s ease !important;
+  /* Theme transition — only animate key surfaces, not every element.
+     This is MUCH more performant than transitioning * selectors. */
+  body.whale-theme-transitioning {
+    transition: background-color 0.25s ease, color 0.25s ease !important;
+  }
+  body.whale-theme-transitioning .navbar,
+  body.whale-theme-transitioning .auth-card,
+  body.whale-theme-transitioning .whale-listing-card,
+  body.whale-theme-transitioning .card,
+  body.whale-theme-transitioning .panel-card,
+  body.whale-theme-transitioning .site-footer,
+  body.whale-theme-transitioning .mobile-nav,
+  body.whale-theme-transitioning .btn,
+  body.whale-theme-transitioning .oauth-btn,
+  body.whale-theme-transitioning .alert,
+  body.whale-theme-transitioning .whale-hero,
+  body.whale-theme-transitioning input,
+  body.whale-theme-transitioning select,
+  body.whale-theme-transitioning textarea {
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease, box-shadow 0.2s ease !important;
   }
 
   body.whale-theme-fade {
@@ -2990,43 +3007,99 @@
   }
 
   html.dark .auth-card {
-    background: color-mix(in srgb, var(--ui-surface-1) 80%, transparent);
+    background: var(--ui-surface-2);
     border-color: var(--ui-border-strong);
     box-shadow:
       var(--ui-shadow-lift),
       inset 0 1px 0 color-mix(in srgb, var(--ui-border-soft) 40%, transparent);
   }
 
-  /* Auth form inputs enhanced */
+  /* ── GLOBAL DARK MODE INPUT FIX ──
+     In dark mode, inputs must be visually distinct from their container.
+     We use --c-input-dark (#1e2d3e) which is lighter than surface-1/surface-2. */
+
   .auth-form input,
   .auth-form select,
-  .auth-form textarea {
-    background: color-mix(in srgb, var(--ui-surface-0) 60%, var(--ui-surface-1));
+  .auth-form textarea,
+  .field input,
+  .field select,
+  .field textarea,
+  .search-input {
+    background: var(--c-input);
     border: 1.5px solid var(--ui-border-soft);
     border-radius: var(--ui-radius-md);
     padding: 13px 14px;
     font-size: var(--fs-body);
     color: var(--ui-ink);
+    font-family: inherit;
+    outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    width: 100%;
+  }
+
+  html.dark .auth-form input,
+  html.dark .auth-form select,
+  html.dark .auth-form textarea,
+  html.dark .field input,
+  html.dark .field select,
+  html.dark .field textarea,
+  html.dark .search-input,
+  html.dark .whale-field input,
+  html.dark .whale-field select,
+  html.dark .whale-field textarea {
+    background: var(--c-input-dark);
+    border-color: var(--ui-border-strong);
+    color: var(--ui-ink);
   }
 
   .auth-form input:focus,
   .auth-form select:focus,
-  .auth-form textarea:focus {
+  .auth-form textarea:focus,
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
     border-color: var(--ui-brand);
     box-shadow: 0 0 0 4px var(--ui-ring);
     background: var(--ui-surface-1);
     outline: none;
   }
 
-  .auth-form input::placeholder {
+  html.dark .auth-form input:focus,
+  html.dark .auth-form select:focus,
+  html.dark .auth-form textarea:focus,
+  html.dark .field input:focus,
+  html.dark .field select:focus,
+  html.dark .field textarea:focus,
+  html.dark .whale-field input:focus,
+  html.dark .whale-field select:focus,
+  html.dark .whale-field textarea:focus {
+    background: #243548;
+    border-color: var(--ui-brand);
+    box-shadow: 0 0 0 4px var(--ui-ring);
+  }
+
+  .auth-form input::placeholder,
+  .field input::placeholder,
+  .search-input::placeholder {
     color: var(--ui-ink-disabled);
   }
 
-  .auth-form label {
+  html.dark .auth-form input::placeholder,
+  html.dark .field input::placeholder,
+  html.dark .search-input::placeholder {
+    color: var(--ui-ink-soft);
+  }
+
+  .auth-form label,
+  .field label {
     color: var(--ui-ink-muted);
     font-size: var(--fs-body-sm);
     font-weight: 600;
+  }
+
+  html.dark .auth-form label,
+  html.dark .field label {
+    color: var(--ui-ink-muted);
   }
 
   /* Auth title */
@@ -3058,6 +3131,237 @@
   /* Auth divider */
   .auth-divider {
     color: var(--ui-ink-disabled);
+  }
+
+  /* ── GLOBAL DARK MODE COMPREHENSIVE FIX ──
+     All components that were missing dark mode support */
+
+  /* All forms / all pages — inputs must always be readable */
+  html.dark input[type="text"],
+  html.dark input[type="email"],
+  html.dark input[type="password"],
+  html.dark input[type="tel"],
+  html.dark input[type="number"],
+  html.dark input[type="search"],
+  html.dark input[type="url"],
+  html.dark textarea,
+  html.dark select {
+    background: var(--c-input-dark) !important;
+    border-color: var(--ui-border-strong) !important;
+    color: var(--ui-ink) !important;
+  }
+
+  html.dark input[type="text"]:focus,
+  html.dark input[type="email"]:focus,
+  html.dark input[type="password"]:focus,
+  html.dark input[type="tel"]:focus,
+  html.dark input[type="number"]:focus,
+  html.dark input[type="search"]:focus,
+  html.dark input[type="url"]:focus,
+  html.dark textarea:focus,
+  html.dark select:focus {
+    background: #243548 !important;
+    border-color: var(--ui-brand) !important;
+    box-shadow: 0 0 0 4px var(--ui-ring) !important;
+    outline: none;
+  }
+
+  html.dark input::placeholder,
+  html.dark textarea::placeholder {
+    color: var(--ui-ink-soft) !important;
+  }
+
+  /* Cards, panels, and containers */
+  html.dark .card,
+  html.dark .panel-card,
+  html.dark .whale-listing-card {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+  }
+
+  /* All text elements must inherit proper color */
+  html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+    color: var(--ui-ink);
+  }
+
+  html.dark p, html.dark span, html.dark div, html.dark label, html.dark li {
+    color: inherit;
+  }
+
+  html.dark .muted {
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark a {
+    color: var(--ui-brand);
+  }
+
+  html.dark a:hover {
+    color: var(--ui-brand-glow);
+  }
+
+  /* Buttons in dark mode */
+  html.dark .btn-primary {
+    background: var(--ui-brand);
+    color: #ffffff;
+  }
+
+  html.dark .btn-primary:hover {
+    background: var(--ui-brand-glow);
+  }
+
+  html.dark .btn-danger {
+    background: var(--ui-danger);
+    color: #ffffff;
+  }
+
+  html.dark .btn-ghost,
+  html.dark .nav-btn-ghost {
+    color: var(--ui-ink);
+    border-color: var(--ui-border-strong);
+  }
+
+  html.dark .btn-ghost:hover,
+  html.dark .nav-btn-ghost:hover {
+    background: var(--ui-surface-2);
+  }
+
+  /* Alerts in dark mode */
+  html.dark .alert {
+    border-color: var(--ui-border-strong);
+  }
+
+  html.dark .alert-err {
+    background: var(--ui-danger-soft);
+    color: var(--ui-danger);
+    border-color: color-mix(in srgb, var(--ui-danger) 30%, transparent);
+  }
+
+  html.dark .alert-ok {
+    background: var(--ui-success-soft);
+    color: var(--ui-success);
+    border-color: color-mix(in srgb, var(--ui-success) 30%, transparent);
+  }
+
+  /* OAuth buttons in dark mode */
+  html.dark .oauth-btn {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-strong);
+    color: var(--ui-ink);
+  }
+
+  html.dark .oauth-btn:hover {
+    background: var(--ui-surface-3);
+    border-color: var(--ui-brand);
+  }
+
+  /* Footer in dark mode */
+  html.dark .site-footer {
+    background: var(--ui-surface-1);
+    border-top-color: var(--ui-border-soft);
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .footer-col a {
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .footer-col a:hover {
+    color: var(--ui-brand);
+  }
+
+  html.dark .footer-brand-name {
+    color: var(--ui-ink);
+  }
+
+  /* Listing body text */
+  html.dark .listing-title {
+    color: var(--ui-ink);
+  }
+
+  html.dark .listing-price {
+    color: var(--ui-brand);
+  }
+
+  html.dark .listing-location {
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .listing-body {
+    color: var(--ui-ink);
+  }
+
+  /* Page title / headings */
+  html.dark .page-title {
+    color: var(--ui-ink);
+  }
+
+  /* Breadcrumb */
+  html.dark .whale-breadcrumb {
+    color: var(--ui-ink-muted);
+  }
+
+  /* Whale hero section */
+  html.dark .whale-hero {
+    background: var(--ui-gradient-hero);
+  }
+
+  /* Condition / status pills */
+  html.dark .whale-condition-pill {
+    background: color-mix(in srgb, var(--ui-surface-0) 80%, transparent);
+    color: var(--ui-ink-muted);
+    border-color: var(--ui-border-soft);
+  }
+
+  html.dark .negotiable-badge {
+    background: var(--ui-success-soft);
+    color: var(--ui-success);
+  }
+
+  /* Category pills / filter chips */
+  html.dark .category-pill,
+  html.dark .filter-chip {
+    background: var(--ui-surface-2);
+    border-color: var(--ui-border-soft);
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .category-pill:hover,
+  html.dark .filter-chip:hover,
+  html.dark .category-pill.active,
+  html.dark .filter-chip.active {
+    background: var(--ui-brand-soft);
+    border-color: var(--ui-brand);
+    color: var(--ui-brand);
+  }
+
+  /* Seller row / avatar */
+  html.dark .whale-seller-name {
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .whale-seller-avatar {
+    background: var(--ui-surface-3);
+    color: var(--ui-ink);
+  }
+
+  /* Listing detail page */
+  html.dark .whale-detail-price {
+    color: var(--ui-brand);
+  }
+
+  html.dark .whale-detail-title {
+    color: var(--ui-ink);
+  }
+
+  html.dark .whale-detail-desc {
+    color: var(--ui-ink-muted);
+  }
+
+  /* Urgency line */
+  html.dark .whale-urgency-line {
+    color: var(--ui-danger);
+    background: var(--ui-danger-soft);
   }
 
   /* OAuth buttons dark mode */
@@ -3235,5 +3539,489 @@
   ::selection {
     background: color-mix(in srgb, var(--ui-brand) 28%, transparent);
     color: var(--ui-ink);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     PHASE 3: MISSING UTILITIES & LAYOUT FIXES
+     ══════════════════════════════════════════════════════════ */
+
+  /* ── Extra spacing utilities ── */
+  .whale-mt-xs { margin-top: 6px; }
+  .whale-mb-sm { margin-bottom: 12px; }
+  .whale-mb-md { margin-bottom: 16px; }
+  .whale-mb-lg { margin-bottom: 24px; }
+
+  /* ── Navbar inline form helpers ── */
+  .nav-lang-form { display: inline; }
+  .av-logout-form { margin: 0; }
+
+  /* ── Checkout form layout ── */
+  .form-group-wide { grid-column: span 2; }
+
+  /* ── Pro badge in avatar menu ── */
+  .av-menu .badge.whale-mt-xs {
+    font-size: 10px;
+    display: inline-block;
+  }
+
+  /* ── Cart layout responsive ── */
+  .whale-cart-layout {
+    display: grid;
+    gap: 20px;
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .whale-cart-layout {
+      grid-template-columns: 1fr 360px;
+    }
+  }
+
+  /* ── Cart item layout ── */
+  .whale-cart-item {
+    display: grid;
+    grid-template-columns: 80px 1fr auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .whale-cart-item-image {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: var(--ui-radius-md);
+  }
+
+  .whale-refund-note {
+    font-size: var(--fs-body-sm);
+    margin-top: 8px;
+  }
+
+  /* ── Checkout steps dark mode ── */
+  html.dark .checkout-step {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .checkout-step.active {
+    background: color-mix(in srgb, var(--ui-brand) 14%, var(--ui-surface-1));
+    border-color: var(--ui-brand);
+    color: var(--ui-brand);
+  }
+
+  html.dark .checkout-step.done {
+    background: color-mix(in srgb, var(--ui-success) 10%, var(--ui-surface-1));
+    border-color: var(--ui-success);
+    color: var(--ui-success);
+  }
+
+  /* ── Order detail dark mode ── */
+  html.dark .panel-card {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+  }
+
+  /* ── Dashboard stats dark mode ── */
+  html.dark .whale-dashboard-stat {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+  }
+
+  /* ── Seller profile dark mode ── */
+  html.dark .whale-seller-card {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+  }
+
+  /* ── Empty state dark mode ── */
+  html.dark .whale-empty-state {
+    color: var(--ui-ink-muted);
+  }
+
+  /* ── Review card dark mode ── */
+  html.dark .review-card {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+  }
+
+  /* ── Status badges dark mode ── */
+  html.dark .badge {
+    background: color-mix(in srgb, var(--ui-surface-1) 80%, transparent);
+    border-color: var(--ui-border-soft);
+  }
+
+  /* ── Trust box dark mode ── */
+  html.dark .whale-trust-box {
+    background: color-mix(in srgb, var(--ui-brand-soft) 15%, var(--ui-surface-1));
+    border-color: color-mix(in srgb, var(--ui-brand) 15%, var(--ui-border-soft));
+  }
+
+  /* ── Navigation avatar menu dark mode ── */
+  html.dark .av-menu {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  html.dark .av-menu-header {
+    border-bottom-color: var(--ui-border-soft);
+    background: color-mix(in srgb, var(--ui-surface-0) 60%, var(--ui-surface-1));
+  }
+
+  html.dark .av-link:hover {
+    background: color-mix(in srgb, var(--ui-brand-soft) 20%, transparent);
+  }
+
+  /* ── Notification panel dark mode ── */
+  html.dark .whale-notification-panel {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  html.dark .whale-notification-item.is-unread {
+    background: color-mix(in srgb, var(--ui-brand-soft) 10%, var(--ui-surface-1));
+  }
+
+  html.dark .whale-notification-footer {
+    border-top-color: var(--ui-border-soft);
+    color: var(--ui-brand);
+  }
+
+  /* ── Mobile nav dark mode ── */
+  html.dark .mob-nav {
+    background: var(--ui-surface-1);
+    border-top-color: var(--ui-border-soft);
+  }
+
+  html.dark .mob-link {
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .mob-link.active {
+    color: var(--ui-brand);
+  }
+
+  html.dark .mob-sell-circle {
+    background: var(--ui-brand);
+    color: var(--ui-surface-1);
+  }
+
+  /* ── Filter drawer dark mode ── */
+  html.dark .whale-filter-card {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+  }
+
+  html.dark .filter-option {
+    color: var(--ui-ink);
+  }
+
+  html.dark .filter-option:hover {
+    background: color-mix(in srgb, var(--ui-brand-soft) 15%, transparent);
+  }
+
+  /* ── Search input dark mode ── */
+  html.dark .nav-search {
+    background: color-mix(in srgb, var(--ui-surface-0) 60%, var(--ui-surface-1));
+    border-color: var(--ui-border-soft);
+  }
+
+  html.dark .nav-search input {
+    color: var(--ui-ink);
+  }
+
+  html.dark .nav-search input::placeholder {
+    color: var(--ui-ink-disabled);
+  }
+
+  /* ── Price & urgency dark mode ── */
+  html.dark .whale-urgency-line {
+    color: var(--ui-danger);
+  }
+
+  /* ── Whale escrow note ── */
+  .whale-escrow-copy {
+    font-size: var(--fs-body-sm);
+  }
+
+  /* ── Payment trust logos dark mode ── */
+  html.dark .whale-payment-trust {
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .whale-pay-logo {
+    background: var(--ui-surface-0);
+    border-color: var(--ui-border-soft);
+    color: var(--ui-ink-muted);
+  }
+
+  /* ── Protection badge dark mode ── */
+  html.dark .whale-protection-badge {
+    background: color-mix(in srgb, var(--ui-brand-soft) 15%, var(--ui-surface-1));
+    color: var(--ui-brand);
+    border-color: color-mix(in srgb, var(--ui-brand) 20%, transparent);
+  }
+
+  /* ── Summary lines dark mode ── */
+  html.dark .whale-summary-line {
+    border-bottom-color: var(--ui-border-soft);
+  }
+
+  html.dark .whale-divider {
+    border-color: var(--ui-border-soft);
+  }
+
+  /* ── Saved page listing grid ── */
+  .whale-saved-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+  }
+
+  /* ── Orders table dark mode ── */
+  html.dark .whale-order-row {
+    background: var(--ui-surface-1);
+    border-color: var(--ui-border-soft);
+  }
+
+  html.dark .whale-order-row:hover {
+    background: color-mix(in srgb, var(--ui-brand-soft) 10%, var(--ui-surface-1));
+  }
+
+  /* ── Tab navigation dark mode ── */
+  html.dark .whale-tabs .whale-tab {
+    color: var(--ui-ink-muted);
+  }
+
+  html.dark .whale-tabs .whale-tab.active {
+    color: var(--ui-brand);
+    border-bottom-color: var(--ui-brand);
+  }
+
+  /* ── Content visibility optimization ── */
+  .whale-listing-card {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+  }
+
+  /* ── Error & 404 pages ── */
+  .whale-error-page {
+    display: flex;
+    align-items: center;
+    min-height: 60vh;
+  }
+
+  .whale-error-container {
+    text-align: center;
+    max-width: 700px;
+  }
+
+  .whale-error-card {
+    padding: 2rem;
+  }
+
+  .whale-error-icon {
+    font-size: 4rem;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+
+  .whale-error-heading {
+    margin: 0;
+    color: var(--ui-ink);
+  }
+
+  .whale-error-404 {
+    font-size: 3rem;
+  }
+
+  .whale-error-message {
+    font-size: 1rem;
+    margin: 12px 0 18px;
+  }
+
+  /* ── OAuth Disabled State ── */
+  .oauth-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+    filter: grayscale(0.5);
+  }
+
+  /* ── Input Focus Animation ── */
+  .auth-form input,
+  .field input,
+  .field select,
+  .field textarea {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, transform 0.15s ease;
+  }
+
+  .auth-form input:focus,
+  .field input:focus {
+    transform: translateY(-1px);
+  }
+
+  /* ── Button Press Effect ── */
+  .btn {
+    transition: background-color 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+    will-change: transform;
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn-primary {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255,255,255,0.3) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+  }
+
+  .btn-primary:active::after {
+    opacity: 1;
+    transition: opacity 0s;
+  }
+
+  /* ── Auth Card Entry Animation ── */
+  @keyframes whale-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .auth-card {
+    animation: whale-card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* ── Form Label Float-up on Focus ── */
+  .auth-form label {
+    transition: color 0.2s ease, transform 0.2s ease;
+  }
+
+  /* ── Link Hover Underline Animation ── */
+  .auth-switch a {
+    position: relative;
+    text-decoration: none;
+  }
+
+  .auth-switch a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1.5px;
+    background: var(--ui-brand);
+    transition: width 0.25s ease;
+  }
+
+  .auth-switch a:hover::after {
+    width: 100%;
+  }
+
+  /* ── OAuth Button Hover Glow ── */
+  .oauth-btn:not(.oauth-disabled) {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .oauth-btn:not(.oauth-disabled):hover {
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--ui-brand) 15%, transparent);
+  }
+
+  /* ── Toast Entrance Animation Enhancement ── */
+  @keyframes whale-toast-slide {
+    from {
+      opacity: 0;
+      transform: translateX(100%) scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  .whale-toast {
+    animation: whale-toast-slide 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* ── Listing Card Hover Micro-interaction ── */
+  .listing-card,
+  .whale-listing-card {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .listing-card:hover,
+    .whale-listing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--ui-shadow-lift);
+    }
+  }
+
+  /* ── Page Transition ── */
+  @keyframes whale-page-enter {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .page-section {
+    animation: whale-page-enter 0.3s ease both;
+  }
+
+  /* ── Smooth scroll indicator ── */
+  html {
+    scroll-behavior: smooth;
+    scrollbar-color: var(--ui-border-strong) transparent;
+    scrollbar-width: thin;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--ui-border-strong);
+    border-radius: 999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--ui-ink-soft);
+  }
+
+  /* ── Print styles ── */
+  @media print {
+    .navbar, .mob-nav, .whale-filter-drawer, .whale-pull-indicator,
+    .nav-notification-shell, .theme-toggle, .nav-lang-form,
+    #toast-wrap, .whale-save-trigger { display: none !important; }
+
+    .page-section { padding: 0; }
+
+    .listing-card, .card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
   }
 }
