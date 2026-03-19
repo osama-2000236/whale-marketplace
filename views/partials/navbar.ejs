@@ -192,9 +192,11 @@
     button.setAttribute('aria-expanded', String(open));
   }
 
-  document.addEventListener('click', function () {
+  document.addEventListener('click', function (e) {
     var menu = document.getElementById('av-menu');
     if (!menu) return;
+    // Don't close the menu if clicking inside it (allows logout form to submit)
+    if (menu.contains(e.target)) return;
     menu.classList.remove('open');
   });
 </script>
