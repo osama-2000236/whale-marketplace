@@ -2437,7 +2437,7 @@ html.dark .status-pill.free {
 .navbar{height:58px !important;} .badge{font-size:12px !important;} .listing-meta,.l-meta{font-size:12px !important;} .price-range{display:grid !important;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) !important;gap:8px !important;align-items:center !important;} .price-range input{width:100% !important;min-width:0 !important;box-sizing:border-box !important;} .filters-panel{overflow:hidden;} .mob-nav{height:60px !important;} .btn{min-height:36px;} @media (max-width:768px){.btn{min-height:44px;}}
 
 
-.cat-chip-row{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding-bottom:4px;max-width:100%;} .cat-chip-row .cat-chip{flex:0 0 auto;} @media (max-width:768px){.navbar .nav-right{display:none !important;}}
+.cat-chip-row{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding-bottom:4px;max-width:100%;} .cat-chip-row .cat-chip{flex:0 0 auto;} @media (max-width:768px){.navbar .nav-right{gap:4px;} .navbar .nav-right .nav-search,.navbar .nav-right .nav-links{display:none;}}
 
 
 @font-face{font-family:'Plus Jakarta Sans';src:local('Plus Jakarta Sans'),local('Segoe UI'),local('Arial');font-weight:100 900;font-style:normal;font-display:swap;} @font-face{font-family:'Tajawal';src:local('Tajawal'),local('Arial');font-weight:100 900;font-style:normal;font-display:swap;}
