@@ -1,4 +1,4 @@
-require('dotenv').config();
+try { require('dotenv').config(); } catch (_) { /* dotenv not available in production — env vars injected by platform */ }
 
 const express = require('express');
 const path = require('path');
