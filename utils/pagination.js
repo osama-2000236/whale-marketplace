@@ -15,7 +15,7 @@ function buildCursorPage(items, take) {
   const hasMore = items.length > take;
   const trimmed = hasMore ? items.slice(0, take) : items;
   const nextCursor = hasMore ? trimmed[trimmed.length - 1].id : null;
-  return { items: trimmed, hasMore, nextCursor };
+  return { data: trimmed, hasMore, nextCursor };
 }
 
 module.exports = { parseLimit, createCursorResponse, buildCursorPage };

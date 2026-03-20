@@ -172,18 +172,19 @@ async function getListingByIdOrSlug(idOrSlug) {
 }
 
 async function incrementViews(listingId) {
-  await prisma.marketListing.update({ where: { id: listingId }, data: { views: { increment: 1 } } }).catch(() => {});
+  return prisma.marketListing.update({ where: { id: listingId }, data: { views: { increment: 1 } } }).catch(() => {});
 }
 
 async function incrementWaClicks(listingId) {
-  await prisma.marketListing.update({ where: { id: listingId }, data: { waClicks: { increment: 1 } } }).catch(() => {});
+  return prisma.marketListing.update({ where: { id: listingId }, data: { waClicks: { increment: 1 } } }).catch(() => {});
 }
 
 async function createListing(sellerId, data) {
   const { title, titleAr, description, descriptionAr, price, negotiable, condition, images, categoryId, subcategoryId, city, tags, specs, quantity } = data;
 
   if (!title || title.length < 3 || title.length > 200) throw new Error('Title must be 3-200 characters');
-  if (hasDangerousHtml(title) || hasDangerousHtml(description)) throw new Error('Invalid content detected');
+  if (hasDangerousHtml(title)) throw new Error('Invalid title');
+  if (hasDangerousHtml(description)) throw new Error('Invalid description');
   if (!description || description.length < 3) throw new Error('Description must be at least 3 characters');
   const parsedPrice = parseMoney(price);
   if (isNaN(parsedPrice) || parsedPrice < 1 || parsedPrice > 1000000) throw new Error('Price must be 1-1,000,000');
@@ -209,7 +210,7 @@ async function createListing(sellerId, data) {
       categoryId: categoryId || null,
       subcategoryId: subcategoryId || null,
       city,
-      tags: tags || [],
+      tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []),
       specs: specs || null,
       quantity: quantity || 1,
     },
@@ -222,7 +223,7 @@ async function createListing(sellerId, data) {
 async function updateListing(listingId, sellerId, data) {
   const listing = await prisma.marketListing.findUnique({ where: { id: listingId } });
   if (!listing) throw new Error('Listing not found');
-  if (listing.sellerId !== sellerId) throw new Error('Not authorized');
+  if (listing.sellerId !== sellerId) throw new Error('Forbidden');
 
   const updateData = {};
   if (data.title !== undefined) {
@@ -230,12 +231,12 @@ async function updateListing(listingId, sellerId, data) {
     if (hasDangerousHtml(data.title)) throw new Error('Invalid content');
     updateData.title = data.title;
   }
-  if (data.titleAr !== undefined) updateData.titleAr = data.titleAr;
+  if (data.titleAr !== undefined) updateData.titleAr = data.titleAr || null;
   if (data.description !== undefined) {
     if (data.description.length < 3) throw new Error('Description too short');
     updateData.description = data.description;
   }
-  if (data.descriptionAr !== undefined) updateData.descriptionAr = data.descriptionAr;
+  if (data.descriptionAr !== undefined) updateData.descriptionAr = data.descriptionAr || null;
   if (data.price !== undefined) {
     const p = parseMoney(data.price);
     if (isNaN(p) || p < 1 || p > 1000000) throw new Error('Invalid price');
@@ -250,7 +251,7 @@ async function updateListing(listingId, sellerId, data) {
   if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
   if (data.subcategoryId !== undefined) updateData.subcategoryId = data.subcategoryId;
   if (data.city !== undefined) updateData.city = data.city;
-  if (data.tags !== undefined) updateData.tags = data.tags;
+  if (data.tags !== undefined) updateData.tags = Array.isArray(data.tags) ? data.tags : (typeof data.tags === 'string' ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
   if (data.specs !== undefined) updateData.specs = data.specs;
   if (data.quantity !== undefined) updateData.quantity = data.quantity;
 
@@ -260,14 +261,14 @@ async function updateListing(listingId, sellerId, data) {
 async function markSold(listingId, sellerId) {
   const listing = await prisma.marketListing.findUnique({ where: { id: listingId } });
   if (!listing) throw new Error('Listing not found');
-  if (listing.sellerId !== sellerId) throw new Error('Not authorized');
+  if (listing.sellerId !== sellerId) throw new Error('Forbidden');
   return prisma.marketListing.update({ where: { id: listingId }, data: { status: 'SOLD' } });
 }
 
 async function deleteListing(listingId, sellerId, isAdmin = false) {
   const listing = await prisma.marketListing.findUnique({ where: { id: listingId } });
-  if (!listing) throw new Error('Listing not found');
-  if (!isAdmin && listing.sellerId !== sellerId) throw new Error('Not authorized');
+  if (!listing) throw new Error('Not found');
+  if (!isAdmin && listing.sellerId !== sellerId) throw new Error('Forbidden');
   return prisma.marketListing.update({ where: { id: listingId }, data: { status: 'REMOVED' } });
 }
 
@@ -296,7 +297,7 @@ async function createOrder({ listingId, buyerId, quantity = 1, paymentMethod, sh
   const listing = await prisma.marketListing.findUnique({ where: { id: listingId }, include: { seller: true } });
   if (!listing || listing.status !== 'ACTIVE') throw new Error('Listing not available');
   if (listing.sellerId === buyerId) throw new Error('Cannot buy your own listing');
-  if (quantity > listing.quantity) throw new Error('Insufficient quantity');
+  if (quantity > listing.quantity) throw new Error('Requested quantity exceeds stock');
 
   const amount = listing.price * quantity;
   const orderNumber = generateOrderNumber();
@@ -454,13 +455,14 @@ async function createReview(orderId, reviewerId, { rating, title, body }) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error('Order not found');
   if (order.buyerId !== reviewerId) throw new Error('Only the buyer can review');
-  if (order.orderStatus !== 'COMPLETED') throw new Error('Order must be completed');
+  if (order.orderStatus !== 'COMPLETED') throw new Error('Order not completed');
 
   const existing = await prisma.sellerReview.findUnique({ where: { orderId } });
   if (existing) throw new Error('Already reviewed');
 
-  const r = Math.max(1, Math.min(5, Math.round(Number(rating))));
-  if (isNaN(r)) throw new Error('Rating must be 1-5');
+  const rNum = Number(rating);
+  if (isNaN(rNum) || rNum < 1 || rNum > 5) throw new Error('Rating must be between 1 and 5');
+  const r = Math.round(rNum);
 
   const review = await prisma.$transaction(async (tx) => {
     const rev = await tx.sellerReview.create({

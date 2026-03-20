@@ -1,6 +1,6 @@
 class MemoryCache {
-  constructor({ ttl = 60000, maxSize = 500 } = {}) {
-    this.ttl = ttl;
+  constructor({ ttl = 60000, ttlMs, maxSize = 500 } = {}) {
+    this.ttl = ttlMs || ttl;
     this.maxSize = maxSize;
     this.store = new Map();
   }
@@ -39,6 +39,10 @@ class MemoryCache {
     for (const key of this.store.keys()) {
       if (key.startsWith(prefix)) this.store.delete(key);
     }
+  }
+
+  clear() {
+    this.store.clear();
   }
 }
 
