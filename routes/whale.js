@@ -476,14 +476,20 @@ router.get('/my-listings', requireAuth, async (req, res, next) => {
 router.get('/dashboard', requireAuth, async (req, res, next) => {
   try {
     const data = await svc.getSellerDashboard(req.user.id);
-    res.render('whale/dashboard', { title: res.locals.t('whale.dashboard'), ...data });
+    const totalListings = await prisma.marketListing.count({ where: { sellerId: req.user.id } });
+    const totalOrders = await prisma.order.count({ where: { sellerId: req.user.id } });
+    const totalRevenue = (await prisma.order.aggregate({ where: { sellerId: req.user.id, orderStatus: 'DELIVERED' }, _sum: { amount: true } }))._sum.amount || 0;
+    const totalViews = (await prisma.marketListing.aggregate({ where: { sellerId: req.user.id }, _sum: { views: true } }))._sum.views || 0;
+    const avgRating = (await prisma.sellerReview.aggregate({ where: { sellerId: req.user.id }, _avg: { rating: true } }))._avg.rating;
+    const stats = { totalListings, activeListings: data.activeListings, totalOrders, totalRevenue, totalViews, averageRating: avgRating };
+    res.render('whale/dashboard', { title: res.locals.t('whale.dashboard'), stats, ...data });
   } catch (e) { next(e); }
 });
 
 router.get('/saved', requireAuth, async (req, res, next) => {
   try {
-    const saved = await svc.getSavedListings(req.user.id);
-    res.render('whale/saved', { title: res.locals.t('whale.saved'), saved });
+    const listings = await svc.getSavedListings(req.user.id);
+    res.render('whale/saved', { title: res.locals.t('whale.saved'), listings });
   } catch (e) { next(e); }
 });
 

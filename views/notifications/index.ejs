@@ -8,7 +8,7 @@
     <div class="page-header">
       <h1><%= t('notifications.title') %></h1>
       <% if (typeof notifications !== 'undefined' && notifications.length) { %>
-      <form method="post" action="/notifications/mark-all-read" class="inline-form">
+      <form method="post" action="/notifications/read-all" class="inline-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <button type="submit" class="btn btn-outline"><%= t('notifications.mark_all_read') %></button>
       </form>
@@ -18,7 +18,7 @@
     <% if (typeof notifications !== 'undefined' && notifications.length) { %>
     <div class="notifications-list">
       <% notifications.forEach(n => { %>
-      <%- include('../partials/notification-item', { notification: n }) %>
+      <%- include('../partials/notification-item', { n: n }) %>
       <% }) %>
     </div>
     <% } else { %>
