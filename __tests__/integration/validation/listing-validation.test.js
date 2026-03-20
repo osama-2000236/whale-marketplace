@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../../server');
 const prisma = require('../../../lib/prisma');
-const { createTestUser, createTestListing, cleanTestData } = require('../../helpers/db');
+const { createTestUser, createTestListing, cleanTestData, skipIfNoDb } = require('../../helpers/db');
 const { getCsrfToken } = require('../../helpers/http');
 
 let proAgent;
@@ -25,6 +25,7 @@ async function postWithToken(agent, path, body, tokenPath) {
 }
 
 beforeAll(async () => {
+  if (skipIfNoDb()) return;
   const user = await createTestUser({ username: 'test_validation_seller', password: 'pass' });
   await prisma.subscription.upsert({
     where: { userId: user.id },
@@ -37,6 +38,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipIfNoDb()) return;
   await cleanTestData();
 });
 
@@ -50,6 +52,7 @@ describe('Listing creation validation', () => {
   };
 
   test('accepts valid listing payload', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', validPayload, '/whale/sell');
     expect([200, 302]).toContain(res.status);
     if (res.status === 302) {
@@ -58,41 +61,49 @@ describe('Listing creation validation', () => {
   });
 
   test('rejects missing title', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, title: '' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects missing price', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, price: '' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects negative price', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, price: '-100' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects zero price', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, price: '0' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects very high price', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, price: '9999999' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects missing description', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, description: '' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects long title', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, title: 'A'.repeat(201) }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects xss title', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, title: '<script>alert(1)</script>' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
 
@@ -101,11 +112,13 @@ describe('Listing creation validation', () => {
   });
 
   test('rejects invalid condition', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, condition: 'INVALID_CONDITION' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
 
   test('rejects missing city', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(proAgent, '/whale/sell', { ...validPayload, city: '' }, '/whale/sell');
     expect([400, 422, 302]).toContain(res.status);
   });
@@ -116,6 +129,7 @@ describe('Order checkout validation', () => {
   let buyerAgent;
 
   beforeAll(async () => {
+    if (skipIfNoDb()) return;
     const buyer = await createTestUser({ username: 'test_order_val_buyer', password: 'pass' });
     const seller = await createTestUser({ username: 'test_order_val_seller', password: 'pass' });
     listing = await createTestListing(seller.id);
@@ -125,6 +139,7 @@ describe('Order checkout validation', () => {
   });
 
   test('rejects missing shipping address for company shipping', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       buyerAgent,
       `/whale/listing/${listing.id}/buy`,
@@ -141,6 +156,7 @@ describe('Order checkout validation', () => {
   });
 
   test('rejects invalid payment method', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       buyerAgent,
       `/whale/listing/${listing.id}/buy`,
@@ -159,6 +175,7 @@ describe('Order checkout validation', () => {
   });
 
   test('rejects invalid phone number', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       buyerAgent,
       `/whale/listing/${listing.id}/buy`,

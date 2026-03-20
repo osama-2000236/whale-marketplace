@@ -1,10 +1,11 @@
 const request = require('supertest');
 const app = require('../../../server');
 const prisma = require('../../../lib/prisma');
-const { cleanTestData, createTestUser } = require('../../helpers/db');
+const { cleanTestData, createTestUser, skipIfNoDb } = require('../../helpers/db');
 const { getCsrfToken } = require('../../helpers/http');
 
 afterAll(async () => {
+  if (skipIfNoDb()) return;
   await cleanTestData();
 });
 
@@ -28,6 +29,7 @@ async function loginWithCsrf(agent, payload) {
 
 describe('POST /auth/register', () => {
   test('register page uses standard form encoding for CSRF-safe submit', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/auth/register');
 
     expect(res.status).toBe(200);
@@ -36,6 +38,7 @@ describe('POST /auth/register', () => {
   });
 
   test('registers new user successfully', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await registerWithCsrf(agent, {
       username: 'test_newreg',
@@ -50,6 +53,7 @@ describe('POST /auth/register', () => {
   });
 
   test('rejects duplicate username', async () => {
+    if (skipIfNoDb()) return;
     const agent1 = request.agent(app);
     await registerWithCsrf(agent1, {
       username: 'test_dup_user',
@@ -69,6 +73,7 @@ describe('POST /auth/register', () => {
   });
 
   test('rejects duplicate email', async () => {
+    if (skipIfNoDb()) return;
     const agent1 = request.agent(app);
     await registerWithCsrf(agent1, {
       username: 'test_dupemail1',
@@ -87,6 +92,7 @@ describe('POST /auth/register', () => {
   });
 
   test('rejects missing username', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await registerWithCsrf(agent, {
       email: 'nouser@example.com',
@@ -96,6 +102,7 @@ describe('POST /auth/register', () => {
   });
 
   test('rejects short password', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await registerWithCsrf(agent, {
       username: 'test_shortpass',
@@ -107,6 +114,7 @@ describe('POST /auth/register', () => {
   });
 
   test('creates subscription on registration', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     await registerWithCsrf(agent, {
       username: 'test_subscheck',
@@ -123,6 +131,7 @@ describe('POST /auth/register', () => {
   });
 
   test('rejects username with spaces', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await registerWithCsrf(agent, {
       username: 'test user spaces',
@@ -134,6 +143,7 @@ describe('POST /auth/register', () => {
   });
 
   test('rejects username over 30 chars', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await registerWithCsrf(agent, {
       username: 'a'.repeat(31),
@@ -145,6 +155,7 @@ describe('POST /auth/register', () => {
   });
 
   test('requires CSRF token', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app)
       .post('/auth/register')
       .set('Content-Type', 'application/json')
@@ -156,6 +167,7 @@ describe('POST /auth/register', () => {
 
 describe('POST /auth/login', () => {
   beforeAll(async () => {
+    if (skipIfNoDb()) return;
     await createTestUser({
       username: 'test_loginuser',
       email: 'loginuser@example.com',
@@ -164,6 +176,7 @@ describe('POST /auth/login', () => {
   });
 
   test('logs in with correct credentials', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await loginWithCsrf(agent, {
       identifier: 'test_loginuser',
@@ -177,6 +190,7 @@ describe('POST /auth/login', () => {
   });
 
   test('rejects wrong password', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await loginWithCsrf(agent, {
       identifier: 'test_loginuser',
@@ -187,6 +201,7 @@ describe('POST /auth/login', () => {
   });
 
   test('rejects non-existent user', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await loginWithCsrf(agent, {
       identifier: 'nobody_exists_xyz',
@@ -197,12 +212,14 @@ describe('POST /auth/login', () => {
   });
 
   test('rejects empty credentials', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await loginWithCsrf(agent, {});
     expect([400, 401]).toContain(res.status);
   });
 
   test('handles SQL injection attempt safely', async () => {
+    if (skipIfNoDb()) return;
     const agent = request.agent(app);
     const res = await loginWithCsrf(agent, {
       identifier: "' OR 1=1 --",

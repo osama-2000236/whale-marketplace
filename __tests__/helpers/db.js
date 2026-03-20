@@ -5,7 +5,15 @@ function rand(size = 8) {
   return Math.random().toString(36).slice(2, 2 + size);
 }
 
+function skipIfNoDb() {
+  if (!global.isDbAvailable || !global.isDbAvailable()) {
+    return true;
+  }
+  return false;
+}
+
 async function createTestUser(overrides = {}) {
+  if (skipIfNoDb()) throw new Error('DB_NOT_AVAILABLE');
   const plainPassword = overrides.password || 'pass';
   const passwordHash = overrides.passwordHash || await bcrypt.hash(plainPassword, 10);
 
@@ -27,6 +35,7 @@ async function createTestUser(overrides = {}) {
 }
 
 async function createTestListing(sellerId, overrides = {}) {
+  if (skipIfNoDb()) throw new Error('DB_NOT_AVAILABLE');
   return prisma.marketListing.create({
     data: {
       title: overrides.title || 'Test RTX 3060 Ti',
@@ -46,6 +55,7 @@ async function createTestListing(sellerId, overrides = {}) {
 }
 
 async function createTestOrder(listingId, buyerId, sellerId, overrides = {}) {
+  if (skipIfNoDb()) throw new Error('DB_NOT_AVAILABLE');
   const order = await prisma.order.create({
     data: {
       orderNumber: overrides.orderNumber || `WH-TEST-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
@@ -74,6 +84,7 @@ async function createTestOrder(listingId, buyerId, sellerId, overrides = {}) {
 }
 
 async function cleanTestData() {
+  if (skipIfNoDb()) return;
   await prisma.orderEvent.deleteMany({});
   await prisma.sellerReview.deleteMany({});
   await prisma.dispute.deleteMany({});
@@ -92,5 +103,6 @@ module.exports = {
   createTestUser,
   createTestListing,
   createTestOrder,
-  cleanTestData
+  cleanTestData,
+  skipIfNoDb
 };

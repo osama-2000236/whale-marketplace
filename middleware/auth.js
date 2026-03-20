@@ -1,13 +1,6 @@
-/**
- * Authentication & Authorization Middleware
- * يدعم نظام الجلسات الجديد مع التوافق مع لوحة الإدارة القديمة.
- */
-
 const prisma = require('../lib/prisma');
 
 function sanitizeUser(user) {
-  if (!user) return null;
-
   return {
     id: user.id,
     username: user.username,
@@ -21,25 +14,28 @@ function sanitizeUser(user) {
     isVerified: user.isVerified,
     isBanned: user.isBanned,
     createdAt: user.createdAt,
-    lastSeenAt: user.lastSeenAt
+    lastSeenAt: user.lastSeenAt,
   };
 }
 
 async function hydrateUser(req, res) {
+  if (req._userHydrated) return;
+  req._userHydrated = true;
+
   if (!req.session) {
     req.user = null;
     res.locals.currentUser = null;
     return;
   }
 
-  // توافق مع العلم القديم للإدارة
+  // Legacy admin session (no userId)
   if (req.session.isAdmin && !req.session.userId) {
     req.user = {
       id: null,
       username: req.session.adminUser || 'admin',
       role: 'ADMIN',
       isVerified: true,
-      isBanned: false
+      isBanned: false,
     };
     res.locals.currentUser = req.user;
     return;
@@ -66,8 +62,8 @@ async function hydrateUser(req, res) {
       isVerified: true,
       isBanned: true,
       createdAt: true,
-      lastSeenAt: true
-    }
+      lastSeenAt: true,
+    },
   });
 
   if (!user || user.isBanned) {
@@ -93,7 +89,6 @@ async function optionalAuth(req, res, next) {
 async function requireAuth(req, res, next) {
   try {
     await hydrateUser(req, res);
-
     if (!req.user) {
       if (req.accepts('html')) {
         req.session.returnTo = req.originalUrl;
@@ -101,7 +96,6 @@ async function requireAuth(req, res, next) {
       }
       return res.status(401).json({ error: 'Authentication required' });
     }
-
     return next();
   } catch (error) {
     return next(error);
@@ -111,25 +105,17 @@ async function requireAuth(req, res, next) {
 async function requireAdmin(req, res, next) {
   try {
     await hydrateUser(req, res);
-
     if (!req.user) {
       if (req.accepts('html')) {
         req.session.returnTo = req.originalUrl;
-        return res.redirect('/auth/login');
+        return res.redirect('/admin/login');
       }
       return res.status(401).json({ error: 'Authentication required' });
     }
-
     if (req.user.role !== 'ADMIN') {
-      if (req.accepts('html')) {
-        return res.status(403).render('error', {
-          title: 'غير مصرح | Forbidden',
-          message: 'هذه الصفحة للإدارة فقط | Admin only page'
-        });
-      }
+      if (req.accepts('html')) return res.status(403).render('error', { title: 'Forbidden', message: 'Admin access required' });
       return res.status(403).json({ error: 'Admin access required' });
     }
-
     return next();
   } catch (error) {
     return next(error);
@@ -139,7 +125,6 @@ async function requireAdmin(req, res, next) {
 async function requireModerator(req, res, next) {
   try {
     await hydrateUser(req, res);
-
     if (!req.user) {
       if (req.accepts('html')) {
         req.session.returnTo = req.originalUrl;
@@ -147,17 +132,10 @@ async function requireModerator(req, res, next) {
       }
       return res.status(401).json({ error: 'Authentication required' });
     }
-
     if (!['ADMIN', 'MODERATOR'].includes(req.user.role)) {
-      if (req.accepts('html')) {
-        return res.status(403).render('error', {
-          title: 'غير مصرح | Forbidden',
-          message: 'هذه الصفحة للمشرفين والإدارة فقط | Moderators/Admin only'
-        });
-      }
+      if (req.accepts('html')) return res.status(403).render('error', { title: 'Forbidden', message: 'Moderator access required' });
       return res.status(403).json({ error: 'Moderator access required' });
     }
-
     return next();
   } catch (error) {
     return next(error);
@@ -171,10 +149,4 @@ function guestOnly(req, res, next) {
   return next();
 }
 
-module.exports = {
-  optionalAuth,
-  requireAuth,
-  requireAdmin,
-  requireModerator,
-  guestOnly
-};
+module.exports = { optionalAuth, requireAuth, requireAdmin, requireModerator, guestOnly };

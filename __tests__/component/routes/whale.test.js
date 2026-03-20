@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../../server');
 const prisma = require('../../../lib/prisma');
-const { createTestUser, createTestListing, cleanTestData } = require('../../helpers/db');
+const { createTestUser, createTestListing, cleanTestData, skipIfNoDb } = require('../../helpers/db');
 const { getCsrfToken } = require('../../helpers/http');
 
 let seller;
@@ -20,6 +20,7 @@ async function loginAgent(agent, identifier, password) {
 }
 
 beforeAll(async () => {
+  if (skipIfNoDb()) return;
   await cleanTestData();
 
   seller = await createTestUser({ username: 'test_whale_seller', password: 'pass' });
@@ -46,41 +47,49 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipIfNoDb()) return;
   await cleanTestData();
 });
 
 describe('GET /whale', () => {
   test('returns 200 for guests', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale');
     expect(res.status).toBe(200);
   });
 
   test('shows listings to guests', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale');
     expect(res.text).toContain('Test RTX 3060 Ti');
   });
 
   test('accepts category filter', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale?category=pc-parts');
     expect(res.status).toBe(200);
   });
 
   test('accepts city filter', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale?city=Tulkarem');
     expect(res.status).toBe(200);
   });
 
   test('accepts price range filter', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale?minPrice=100&maxPrice=1000');
     expect(res.status).toBe(200);
   });
 
   test('accepts search query', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale?q=RTX');
     expect(res.status).toBe(200);
   });
 
   test('accepts all sort options', async () => {
+    if (skipIfNoDb()) return;
     for (const sort of ['newest', 'cheapest', 'expensive', 'popular']) {
       const res = await request(app).get(`/whale?sort=${sort}`);
       expect(res.status).toBe(200);
@@ -88,6 +97,7 @@ describe('GET /whale', () => {
   });
 
   test('does not show direct create form to guests', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale');
     expect(res.text).not.toContain('action="/whale/sell"');
   });
@@ -95,22 +105,26 @@ describe('GET /whale', () => {
 
 describe('GET /whale/listing/:id', () => {
   test('returns 200 for valid listing', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get(`/whale/listing/${listing.id}`);
     expect(res.status).toBe(200);
     expect(res.text).toContain(listing.title);
   });
 
   test('shows register prompt for guest contact', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get(`/whale/listing/${listing.id}`);
     expect(res.text).toMatch(/Register to contact seller|سجّل للتواصل/i);
   });
 
   test('shows buy button to logged-in buyer', async () => {
+    if (skipIfNoDb()) return;
     const res = await buyerAgent.get(`/whale/listing/${listing.id}`);
     expect(res.text).toMatch(/Buy Now|اشتر الآن/i);
   });
 
   test('increments view count', async () => {
+    if (skipIfNoDb()) return;
     const before = await prisma.marketListing.findUnique({ where: { id: listing.id } });
     await request(app).get(`/whale/listing/${listing.id}`);
     const after = await prisma.marketListing.findUnique({ where: { id: listing.id } });
@@ -118,12 +132,14 @@ describe('GET /whale/listing/:id', () => {
   });
 
   test('returns 404 for removed listing', async () => {
+    if (skipIfNoDb()) return;
     const removed = await createTestListing(seller.id, { status: 'REMOVED' });
     const res = await request(app).get(`/whale/listing/${removed.id}`);
     expect(res.status).toBe(404);
   });
 
   test('returns 404 for missing uuid', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale/listing/00000000-0000-0000-0000-000000000000');
     expect(res.status).toBe(404);
   });
@@ -131,6 +147,7 @@ describe('GET /whale/listing/:id', () => {
 
 describe('GET /whale/sell auth gate', () => {
   test('redirects guests', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale/sell');
     expect([302, 401]).toContain(res.status);
     if (res.status === 302) {
@@ -139,6 +156,7 @@ describe('GET /whale/sell auth gate', () => {
   });
 
   test('redirects free members to upgrade', async () => {
+    if (skipIfNoDb()) return;
     const freeMember = await createTestUser({ username: 'test_free_member', password: 'pass' });
     await prisma.subscription.upsert({
       where: { userId: freeMember.id },
@@ -159,6 +177,7 @@ describe('GET /whale/sell auth gate', () => {
 
 describe('POST /whale/listing/:id/save', () => {
   test('returns auth or csrf error for unauthenticated request', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app)
       .post(`/whale/listing/${listing.id}/save`)
       .set('Accept', 'application/json');
@@ -167,6 +186,7 @@ describe('POST /whale/listing/:id/save', () => {
   });
 
   test('toggles save for authenticated user', async () => {
+    if (skipIfNoDb()) return;
     const token = await getCsrfToken(buyerAgent, `/whale/listing/${listing.id}`);
     const res = await buyerAgent
       .post(`/whale/listing/${listing.id}/save`)

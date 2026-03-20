@@ -1,59 +1,23 @@
-<%
-  var config = (typeof config !== 'undefined' && config) ? config : {};
-  if (!config.seo) config.seo = {};
-  var resolvedTitle = (typeof title !== 'undefined' && title) || pageTitle || t('app.name');
-%>
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>" class="<%= theme === 'dark' ? 'dark' : '' %>">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="<%= t('app.meta_desc') %>">
-  <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-  <meta name="color-scheme" content="<%= theme === 'dark' ? 'dark light' : 'light dark' %>">
-  <meta property="og:site_name" content="Whale · الحوت">
-  <meta property="og:title" content="<%= resolvedTitle %>">
-  <meta property="og:description" content="<%= t('app.meta_desc') %>">
-  <title><%= resolvedTitle %></title>
-  <% if (typeof jsonLd !== 'undefined' && jsonLd) { %>
-    <script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
-  <% } %>
-  <link rel="icon" href="/img/whale-icon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    rel="preload"
-    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap"
-    as="style"
-    onload="this.onload=null;this.rel='stylesheet'"
-  >
-  <noscript>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  </noscript>
-  <script>
-    (function () {
-      var serverTheme = '<%= theme %>' === 'dark' ? 'dark' : 'light';
-      var storedTheme = null;
-      try {
-        storedTheme = localStorage.getItem('whale-theme') || sessionStorage.getItem('whale-theme');
-      } catch (_error) {}
-      var finalTheme = storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : serverTheme;
-      document.documentElement.classList.toggle('dark', finalTheme === 'dark');
-      document.documentElement.dataset.theme = finalTheme;
-    })();
-  </script>
-  <link rel="stylesheet" href="/css/WHALE_UI_SYSTEM_V2.css">
-</head>
-<body
-  class="<%= bodyClass || 'whale-site' %>"
-  data-ui-category="<%= t('ui.category') %>"
-  data-ui-search="<%= t('ui.search') %>"
-  data-ui-close="<%= t('ui.close') %>"
-  data-ui-recent-searches="<%= t('market.recent_searches') %>"
-  data-ui-popular-searches="<%= t('market.popular_searches') %>"
-  data-ui-remove="<%= t('ui.delete') %>"
-  data-ui-no-results="<%= t('market.no_results') %>"
-  data-ui-loading="<%= t('ui.loading') %>"
-  data-ui-theme-dark="<%= t('ui.theme_dark') %>"
-  data-ui-theme-light="<%= t('ui.theme_light') %>"
->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="<%= typeof config !== 'undefined' && config.seo ? config.seo.description : t('app.meta_desc') %>">
+<meta name="csrf-token" content="<%= csrfToken %>">
+<% if (typeof jsonLd !== 'undefined' && jsonLd) { %>
+<script type="application/ld+json"><%- JSON.stringify(jsonLd) %></script>
+<% } %>
+<title><%= typeof title !== 'undefined' ? title + ' — ' + t('app.name') : t('app.name') %></title>
+<link rel="icon" href="/img/whale-icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/WHALE_UI_SYSTEM_V2.css">
+<link rel="stylesheet" href="/css/style.css">
+<% if (typeof adminPage !== 'undefined' && adminPage) { %>
+<link rel="stylesheet" href="/css/admin.css">
+<% } %>
+<script>
+(function(){
+  var t = localStorage.getItem('whale-theme') || sessionStorage.getItem('whale-theme') || '<%= theme %>';
+  if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+})();
+</script>

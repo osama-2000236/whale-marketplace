@@ -1,10 +1,5 @@
-/**
- * locale middleware
- * Injects lang, dir, theme, t(), and city options into every EJS view.
- */
-
 const { t } = require('../lib/i18n');
-const { getCityOptions } = require('../lib/cities');
+const { getCityOptions, getCityName } = require('../lib/cities');
 
 module.exports = function locale(req, res, next) {
   const defaultLang = process.env.DEFAULT_LANG === 'en' ? 'en' : 'ar';
@@ -20,10 +15,14 @@ module.exports = function locale(req, res, next) {
   res.locals.cities = getCityOptions(res.locals.lang);
   res.locals.path = req.path;
   res.locals.bodyClass = `whale-site lang-${res.locals.lang} theme-${res.locals.theme}`;
+
   const cart = Array.isArray(req.session?.cart) ? req.session.cart : [];
   res.locals.cartCount = cart.length;
 
-  // Compatibility aliases used by existing templates/tests.
+  // Helper functions for templates
+  res.locals.getCityName = (idOrValue, l) => getCityName(idOrValue, l || res.locals.lang);
+
+  // Compatibility aliases
   res.locals.user = req.user || res.locals.currentUser || null;
   res.locals.unreadCount = res.locals.unreadNotificationsCount || 0;
 

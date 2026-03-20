@@ -1,132 +1,55 @@
-const PLACEHOLDER_IMAGE = '/images/products/placeholder.svg';
+const PLACEHOLDER_IMAGE = '/images/placeholder.png';
 const DEFAULT_WIDTHS = [210, 420, 630];
-const CLOUDINARY_SEGMENT = '/upload/';
 
 function isCloudinaryUrl(url) {
-  return typeof url === 'string'
-    && /res\.cloudinary\.com/i.test(url)
-    && url.includes(CLOUDINARY_SEGMENT);
+  return typeof url === 'string' && url.includes('res.cloudinary.com');
 }
 
-function normalizeWidths(widths = DEFAULT_WIDTHS) {
-  const unique = Array.from(new Set(
-    widths
-      .map((width) => Number(width))
-      .filter((width) => Number.isFinite(width) && width > 0)
-  ));
-
-  if (!unique.length) return [...DEFAULT_WIDTHS];
-  return unique.sort((a, b) => a - b);
-}
-
-function parseAspectRatio(aspectRatio = '4:3', fallbackWidth = 630) {
-  const [rawWidth, rawHeight] = String(aspectRatio).split(':').map((value) => Number(value));
-  const widthRatio = Number.isFinite(rawWidth) && rawWidth > 0 ? rawWidth : 4;
-  const heightRatio = Number.isFinite(rawHeight) && rawHeight > 0 ? rawHeight : 3;
-  const width = Math.max(1, Math.round(fallbackWidth));
-  const height = Math.max(1, Math.round((width * heightRatio) / widthRatio));
-
-  return { widthRatio, heightRatio, width, height };
-}
-
-function transformCloudinaryUrl(url, {
-  width,
-  height,
-  fit = 'fill',
-  quality = 'auto',
-  format = 'auto'
-} = {}) {
+function transformCloudinaryUrl(url, { width, height, quality = 'auto', format = 'auto', crop = 'fill', gravity = 'auto' } = {}) {
   if (!isCloudinaryUrl(url)) return url;
+  const parts = [`c_${crop}`, `g_${gravity}`, `q_${quality}`, `f_${format}`];
+  if (width) parts.push(`w_${width}`);
+  if (height) parts.push(`h_${height}`);
+  return url.replace('/upload/', `/upload/${parts.join(',')}/`);
+}
 
-  const transforms = ['c_fill', 'g_auto', `q_${quality}`, `f_${format}`];
-  if (Number.isFinite(width) && width > 0) transforms.push(`w_${Math.round(width)}`);
-  if (Number.isFinite(height) && height > 0) transforms.push(`h_${Math.round(height)}`);
-  if (fit && /^(fill|fit|crop|limit)$/i.test(fit)) {
-    transforms[0] = `c_${fit}`;
-  }
-
-  return url.replace(CLOUDINARY_SEGMENT, `${CLOUDINARY_SEGMENT}${transforms.join(',')}/`);
+// Backward-compatible alias
+function cloudinaryTransform(url, width, options = {}) {
+  return transformCloudinaryUrl(url, { width, ...options });
 }
 
 function buildResponsiveImage(url, options = {}) {
-  const fallback = options.fallback || PLACEHOLDER_IMAGE;
-  const widths = normalizeWidths(options.widths);
-  const largestWidth = widths[widths.length - 1];
-  const { width, height } = parseAspectRatio(options.aspectRatio || '4:3', largestWidth);
-  const sizes = options.sizes || '100vw';
-
   if (!url) {
-    return {
-      src: fallback,
-      srcset: `${fallback} ${largestWidth}w`,
-      webpSrcset: '',
-      placeholder: fallback,
-      sizes,
-      width,
-      height
-    };
+    return { src: PLACEHOLDER_IMAGE, srcset: '', webpSrcset: '', placeholder: PLACEHOLDER_IMAGE, width: 420, height: 315 };
   }
+
+  const widths = options.widths || DEFAULT_WIDTHS;
+  const aspectRatio = options.aspectRatio || '4:3';
+  const [aw, ah] = aspectRatio.split(':').map(Number);
+  const baseWidth = widths[1] || widths[0];
+  const height = Math.round((baseWidth * ah) / aw);
 
   if (!isCloudinaryUrl(url)) {
-    return {
-      src: url,
-      srcset: `${url} ${largestWidth}w`,
-      webpSrcset: '',
-      placeholder: fallback,
-      sizes,
-      width,
-      height
-    };
+    return { src: url, srcset: '', webpSrcset: '', placeholder: url, width: baseWidth, height };
   }
 
-  const srcset = widths.map((targetWidth) => {
-    const targetHeight = Math.round((targetWidth * height) / width);
-    return `${transformCloudinaryUrl(url, {
-      width: targetWidth,
-      height: targetHeight,
-      fit: options.fit,
-      quality: options.quality,
-      format: 'jpg'
-    })} ${targetWidth}w`;
-  }).join(', ');
-
-  const webpSrcset = widths.map((targetWidth) => {
-    const targetHeight = Math.round((targetWidth * height) / width);
-    return `${transformCloudinaryUrl(url, {
-      width: targetWidth,
-      height: targetHeight,
-      fit: options.fit,
-      quality: options.quality,
-      format: 'webp'
-    })} ${targetWidth}w`;
-  }).join(', ');
+  const srcset = widths
+    .map((w) => `${transformCloudinaryUrl(url, { width: w, height: Math.round((w * ah) / aw), format: 'jpg' })} ${w}w`)
+    .join(', ');
+  const webpSrcset = widths
+    .map((w) => `${transformCloudinaryUrl(url, { width: w, height: Math.round((w * ah) / aw), format: 'webp' })} ${w}w`)
+    .join(', ');
+  const sizes = options.sizes || `(max-width: 600px) ${widths[0]}px, ${widths[1]}px`;
 
   return {
-    src: transformCloudinaryUrl(url, {
-      width,
-      height,
-      fit: options.fit,
-      quality: options.quality,
-      format: 'jpg'
-    }),
+    src: transformCloudinaryUrl(url, { width: baseWidth, height }),
     srcset,
     webpSrcset,
-    placeholder: transformCloudinaryUrl(url, {
-      width: 32,
-      height: Math.round((32 * height) / width),
-      fit: options.fit,
-      quality: 20,
-      format: 'jpg'
-    }),
+    placeholder: transformCloudinaryUrl(url, { width: widths[0], height: Math.round((widths[0] * ah) / aw), quality: 20 }),
+    width: baseWidth,
+    height,
     sizes,
-    width,
-    height
   };
 }
 
-module.exports = {
-  PLACEHOLDER_IMAGE,
-  isCloudinaryUrl,
-  transformCloudinaryUrl,
-  buildResponsiveImage
-};
+module.exports = { buildResponsiveImage, cloudinaryTransform, transformCloudinaryUrl, isCloudinaryUrl, PLACEHOLDER: PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE };

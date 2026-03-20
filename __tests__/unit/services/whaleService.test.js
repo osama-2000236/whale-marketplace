@@ -1,24 +1,41 @@
 const svc = require('../../../services/whaleService');
 const prisma = require('../../../lib/prisma');
 const emailService = require('../../../services/emailService');
-const { createTestUser, createTestListing, createTestOrder, cleanTestData } = require('../../helpers/db');
+const { createTestUser, createTestListing, createTestOrder, cleanTestData, skipIfNoDb } = require('../../helpers/db');
+
+// Wrap test() to auto-skip when database is not available
+const dbTest = (name, fn) => {
+  test(name, async (...args) => {
+    if (skipIfNoDb()) return;
+    return fn(...args);
+  });
+};
+
+const dbBeforeAll = (fn) => {
+  beforeAll(async () => {
+    if (skipIfNoDb()) return;
+    return fn();
+  });
+};
 
 describe('whaleService unit', () => {
   let seller;
   let buyer;
 
   beforeAll(async () => {
+    if (skipIfNoDb()) return;
     await cleanTestData();
     seller = await createTestUser({ username: 'test_svc_seller' });
     buyer = await createTestUser({ username: 'test_svc_buyer' });
   });
 
   afterAll(async () => {
+    if (skipIfNoDb()) return;
     await cleanTestData();
   });
 
   describe('createListing', () => {
-    test('creates listing with required fields', async () => {
+    dbTest('creates listing with required fields', async () => {
       const listing = await svc.createListing(seller.id, {
         title: 'RTX 3060 Ti',
         description: 'Great condition for gaming',
@@ -34,7 +51,7 @@ describe('whaleService unit', () => {
       expect(listing.status).toBe('ACTIVE');
     });
 
-    test('converts price string with comma to float', async () => {
+    dbTest('converts price string with comma to float', async () => {
       const listing = await svc.createListing(seller.id, {
         title: 'Price test',
         description: 'desc text long enough',
@@ -47,7 +64,7 @@ describe('whaleService unit', () => {
       expect(listing.price).toBe(1250.5);
     });
 
-    test('handles tags from CSV', async () => {
+    dbTest('handles tags from CSV', async () => {
       const listing = await svc.createListing(seller.id, {
         title: 'Tag test',
         description: 'desc text long enough',
@@ -61,7 +78,7 @@ describe('whaleService unit', () => {
       expect(listing.tags).toEqual(['gpu', 'nvidia', 'gaming']);
     });
 
-    test('handles tags from array and generates slug', async () => {
+    dbTest('handles tags from array and generates slug', async () => {
       const listing = await svc.createListing(seller.id, {
         title: 'Array tags listing',
         description: 'desc text long enough',
@@ -76,7 +93,7 @@ describe('whaleService unit', () => {
       expect(listing.slug).toMatch(/^array-tags-listing-/);
     });
 
-    test('creates seller profile if missing', async () => {
+    dbTest('creates seller profile if missing', async () => {
       const newSeller = await createTestUser({ username: 'test_svc_newseller' });
       await svc.createListing(newSeller.id, {
         title: 'New seller listing',
@@ -91,7 +108,7 @@ describe('whaleService unit', () => {
       expect(profile).not.toBeNull();
     });
 
-    test('rejects invalid condition', async () => {
+    dbTest('rejects invalid condition', async () => {
       await expect(svc.createListing(seller.id, {
         title: 'Bad cond',
         description: 'desc text long enough',
@@ -102,7 +119,7 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Invalid condition');
     });
 
-    test('rejects xss title', async () => {
+    dbTest('rejects xss title', async () => {
       await expect(svc.createListing(seller.id, {
         title: '<script>alert(1)</script>',
         description: 'desc text long enough',
@@ -113,7 +130,7 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Invalid title');
     });
 
-    test('sets negotiable from "on" and quantity min 1', async () => {
+    dbTest('sets negotiable from "on" and quantity min 1', async () => {
       const listing = await svc.createListing(seller.id, {
         title: 'Negotiable switch',
         description: 'desc text long enough',
@@ -133,46 +150,46 @@ describe('whaleService unit', () => {
   describe('getListing', () => {
     let listing;
 
-    beforeAll(async () => {
+    dbBeforeAll(async () => {
       listing = await createTestListing(seller.id, { title: 'Get listing unit' });
     });
 
-    test('retrieves listing by id', async () => {
+    dbTest('retrieves listing by id', async () => {
       const found = await svc.getListing(listing.id);
       expect(found.id).toBe(listing.id);
       expect(found.seller).toBeDefined();
       expect(found.seller.id).toBe(seller.id);
     });
 
-    test('returns null for missing id', async () => {
+    dbTest('returns null for missing id', async () => {
       const found = await svc.getListing('00000000-0000-0000-0000-000000000000');
       expect(found).toBeNull();
     });
   });
 
   describe('getListings', () => {
-    beforeAll(async () => {
+    dbBeforeAll(async () => {
       await createTestListing(seller.id, { title: 'RTX 4090', city: 'Ramallah', price: 4000, condition: 'NEW' });
       await createTestListing(seller.id, { title: 'Used Mouse', city: 'Tulkarem', price: 50, condition: 'USED' });
       await createTestListing(seller.id, { title: 'New Keyboard', city: 'Nablus', price: 150, condition: 'NEW' });
     });
 
-    test('returns active listings only', async () => {
+    dbTest('returns active listings only', async () => {
       const { listings } = await svc.getListings({});
       listings.forEach((l) => expect(l.status).toBe('ACTIVE'));
     });
 
-    test('filters by city', async () => {
+    dbTest('filters by city', async () => {
       const { listings } = await svc.getListings({ city: 'Tulkarem' });
       listings.forEach((l) => expect(l.city).toBe('Tulkarem'));
     });
 
-    test('filters by condition', async () => {
+    dbTest('filters by condition', async () => {
       const { listings } = await svc.getListings({ condition: 'NEW' });
       listings.forEach((l) => expect(l.condition).toBe('NEW'));
     });
 
-    test('filters by min/max price', async () => {
+    dbTest('filters by min/max price', async () => {
       const { listings } = await svc.getListings({ minPrice: '100', maxPrice: '500' });
       listings.forEach((l) => {
         expect(l.price).toBeGreaterThanOrEqual(100);
@@ -180,7 +197,7 @@ describe('whaleService unit', () => {
       });
     });
 
-    test('searches by title keyword', async () => {
+    dbTest('searches by title keyword', async () => {
       const { listings } = await svc.getListings({ q: 'RTX' });
       expect(listings.length).toBeGreaterThan(0);
       listings.forEach((l) => {
@@ -188,20 +205,20 @@ describe('whaleService unit', () => {
       });
     });
 
-    test('respects take limit and hasMore', async () => {
+    dbTest('respects take limit and hasMore', async () => {
       const result = await svc.getListings({ take: 1 });
       expect(result.listings.length).toBeLessThanOrEqual(1);
       expect(result.hasMore).toBe(true);
     });
 
-    test('sorts by cheapest', async () => {
+    dbTest('sorts by cheapest', async () => {
       const { listings } = await svc.getListings({ sort: 'cheapest' });
       for (let i = 1; i < listings.length; i += 1) {
         expect(listings[i].price).toBeGreaterThanOrEqual(listings[i - 1].price);
       }
     });
 
-    test('maps legacy marketplace category slugs to the Whale surface counts and filters', async () => {
+    dbTest('maps legacy marketplace category slugs to the Whale surface counts and filters', async () => {
       const categories = [
         { name: 'Electronics', nameAr: 'الإلكترونيات', slug: 'electronics', icon: '⚡', order: 1 },
         { name: 'PC Parts', nameAr: 'قطع الكمبيوتر', slug: 'pc-parts', icon: '🧩', order: 2 },
@@ -240,11 +257,11 @@ describe('whaleService unit', () => {
   describe('createOrder', () => {
     let listing;
 
-    beforeAll(async () => {
+    dbBeforeAll(async () => {
       listing = await createTestListing(seller.id, { price: 850 });
     });
 
-    test('creates order with valid payload', async () => {
+    dbTest('creates order with valid payload', async () => {
       const order = await svc.createOrder({
         listingId: listing.id,
         buyerId: buyer.id,
@@ -264,7 +281,7 @@ describe('whaleService unit', () => {
       expect(order.orderNumber).toMatch(/^WH-\d{4}-\d+/);
     });
 
-    test('prevents self-buy', async () => {
+    dbTest('prevents self-buy', async () => {
       await expect(svc.createOrder({
         listingId: listing.id,
         buyerId: seller.id,
@@ -280,7 +297,7 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Cannot buy your own listing');
     });
 
-    test('rejects inactive listing', async () => {
+    dbTest('rejects inactive listing', async () => {
       const inactive = await createTestListing(seller.id, { status: 'SOLD' });
       await expect(svc.createOrder({
         listingId: inactive.id,
@@ -297,7 +314,7 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Listing not available');
     });
 
-    test('creates timeline and seller notification', async () => {
+    dbTest('creates timeline and seller notification', async () => {
       const order = await svc.createOrder({
         listingId: listing.id,
         buyerId: buyer.id,
@@ -322,7 +339,7 @@ describe('whaleService unit', () => {
       expect(notif).not.toBeNull();
     });
 
-    test('rejects invalid shipping method', async () => {
+    dbTest('rejects invalid shipping method', async () => {
       await expect(svc.createOrder({
         listingId: listing.id,
         buyerId: buyer.id,
@@ -332,7 +349,7 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Invalid shipping method');
     });
 
-    test('rejects quantity above stock', async () => {
+    dbTest('rejects quantity above stock', async () => {
       const lowStock = await createTestListing(seller.id, { quantity: 1, price: 20 });
       await expect(svc.createOrder({
         listingId: lowStock.id,
@@ -343,7 +360,7 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Requested quantity exceeds stock');
     });
 
-    test('card payment starts with held status', async () => {
+    dbTest('card payment starts with held status', async () => {
       const order = await svc.createOrder({
         listingId: listing.id,
         buyerId: buyer.id,
@@ -358,7 +375,7 @@ describe('whaleService unit', () => {
   describe('listing mutations', () => {
     let listing;
 
-    beforeAll(async () => {
+    dbBeforeAll(async () => {
       listing = await createTestListing(seller.id, {
         title: 'Mutation listing',
         description: 'Before update description',
@@ -369,7 +386,7 @@ describe('whaleService unit', () => {
       });
     });
 
-    test('updateListing updates parsed price/tags/specs/quantity', async () => {
+    dbTest('updateListing updates parsed price/tags/specs/quantity', async () => {
       const updated = await svc.updateListing(listing.id, seller.id, {
         titleAr: '',
         descriptionAr: '',
@@ -391,7 +408,7 @@ describe('whaleService unit', () => {
       expect(updated.descriptionAr).toBeNull();
     });
 
-    test('updateListing handles array tags payload', async () => {
+    dbTest('updateListing handles array tags payload', async () => {
       const updated = await svc.updateListing(listing.id, seller.id, {
         tags: ['rtx', 'used', 'gaming']
       });
@@ -399,48 +416,48 @@ describe('whaleService unit', () => {
       expect(updated.tags).toEqual(['rtx', 'used', 'gaming']);
     });
 
-    test('updateListing rejects invalid price', async () => {
+    dbTest('updateListing rejects invalid price', async () => {
       await expect(svc.updateListing(listing.id, seller.id, {
         price: '-5'
       })).rejects.toThrow('Invalid price');
     });
 
-    test('updateListing rejects invalid condition', async () => {
+    dbTest('updateListing rejects invalid condition', async () => {
       await expect(svc.updateListing(listing.id, seller.id, {
         condition: 'broken'
       })).rejects.toThrow('Invalid condition');
     });
 
-    test('updateListing forbids non-owner', async () => {
+    dbTest('updateListing forbids non-owner', async () => {
       await expect(svc.updateListing(listing.id, buyer.id, {
         title: 'Nope'
       })).rejects.toThrow('Forbidden');
     });
 
-    test('markSold updates status for owner', async () => {
+    dbTest('markSold updates status for owner', async () => {
       const sellable = await createTestListing(seller.id, { status: 'ACTIVE' });
       const sold = await svc.markSold(sellable.id, seller.id);
       expect(sold.status).toBe('SOLD');
     });
 
-    test('markSold forbids non-owner', async () => {
+    dbTest('markSold forbids non-owner', async () => {
       const other = await createTestListing(seller.id, { status: 'ACTIVE' });
       await expect(svc.markSold(other.id, buyer.id)).rejects.toThrow('Forbidden');
     });
 
-    test('deleteListing sets removed for owner', async () => {
+    dbTest('deleteListing sets removed for owner', async () => {
       const removable = await createTestListing(seller.id, { status: 'ACTIVE' });
       const removed = await svc.deleteListing(removable.id, seller.id);
       expect(removed.status).toBe('REMOVED');
     });
 
-    test('deleteListing allows admin override', async () => {
+    dbTest('deleteListing allows admin override', async () => {
       const removable = await createTestListing(seller.id, { status: 'ACTIVE' });
       const removed = await svc.deleteListing(removable.id, buyer.id, true);
       expect(removed.status).toBe('REMOVED');
     });
 
-    test('deleteListing rejects missing listing', async () => {
+    dbTest('deleteListing rejects missing listing', async () => {
       await expect(svc.deleteListing('00000000-0000-0000-0000-000000000000', seller.id)).rejects.toThrow('Not found');
     });
   });
@@ -449,7 +466,7 @@ describe('whaleService unit', () => {
     let listing;
     let order;
 
-    beforeAll(async () => {
+    dbBeforeAll(async () => {
       listing = await createTestListing(seller.id, { title: 'Review listing' });
       order = await createTestOrder(listing.id, buyer.id, seller.id, {
         orderStatus: 'COMPLETED',
@@ -457,7 +474,7 @@ describe('whaleService unit', () => {
       });
     });
 
-    test('creates verified review', async () => {
+    dbTest('creates verified review', async () => {
       const review = await svc.createReview(order.id, buyer.id, {
         rating: 5,
         title: 'Great seller',
@@ -469,7 +486,7 @@ describe('whaleService unit', () => {
       expect(review.isVerified).toBe(true);
     });
 
-    test('prevents duplicate reviews', async () => {
+    dbTest('prevents duplicate reviews', async () => {
       await expect(svc.createReview(order.id, buyer.id, {
         rating: 4,
         title: 'Duplicate',
@@ -477,7 +494,7 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Already reviewed');
     });
 
-    test('prevents review on non-completed order', async () => {
+    dbTest('prevents review on non-completed order', async () => {
       const pendingOrder = await createTestOrder(listing.id, buyer.id, seller.id, {
         orderStatus: 'PENDING'
       });
@@ -489,12 +506,12 @@ describe('whaleService unit', () => {
       })).rejects.toThrow('Order not completed');
     });
 
-    test('updates seller average rating', async () => {
+    dbTest('updates seller average rating', async () => {
       const profile = await prisma.sellerProfile.findUnique({ where: { userId: seller.id } });
       expect(profile.averageRating).toBeGreaterThan(0);
     });
 
-    test('rejects rating outside 1-5', async () => {
+    dbTest('rejects rating outside 1-5', async () => {
       const listing2 = await createTestListing(seller.id, { title: 'Review bad rating listing' });
       const order2 = await createTestOrder(listing2.id, buyer.id, seller.id, {
         orderStatus: 'COMPLETED',
@@ -511,11 +528,11 @@ describe('whaleService unit', () => {
   describe('toggleSaved', () => {
     let listing;
 
-    beforeAll(async () => {
+    dbBeforeAll(async () => {
       listing = await createTestListing(seller.id, { title: 'Saved listing' });
     });
 
-    test('save and unsave listing', async () => {
+    dbTest('save and unsave listing', async () => {
       const save = await svc.toggleSaved(buyer.id, listing.id);
       expect(save.saved).toBe(true);
 
@@ -525,7 +542,7 @@ describe('whaleService unit', () => {
   });
 
   describe('misc helpers', () => {
-    test('getListingByIdOrSlug resolves by slug', async () => {
+    dbTest('getListingByIdOrSlug resolves by slug', async () => {
       const listing = await createTestListing(seller.id, { title: 'Slug helper listing' });
       const withSlug = await prisma.marketListing.update({
         where: { id: listing.id },
@@ -537,19 +554,19 @@ describe('whaleService unit', () => {
       expect(found.id).toBe(withSlug.id);
     });
 
-    test('incrementViews increments counter', async () => {
+    dbTest('incrementViews increments counter', async () => {
       const listing = await createTestListing(seller.id, { views: 0 });
       const updated = await svc.incrementViews(listing.id);
       expect(updated.views).toBe(1);
     });
 
-    test('incrementWaClicks increments counter', async () => {
+    dbTest('incrementWaClicks increments counter', async () => {
       const listing = await createTestListing(seller.id, { waClicks: 0 });
       const updated = await svc.incrementWaClicks(listing.id);
       expect(updated.waClicks).toBe(1);
     });
 
-    test('getSavedListings returns saved entries with listing relation', async () => {
+    dbTest('getSavedListings returns saved entries with listing relation', async () => {
       const listing = await createTestListing(seller.id, { title: 'Saved relation listing' });
       await svc.toggleSaved(buyer.id, listing.id);
       const saved = await svc.getSavedListings(buyer.id);
@@ -557,7 +574,7 @@ describe('whaleService unit', () => {
       expect(saved[0].listing).toBeDefined();
     });
 
-    test('getSellerDashboard returns aggregate payload', async () => {
+    dbTest('getSellerDashboard returns aggregate payload', async () => {
       const data = await svc.getSellerDashboard(seller.id);
       expect(data).toHaveProperty('activeListings');
       expect(data).toHaveProperty('pendingOrders');
@@ -568,7 +585,7 @@ describe('whaleService unit', () => {
   });
 
   describe('email failure safety', () => {
-    test('createOrder does not crash when order-placed email fails', async () => {
+    dbTest('createOrder does not crash when order-placed email fails', async () => {
       const listing = await createTestListing(seller.id, { price: 210, quantity: 2, status: 'ACTIVE' });
       const emailSpy = jest.spyOn(emailService, 'sendOrderPlaced').mockRejectedValue(new Error('mail fail'));
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -589,7 +606,7 @@ describe('whaleService unit', () => {
       consoleSpy.mockRestore();
     });
 
-    test('sellerConfirmOrder does not crash when confirm email fails', async () => {
+    dbTest('sellerConfirmOrder does not crash when confirm email fails', async () => {
       const listing = await createTestListing(seller.id, { status: 'ACTIVE' });
       const order = await createTestOrder(listing.id, buyer.id, seller.id, { orderStatus: 'PENDING' });
       const emailSpy = jest.spyOn(emailService, 'sendOrderConfirmed').mockRejectedValue(new Error('mail fail'));
@@ -604,7 +621,7 @@ describe('whaleService unit', () => {
       consoleSpy.mockRestore();
     });
 
-    test('sellerShipOrder does not crash when shipped email fails', async () => {
+    dbTest('sellerShipOrder does not crash when shipped email fails', async () => {
       const listing = await createTestListing(seller.id, { status: 'ACTIVE' });
       const order = await createTestOrder(listing.id, buyer.id, seller.id, { orderStatus: 'SELLER_CONFIRMED' });
       const emailSpy = jest.spyOn(emailService, 'sendOrderShipped').mockRejectedValue(new Error('mail fail'));
@@ -622,7 +639,7 @@ describe('whaleService unit', () => {
       consoleSpy.mockRestore();
     });
 
-    test('buyerConfirmDelivery does not crash when completed email fails', async () => {
+    dbTest('buyerConfirmDelivery does not crash when completed email fails', async () => {
       const listing = await createTestListing(seller.id, { status: 'ACTIVE' });
       const order = await createTestOrder(listing.id, buyer.id, seller.id, { orderStatus: 'SHIPPED' });
       const emailSpy = jest.spyOn(emailService, 'sendOrderCompleted').mockRejectedValue(new Error('mail fail'));

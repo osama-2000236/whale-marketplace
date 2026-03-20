@@ -1,99 +1,64 @@
-const fs = require('fs');
-const path = require('path');
 const multer = require('multer');
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 
-const cloudinaryEnabled = Boolean(process.env.CLOUDINARY_URL);
-let cloudinary = null;
+const MAX_SIZE = parseInt(process.env.MAX_FILE_SIZE, 10) || 5 * 1024 * 1024;
+const UPLOAD_DIR = path.join(__dirname, '..', 'public', 'uploads');
 
-if (cloudinaryEnabled) {
-  // استخدام Cloudinary عند وجود CLOUDINARY_URL
-  cloudinary = require('cloudinary').v2;
-  cloudinary.config({
-    cloudinary_url: process.env.CLOUDINARY_URL
-  });
-}
-
-const tmpDir = path.join(__dirname, '..', 'public', 'uploads', 'tmp');
-if (!fs.existsSync(tmpDir)) {
-  fs.mkdirSync(tmpDir, { recursive: true });
-}
+const ALLOWED_MIMES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, tmpDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname || '').toLowerCase() || '.jpg';
-    cb(null, `${Date.now()}-${uuidv4()}${ext}`);
-  }
+  destination(_req, _file, cb) {
+    const dir = path.join(UPLOAD_DIR, 'whale');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(_req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `${uuidv4()}${ext}`);
+  },
 });
 
 const upload = multer({
   storage,
-  limits: {
-    fileSize: Number(process.env.MAX_FILE_SIZE || 5 * 1024 * 1024)
+  limits: { fileSize: MAX_SIZE },
+  fileFilter(_req, file, cb) {
+    if (ALLOWED_MIMES.includes(file.mimetype)) return cb(null, true);
+    cb(new Error('Only image files are allowed'));
   },
-  fileFilter: (_req, file, cb) => {
-    const allowed = /image\/(png|jpe?g|gif|webp|svg\+xml)/;
-    if (allowed.test(file.mimetype)) {
-      return cb(null, true);
-    }
-    return cb(new Error('Only image uploads are allowed'));
-  }
 });
 
-function ensureDir(relativeDir) {
-  const absPath = path.join(__dirname, '..', 'public', relativeDir);
-  if (!fs.existsSync(absPath)) {
-    fs.mkdirSync(absPath, { recursive: true });
+let cloudinary = null;
+let cloudinaryEnabled = false;
+
+try {
+  if (process.env.CLOUDINARY_URL) {
+    cloudinary = require('cloudinary').v2;
+    cloudinaryEnabled = true;
   }
-  return absPath;
+} catch (_e) {
+  /* cloudinary not available */
 }
 
-async function storeOneFile(file, targetDir = 'uploads') {
+async function storeOneFile(file) {
   if (!file) return null;
-
   if (cloudinaryEnabled && cloudinary) {
     try {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: `pc-gaming/${targetDir}`
-      });
+      const result = await cloudinary.uploader.upload(file.path, { folder: 'whale' });
       fs.unlink(file.path, () => {});
       return result.secure_url;
-    } catch (error) {
-      // fallback local storage when cloud upload fails
-      console.warn('Cloudinary upload failed, fallback to local:', error.message);
+    } catch (_e) {
+      /* fall through to local */
     }
   }
-
-  const destinationDir = ensureDir(targetDir);
-  const ext = path.extname(file.originalname || file.filename || '.jpg') || '.jpg';
-  const fileName = `${Date.now()}-${uuidv4()}${ext.toLowerCase()}`;
-  const destination = path.join(destinationDir, fileName);
-
-  await fs.promises.rename(file.path, destination);
-  return `/${targetDir.replace(/\\/g, '/')}/${fileName}`;
+  return `/uploads/whale/${file.filename}`;
 }
 
-async function storeFiles(files, targetDir = 'uploads', max = 6) {
-  if (!Array.isArray(files) || files.length === 0) {
-    return [];
-  }
-
+async function storeFiles(files, max = 6) {
+  if (!files || !files.length) return [];
   const limited = files.slice(0, max);
-  const urls = [];
-
-  for (const file of limited) {
-    // eslint-disable-next-line no-await-in-loop
-    const url = await storeOneFile(file, targetDir);
-    if (url) urls.push(url);
-  }
-
-  return urls;
+  return Promise.all(limited.map(storeOneFile));
 }
 
-module.exports = {
-  upload,
-  storeOneFile,
-  storeFiles,
-  cloudinaryEnabled
-};
+module.exports = { upload, storeOneFile, storeFiles, cloudinaryEnabled };

@@ -1,73 +1,69 @@
-<%- include('../partials/header') %>
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head><%- include('../partials/head') %></head>
+<body class="<%= bodyClass %>">
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="page-container">
+    <h1><%= t('search.results') %></h1>
 
-<section class="page-section search-page">
-  <div class="container">
-    <h1>نتائج البحث | Search Results</h1>
-
-    <form method="GET" action="/search" class="search-main-form">
-      <input type="text" name="q" value="<%= q %>" placeholder="ابحث في المنصة | Search platform" required>
-      <select name="type">
-        <option value="all" <%= type === 'all' ? 'selected' : '' %>>All</option>
-        <option value="users" <%= type === 'users' ? 'selected' : '' %>>Users</option>
-        <option value="posts" <%= type === 'posts' ? 'selected' : '' %>>Posts</option>
-        <option value="rooms" <%= type === 'rooms' ? 'selected' : '' %>>Rooms</option>
-        <option value="marketplace" <%= type === 'marketplace' ? 'selected' : '' %>>Marketplace</option>
-        <option value="products" <%= type === 'products' ? 'selected' : '' %>>Store Products</option>
-      </select>
-      <button class="btn btn-primary" type="submit">بحث | Search</button>
+    <form method="get" action="/search" class="search-form-page whale-form">
+      <div class="search-bar">
+        <input type="text" name="q" value="<%= typeof q !== 'undefined' ? q : '' %>" placeholder="<%= t('search.placeholder') %>" autofocus>
+        <select name="type">
+          <option value="all" <%= typeof type === 'undefined' || type === 'all' ? 'selected' : '' %>><%= t('search.all') %></option>
+          <option value="listings" <%= type === 'listings' ? 'selected' : '' %>><%= t('search.listings') %></option>
+          <option value="threads" <%= type === 'threads' ? 'selected' : '' %>><%= t('search.threads') %></option>
+          <option value="users" <%= type === 'users' ? 'selected' : '' %>><%= t('search.users') %></option>
+        </select>
+        <button type="submit" class="btn btn-primary"><%= t('search.search') %></button>
+      </div>
     </form>
 
-    <div class="search-results panel-card">
-      <% if (!q) { %>
-        <p class="muted">اكتب كلمة للبحث | Enter a query</p>
+    <% if (typeof results !== 'undefined') { %>
+      <% if (results.listings && results.listings.length) { %>
+      <h2><%= t('search.listings') %> (<%= results.listings.length %>)</h2>
+      <div class="listings-grid">
+        <% results.listings.forEach(listing => { %>
+          <%- include('../partials/listing-card', { listing: listing }) %>
+        <% }) %>
+      </div>
+      <% } %>
+
+      <% if (results.threads && results.threads.length) { %>
+      <h2><%= t('search.threads') %> (<%= results.threads.length %>)</h2>
+      <div class="forum-thread-list">
+        <% results.threads.forEach(thread => { %>
+        <a href="/forum/t/<%= thread.slug %>" class="forum-thread-card">
+          <div class="thread-info">
+            <h3><%= thread.title %></h3>
+            <p class="thread-meta"><%= thread.author ? thread.author.username : '' %> &middot; <%= timeAgo(thread.createdAt) %></p>
+          </div>
+        </a>
+        <% }) %>
+      </div>
       <% } %>
 
       <% if (results.users && results.users.length) { %>
-        <h2>Users</h2>
-        <ul class="simple-list">
-          <% results.users.forEach((u) => { %>
-            <li><a href="/u/<%= u.username %>"><%= u.username %></a></li>
-          <% }) %>
-        </ul>
+      <h2><%= t('search.users') %> (<%= results.users.length %>)</h2>
+      <div class="users-grid">
+        <% results.users.forEach(user => { %>
+        <a href="/u/<%= user.username %>" class="user-card">
+          <%- include('../partials/avatar', { user: user, size: 'md' }) %>
+          <span><%= user.username %></span>
+        </a>
+        <% }) %>
+      </div>
       <% } %>
 
-      <% if (results.posts && results.posts.length) { %>
-        <h2>Posts</h2>
-        <ul class="simple-list">
-          <% results.posts.forEach((p) => { %>
-            <li><a href="/#post-<%= p.id %>"><%= (p.snippet || p.content || '').toString().replace(/<[^>]+>/g, '') %></a></li>
-          <% }) %>
-        </ul>
+      <% if ((!results.listings || !results.listings.length) && (!results.threads || !results.threads.length) && (!results.users || !results.users.length)) { %>
+      <div class="empty-state">
+        <h3><%= t('search.no_results') %></h3>
+      </div>
       <% } %>
-
-      <% if (results.rooms && results.rooms.length) { %>
-        <h2>Rooms</h2>
-        <ul class="simple-list">
-          <% results.rooms.forEach((room) => { %>
-            <li><a href="/rooms/<%= room.slug %>"><%= room.nameAr || room.name %></a></li>
-          <% }) %>
-        </ul>
-      <% } %>
-
-      <% if (results.marketplace && results.marketplace.length) { %>
-        <h2>Marketplace</h2>
-        <ul class="simple-list">
-          <% results.marketplace.forEach((item) => { %>
-            <li><a href="/marketplace/<%= item.id %>"><%= item.titleAr || item.title %></a></li>
-          <% }) %>
-        </ul>
-      <% } %>
-
-      <% if (results.products && results.products.length) { %>
-        <h2>Store Products</h2>
-        <ul class="simple-list">
-          <% results.products.forEach((product) => { %>
-            <li><a href="/product/<%= product.id %>"><%= product.nameAr || product.name %></a></li>
-          <% }) %>
-        </ul>
-      <% } %>
-    </div>
+    <% } %>
   </div>
-</section>
-
+</main>
 <%- include('../partials/footer') %>
+</body>
+</html>

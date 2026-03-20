@@ -1,38 +1,21 @@
 function parseLimit(limit, fallback = 10, max = 50) {
-  const value = Number(limit || fallback);
-  if (Number.isNaN(value) || value < 1) return fallback;
-  return Math.min(value, max);
+  const n = parseInt(limit, 10);
+  if (Number.isNaN(n) || n < 1) return fallback;
+  return Math.min(n, max);
 }
 
 function createCursorResponse(items, limit) {
   const hasMore = items.length > limit;
-  const sliced = hasMore ? items.slice(0, limit) : items;
-  const nextCursor = hasMore ? sliced[sliced.length - 1].id : null;
-
-  return {
-    items: sliced,
-    pageInfo: {
-      hasMore,
-      nextCursor
-    }
-  };
+  const trimmed = hasMore ? items.slice(0, limit) : items;
+  const nextCursor = hasMore ? trimmed[trimmed.length - 1].id : null;
+  return { items: trimmed, hasMore, nextCursor };
 }
 
 function buildCursorPage(items, take) {
-  const safeTake = Number(take) > 0 ? Number(take) : 10;
-  const hasMore = items.length > safeTake;
-  const data = hasMore ? items.slice(0, safeTake) : items;
-  const nextCursor = hasMore && data.length ? data[data.length - 1].id : null;
-
-  return {
-    data,
-    hasMore,
-    nextCursor
-  };
+  const hasMore = items.length > take;
+  const trimmed = hasMore ? items.slice(0, take) : items;
+  const nextCursor = hasMore ? trimmed[trimmed.length - 1].id : null;
+  return { data: trimmed, hasMore, nextCursor };
 }
 
-module.exports = {
-  parseLimit,
-  createCursorResponse,
-  buildCursorPage
-};
+module.exports = { parseLimit, createCursorResponse, buildCursorPage };

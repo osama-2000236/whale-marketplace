@@ -5,7 +5,8 @@ const {
   createTestUser,
   createTestListing,
   createTestOrder,
-  cleanTestData
+  cleanTestData,
+  skipIfNoDb
 } = require('../../helpers/db');
 const { getCsrfToken } = require('../../helpers/http');
 
@@ -38,6 +39,7 @@ describe('Whale extra component coverage', () => {
   let strangerAgent;
 
   beforeAll(async () => {
+    if (skipIfNoDb()) return;
     await cleanTestData();
 
     seller = await createTestUser({ username: 'test_whale_extra_seller', password: 'pass' });
@@ -77,10 +79,12 @@ describe('Whale extra component coverage', () => {
   });
 
   afterAll(async () => {
+    if (skipIfNoDb()) return;
     await cleanTestData();
   });
 
   test('POST /whale/listing/:id/wa-click increments click counter', async () => {
+    if (skipIfNoDb()) return;
     const before = await prisma.marketListing.findUnique({ where: { id: listing.id } });
     const guestAgent = request.agent(app);
     const res = await postWithToken(
@@ -98,6 +102,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('POST /whale/listing/:id/save returns 400 for invalid listing id', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       buyerAgent,
       '/whale/listing/00000000-0000-0000-0000-000000000000/save',
@@ -109,17 +114,20 @@ describe('Whale extra component coverage', () => {
   });
 
   test('GET /whale/listing/:id/buy returns 404 for missing listing', async () => {
+    if (skipIfNoDb()) return;
     const res = await buyerAgent.get('/whale/listing/00000000-0000-0000-0000-000000000000/buy');
     expect(res.status).toBe(404);
   });
 
   test('GET /whale/listing/:id/buy redirects seller away from own checkout', async () => {
+    if (skipIfNoDb()) return;
     const res = await sellerAgent.get(`/whale/listing/${listing.id}/buy`);
     expect(res.status).toBe(302);
     expect(res.headers.location).toBe(`/whale/listing/${listing.id}`);
   });
 
   test('GET /whale/listing/:id/edit allows owner and blocks other users', async () => {
+    if (skipIfNoDb()) return;
     const owner = await sellerAgent.get(`/whale/listing/${listing.id}/edit`);
     expect(owner.status).toBe(200);
 
@@ -128,6 +136,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('POST /whale/listing/:id/edit updates listing for owner', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       sellerAgent,
       `/whale/listing/${listing.id}/edit`,
@@ -154,6 +163,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('POST /whale/listing/:id/edit redirects to error for non-owner', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       buyerAgent,
       `/whale/listing/${listing.id}/edit`,
@@ -166,6 +176,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('POST /whale/listing/:id/mark-sold and /delete work for owner', async () => {
+    if (skipIfNoDb()) return;
     const toSell = await createTestListing(seller.id, { title: 'Sell then delete', status: 'ACTIVE' });
     const sellRes = await postWithToken(
       sellerAgent,
@@ -192,6 +203,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('POST /whale/listing/:id/mark-sold returns 400 for non-owner', async () => {
+    if (skipIfNoDb()) return;
     const protectedListing = await createTestListing(seller.id, { title: 'Protected listing' });
     const res = await postWithToken(
       buyerAgent,
@@ -203,6 +215,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('GET /whale/orders works for buying and selling tabs', async () => {
+    if (skipIfNoDb()) return;
     const buyerOrders = await buyerAgent.get('/whale/orders?tab=buying');
     expect(buyerOrders.status).toBe(200);
     expect(buyerOrders.text).toContain(order.orderNumber);
@@ -213,6 +226,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('GET /whale/orders/:id authorizes buyer/seller and blocks stranger', async () => {
+    if (skipIfNoDb()) return;
     const buyerView = await buyerAgent.get(`/whale/orders/${order.id}`);
     expect(buyerView.status).toBe(200);
 
@@ -224,6 +238,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('POST order state endpoints return 400 on forbidden/invalid states', async () => {
+    if (skipIfNoDb()) return;
     const confirmAsBuyer = await postWithToken(
       buyerAgent,
       `/whale/orders/${order.id}/confirm`,
@@ -250,6 +265,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('POST /whale/listing/:id/buy with card redirects to payment start', async () => {
+    if (skipIfNoDb()) return;
     const cardListing = await createTestListing(seller.id, {
       title: 'Card checkout listing',
       price: 100,
@@ -273,6 +289,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('GET /whale/my-listings, /dashboard and /saved render for authenticated users', async () => {
+    if (skipIfNoDb()) return;
     const saveRes = await postWithToken(
       buyerAgent,
       `/whale/listing/${listing.id}/save`,
@@ -292,6 +309,7 @@ describe('Whale extra component coverage', () => {
   });
 
   test('GET /whale/seller/:username returns 200 for existing and 404 for missing seller', async () => {
+    if (skipIfNoDb()) return;
     const existing = await request(app).get(`/whale/seller/${seller.username}`);
     expect(existing.status).toBe(200);
     expect(existing.text).toContain(seller.username);

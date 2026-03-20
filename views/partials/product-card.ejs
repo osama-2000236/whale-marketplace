@@ -1,22 +1,10 @@
-<div class="product-card">
-  <% if (product.badge) { %>
-  <span class="product-badge"><%= product.badge %></span>
-  <% } %>
-  <a href="/product/<%= product.id %>" class="product-image-link">
-    <img src="<%= product.image %>" alt="<%= product.nameAr %>" class="product-image" loading="lazy" onerror="this.src='/images/products/placeholder.svg'">
+<article class="product-card">
+  <a href="/api/products/<%= product.id %>">
+    <% if (product.image) { %><img src="<%= product.image %>" alt="<%= product.name %>" loading="lazy"><% } %>
+    <div class="product-card-body">
+      <h3><%= lang === 'ar' && product.nameAr ? product.nameAr : product.name %></h3>
+      <div class="product-price">₪<%= product.price %></div>
+      <% if (product.badge) { %><span class="product-badge"><%= product.badge %></span><% } %>
+    </div>
   </a>
-  <div class="product-info">
-    <h3 class="product-name"><a href="/product/<%= product.id %>"><%= product.nameAr %></a></h3>
-    <p class="product-desc"><%= product.description ? product.description.substring(0, 80) + '...' : '' %></p>
-    <div class="product-price-row">
-      <span class="product-price"><%= config.currency %> <%= product.price.toLocaleString() %></span>
-      <% if (product.oldPrice) { %>
-      <span class="product-old-price"><%= config.currency %> <%= product.oldPrice.toLocaleString() %></span>
-      <% } %>
-    </div>
-    <div class="product-actions">
-      <a href="https://wa.me/<%= whatsappNumber %>?text=مرحبا، أريد الاستفسار عن: <%= encodeURIComponent(product.nameAr) %>" target="_blank" class="btn btn-primary btn-sm">📱 اطلب الآن</a>
-      <a href="/product/<%= product.id %>" class="btn btn-outline btn-sm">التفاصيل</a>
-    </div>
-  </div>
-</div>
+</article>

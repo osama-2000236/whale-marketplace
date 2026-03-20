@@ -18,6 +18,51 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     });
   }
+
+  // Nav dropdown toggle (notifications, user menu)
+  document.querySelectorAll('.nav-dropdown').forEach((dd) => {
+    const btn = dd.querySelector('.btn-icon, .user-avatar-btn');
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasOpen = dd.classList.contains('open');
+      document.querySelectorAll('.nav-dropdown.open').forEach((d) => d.classList.remove('open'));
+      if (!wasOpen) dd.classList.add('open');
+    });
+  });
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.nav-dropdown.open').forEach((d) => d.classList.remove('open'));
+  });
+
+  // Mobile nav toggle
+  const navToggle = document.getElementById('navToggle');
+  const navLinks = document.querySelector('.nav-links');
+  if (navToggle && navLinks) {
+    navToggle.addEventListener('click', () => {
+      navLinks.classList.toggle('mobile-open');
+      navToggle.classList.toggle('active');
+    });
+  }
+
+  // Theme toggle
+  const themeToggle = document.getElementById('themeToggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', async () => {
+      const isDark = document.documentElement.dataset.theme === 'dark';
+      const next = isDark ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      document.documentElement.classList.toggle('dark', next === 'dark');
+      try { localStorage.setItem('whale-theme', next); } catch (_) {}
+      const csrf = window.getCsrfToken();
+      try {
+        await fetch('/prefs/theme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: `_csrf=${encodeURIComponent(csrf)}&theme=${encodeURIComponent(next)}`
+        });
+      } catch (_) {}
+    });
+  }
 });
 
 window.getCsrfToken = function getCsrfToken() {

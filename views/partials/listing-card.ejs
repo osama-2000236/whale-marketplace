@@ -1,90 +1,43 @@
-<%
-  const cardHref = listing.slug
-    ? `/whale/listing/${listing.slug}`
-    : `/whale/listing/${listing.id}`;
-  const cardImage = listing.images && listing.images[0]
-    ? listing.images[0]
-    : '/images/products/placeholder.svg';
-  const cardTitle = listing.titleAr || listing.title;
-  const cardLang = (typeof lang !== 'undefined' && lang) || 'ar';
-  const cardLocale = cardLang === 'ar' ? 'ar-PS' : 'en-US';
-  const cardPrice = Number(listing.price || 0).toLocaleString(cardLocale);
-  const cardCity = listing.city || listing.location || '';
-  const cardSeller = listing.seller || null;
-  const sellerInitial = cardSeller
-    ? String(cardSeller.username || '?').charAt(0).toUpperCase()
-    : '?';
-  const cardQuantity = listing.quantity != null ? listing.quantity : 99;
-  const cardOrderCount = listing._count ? (listing._count.orders || 0) : 0;
-  const isNegotiable = listing.negotiable || false;
-  const isBoosted = listing.isBoosted || false;
-  const isSold = listing.status === 'SOLD';
-  const conditionKey = listing.condition || 'USED';
-  const conditionLabel = typeof t === 'function' ? t('cond.' + conditionKey) : conditionKey;
-%>
-<article class="listing-card card whale-listing-card <%= isSold ? 'is-sold' : '' %>">
-  <% if (isBoosted) { %>
-    <span class="whale-boost-ribbon"><%= typeof t === 'function' ? t('market.sponsored') : 'Sponsored' %></span>
-  <% } %>
-
-  <% if (typeof currentUser !== 'undefined' && currentUser) { %>
-    <button class="save-btn whale-save-trigger" data-id="<%= listing.id %>" type="button" aria-label="<%= typeof t === 'function' ? t('listing.save') : 'Save' %>">♡</button>
-  <% } else { %>
-    <a href="/auth/register?reason=save" class="save-btn whale-save-trigger" aria-label="<%= typeof t === 'function' ? t('listing.save') : 'Save' %>">♡</a>
-  <% } %>
-
-  <a href="<%= cardHref %>" class="whale-card-link" aria-label="<%= cardTitle %>">
-    <div class="whale-card-media">
-      <% if (listing.images && listing.images[0]) { %>
-        <img
-          src="<%= cardImage %>"
-          alt="<%= cardTitle %>"
-          class="listing-img"
-          loading="lazy"
-        >
-      <% } else { %>
-        <div class="whale-card-placeholder" aria-hidden="true"></div>
+<% var img = listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png'; %>
+<% var imgData = imageSet(img); %>
+<article class="listing-card">
+  <a href="/whale/listing/<%= listing.slug || listing.id %>" class="listing-card-link">
+    <div class="listing-card-img">
+      <img src="<%= imgData.src %>" alt="<%= listing.title %>" loading="lazy" width="<%= imgData.width %>" height="<%= imgData.height %>">
+      <% if (listing.isBoosted) { %><span class="boost-ribbon">⚡</span><% } %>
+      <% if (listing.condition && listing.condition !== 'GOOD') { %>
+      <span class="condition-badge condition-<%= listing.condition.toLowerCase() %>"><%= t('condition.' + listing.condition.toLowerCase()) %></span>
       <% } %>
-      <span class="whale-condition-pill"><%= conditionLabel %></span>
-      <% if (cardOrderCount > 3) { %>
-        <span class="whale-proof-pill">🛒 <%= typeof t === 'function' ? t('listing.sold_recently', { n: cardOrderCount }) : (cardOrderCount + ' sold') %></span>
+      <% if (listing._count && listing._count.orders > 3) { %>
+      <span class="proof-pill">🛒 <%= listing._count.orders %> <%= t('whale.sold') %></span>
+      <% } %>
+    </div>
+    <div class="listing-card-body">
+      <h3 class="listing-card-title" dir="auto"><%= lang === 'ar' && listing.titleAr ? listing.titleAr : listing.title %></h3>
+      <div class="listing-card-price">
+        ₪<%= listing.price %>
+        <% if (listing.negotiable) { %><span class="negotiable-badge"><%= t('whale.negotiable') %></span><% } %>
+      </div>
+      <div class="listing-card-meta">
+        <% if (listing.seller) { %>
+        <span class="seller-info">
+          <% if (listing.seller.avatar) { %><img src="<%= listing.seller.avatar %>" alt="" class="avatar-xs"><% } %>
+          <%= listing.seller.username %>
+          <% if (listing.seller.isVerified) { %><span class="verified-check">✓</span><% } %>
+          <% if (listing.seller.sellerProfile && listing.seller.sellerProfile.averageRating > 0) { %>
+          <span class="star-sm">★ <%= listing.seller.sellerProfile.averageRating.toFixed(1) %></span>
+          <% } %>
+        </span>
+        <% } %>
+        <span class="listing-city"><%= typeof getCityName === 'function' ? getCityName(listing.city, lang) : listing.city %></span>
+        <span class="listing-time"><%= timeAgo(listing.createdAt) %></span>
+      </div>
+      <% if (listing.quantity && listing.quantity <= 2 && listing.quantity > 0) { %>
+      <span class="urgency-badge"><%= t('whale.few_left') %></span>
       <% } %>
     </div>
   </a>
-
-  <div class="listing-body">
-    <div class="listing-price">
-      <%= cardPrice %> ₪
-      <% if (isNegotiable) { %>
-        <span class="negotiable-badge"><%= typeof t === 'function' ? t('listing.negotiable') : 'Negotiable' %></span>
-      <% } %>
-    </div>
-
-    <a href="<%= cardHref %>" class="listing-title" dir="auto"><%= cardTitle %></a>
-
-    <% if (cardSeller) { %>
-      <div class="whale-seller-row">
-        <span class="whale-seller-avatar" aria-hidden="true">
-          <% if (cardSeller.avatar) { %>
-            <img src="<%= cardSeller.avatar %>" alt="<%= cardSeller.username %>">
-          <% } else { %>
-            <%= sellerInitial %>
-          <% } %>
-        </span>
-        <span class="whale-seller-name"><%= cardSeller.username %></span>
-        <% if (cardSeller.sellerProfile && cardSeller.sellerProfile.isVerified) { %>
-          <span class="verified-seller">✓</span>
-        <% } %>
-        <% if (cardSeller.sellerProfile && cardSeller.sellerProfile.averageRating > 0) { %>
-          <span class="stars"><%- '★'.repeat(Math.round(cardSeller.sellerProfile.averageRating)) %><%- '☆'.repeat(5 - Math.round(cardSeller.sellerProfile.averageRating)) %></span>
-        <% } %>
-      </div>
-    <% } %>
-
-    <div class="listing-location">📍 <%= cardCity %><% if (typeof timeAgo === 'function' && listing.createdAt) { %> · <span class="listing-time" data-dynamic-time><%= timeAgo(listing.createdAt) %></span><% } %></div>
-
-    <% if (cardQuantity <= 2 && !isSold) { %>
-      <div class="whale-urgency-line"><%= typeof t === 'function' ? t('listing.only_left', { n: cardQuantity }) : ('Only ' + cardQuantity + ' left') %></div>
-    <% } %>
-  </div>
+  <% if (listing.status === 'SOLD') { %>
+  <div class="sold-overlay"><%= t('whale.sold') %></div>
+  <% } %>
 </article>

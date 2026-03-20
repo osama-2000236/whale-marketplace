@@ -1,93 +1,28 @@
 const prisma = require('../lib/prisma');
 
-async function getFeaturedProducts(limit = 8) {
+async function listProducts(category, options = {}) {
+  const where = {};
+  if (category) where.category = category;
+  if (options.inStock !== undefined) where.inStock = options.inStock;
+  if (options.featured) where.featured = true;
+
   return prisma.product.findMany({
-    where: {
-      featured: true,
-      inStock: true
-    },
+    where,
     orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-    take: limit
+    include: { _count: { select: { reviews: true } } },
   });
-}
-
-async function getLatestProducts(limit = 8) {
-  return prisma.product.findMany({
-    where: {
-      inStock: true
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit
-  });
-}
-
-async function listProducts({ category, search, page = 1, limit = 12 } = {}) {
-  const where = {
-    inStock: true
-  };
-
-  if (category) {
-    where.category = category;
-  }
-
-  if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { nameAr: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } }
-    ];
-  }
-
-  const currentPage = Number(page) || 1;
-  const take = Number(limit) || 12;
-  const skip = (currentPage - 1) * take;
-
-  const [items, total] = await Promise.all([
-    prisma.product.findMany({
-      where,
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-      skip,
-      take
-    }),
-    prisma.product.count({ where })
-  ]);
-
-  const totalPages = Math.max(Math.ceil(total / take), 1);
-
-  return {
-    items,
-    pagination: {
-      page: currentPage,
-      limit: take,
-      total,
-      totalPages,
-      hasNext: currentPage < totalPages,
-      hasPrev: currentPage > 1
-    }
-  };
 }
 
 async function getProductById(id) {
-  return prisma.product.findUnique({ where: { id } });
-}
-
-async function getRelatedProducts(productId, category, limit = 4) {
-  return prisma.product.findMany({
-    where: {
-      category,
-      id: { not: productId },
-      inStock: true
+  return prisma.product.findUnique({
+    where: { id },
+    include: {
+      reviews: {
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        include: { user: { select: { id: true, username: true, avatar: true } } },
+      },
     },
-    orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-    take: limit
-  });
-}
-
-async function adminListProducts(category) {
-  const where = category ? { category } : undefined;
-  return prisma.product.findMany({
-    where,
-    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }]
   });
 }
 
@@ -96,29 +31,24 @@ async function createProduct(data) {
 }
 
 async function updateProduct(id, data) {
-  return prisma.product.update({
-    where: { id },
-    data
-  });
+  return prisma.product.update({ where: { id }, data });
 }
 
 async function deleteProduct(id) {
   return prisma.product.delete({ where: { id } });
 }
 
-async function countProducts(where = undefined) {
-  return prisma.product.count({ where });
+async function adminListProducts(category) {
+  const where = {};
+  if (category) where.category = category;
+  return prisma.product.findMany({
+    where,
+    orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+  });
 }
 
-module.exports = {
-  getFeaturedProducts,
-  getLatestProducts,
-  listProducts,
-  getProductById,
-  getRelatedProducts,
-  adminListProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  countProducts
-};
+async function countProducts() {
+  return prisma.product.count();
+}
+
+module.exports = { listProducts, getProductById, createProduct, updateProduct, deleteProduct, adminListProducts, countProducts };

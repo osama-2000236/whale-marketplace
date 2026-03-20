@@ -1,55 +1,42 @@
-<%- include('../partials/header', { title: t('nav.my_orders') + ' — Whale' }) %>
-
-<section class="page-section whale-page">
-  <div class="container">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-      <h1 class="page-title"><%= t('nav.my_orders') %></h1>
-      <div style="display:flex; gap:8px;" role="tablist" aria-label="<%= t('nav.my_orders') %>">
-        <a href="/whale/orders?tab=buying" class="btn btn-sm <%= tab === 'buying' ? 'btn-primary' : 'btn-ghost' %>" role="tab" aria-selected="<%= tab === 'buying' %>"><%= t('order.tab_buying') %></a>
-        <a href="/whale/orders?tab=selling" class="btn btn-sm <%= tab === 'selling' ? 'btn-primary' : 'btn-ghost' %>" role="tab" aria-selected="<%= tab === 'selling' %>"><%= t('order.tab_selling') %></a>
-      </div>
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head><%- include('../partials/head') %></head>
+<body class="<%= bodyClass %>">
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="page-container">
+    <h1><%= t('whale.orders') %></h1>
+    <div class="tab-bar">
+      <a href="/whale/orders?tab=buying" class="tab <%= tab === 'buying' ? 'active' : '' %>"><%= t('whale.buying') %></a>
+      <a href="/whale/orders?tab=selling" class="tab <%= tab === 'selling' ? 'active' : '' %>"><%= t('whale.selling') %></a>
     </div>
 
-    <div class="panel-card">
-      <% if (orders.length) { %>
-        <table class="data-table">
-          <caption class="sr-only"><%= t('nav.my_orders') %> — <%= tab === 'buying' ? t('order.tab_buying') : t('order.tab_selling') %></caption>
-          <thead>
-            <tr>
-              <th scope="col"><%= t('order.number') %></th>
-              <th scope="col"><%= t('order.item') %></th>
-              <th scope="col"><%= tab === 'selling' ? t('order.buyer') : t('order.seller') %></th>
-              <th scope="col"><%= t('order.amount') %></th>
-              <th scope="col"><%= t('order.status') %></th>
-              <th scope="col"><%= t('order.created') %></th>
-              <th scope="col"><%= t('order.actions') %></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% orders.forEach((order) => { %>
-              <tr>
-                <td><%= order.orderNumber %></td>
-                <td dir="auto"><%= order.listing.titleAr || order.listing.title %></td>
-                <td><%= tab === 'selling' ? order.buyer.username : order.seller.username %></td>
-                <td><%= order.amount.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</td>
-                <td><%- include('../partials/status-badge', { status: order.orderStatus }) %></td>
-                <td><%= new Date(order.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB') %></td>
-                <td><a href="/whale/orders/<%= order.id %>"><%= t('ui.open') %></a></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      <% } else { %>
-        <%- include('../partials/empty-state', {
-          icon: '📦',
-          title: t('order.no_orders'),
-          subtitle: tab === 'buying' ? t('order.empty_buying') : t('order.empty_selling'),
-          ctaText: tab === 'buying' ? t('ui.browse') : t('ui.sell'),
-          ctaHref: tab === 'buying' ? '/whale' : '/whale/sell'
-        }) %>
-      <% } %>
+    <% if (orders.length) { %>
+    <div class="orders-list">
+      <% orders.forEach(order => { %>
+      <a href="/whale/orders/<%= order.id %>" class="order-card">
+        <img src="<%= order.listing && order.listing.images && order.listing.images[0] ? order.listing.images[0] : '/images/placeholder.png' %>" alt="" class="order-thumb">
+        <div class="order-info">
+          <h3><%= order.listing ? order.listing.title : t('whale.order') %></h3>
+          <p class="order-number">#<%= order.orderNumber %></p>
+          <p class="order-amount">₪<%= order.amount %></p>
+        </div>
+        <div class="order-status">
+          <% var os = order.orderStatus || 'PENDING'; %>
+          <span class="status-badge status-<%= os %>"><%= t('status.' + os.toLowerCase()) %></span>
+          <span class="order-date"><%= timeAgo(order.createdAt) %></span>
+        </div>
+      </a>
+      <% }) %>
     </div>
+    <% } else { %>
+    <div class="empty-state">
+      <h3><%= t('whale.no_orders') %></h3>
+      <a href="/whale" class="btn btn-primary"><%= t('whale.browse') %></a>
+    </div>
+    <% } %>
   </div>
-</section>
-
+</main>
 <%- include('../partials/footer') %>
+</body>
+</html>

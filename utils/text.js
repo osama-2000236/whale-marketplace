@@ -1,57 +1,49 @@
-function startsWithArabic(text = '') {
-  return /^[\u0600-\u06FF]/.test(String(text).trim());
+function startsWithArabic(text) {
+  if (!text) return false;
+  return /[\u0600-\u06FF]/.test(String(text).charAt(0));
 }
 
-function getDirection(text = '') {
+function getDirection(text) {
   return startsWithArabic(text) ? 'rtl' : 'ltr';
 }
 
-function detectDir(text = '') {
-  const value = String(text || '').trim();
-  if (!value) return 'auto';
-
-  const hasArabic = /[\u0600-\u06FF]/.test(value);
-  const hasLatin = /[A-Za-z]/.test(value);
-
-  if (hasArabic && hasLatin) return 'auto';
-  if (hasArabic) return 'rtl';
-  return 'ltr';
+function detectDir(text) {
+  if (!text) return 'auto';
+  return startsWithArabic(text) ? 'rtl' : 'ltr';
 }
 
-function timeAgo(input) {
-  if (!input) return 'الآن | Just now';
-
+function timeAgo(input, lang = 'ar') {
+  if (!input) return '';
+  const now = Date.now();
   const date = new Date(input);
-  if (Number.isNaN(date.getTime())) return 'الآن | Just now';
+  const diff = now - date.getTime();
+  if (diff < 0) return lang === 'ar' ? 'الآن' : 'now';
 
-  const diffMs = Math.max(0, Date.now() - date.getTime());
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
 
-  if (diffMs < minute) return 'الآن | Just now';
-  if (diffMs < hour) {
-    const m = Math.floor(diffMs / minute);
-    return `${m} دقيقة | ${m} min ago`;
+  if (lang === 'ar') {
+    if (seconds < 60) return 'الآن';
+    if (minutes < 60) return `منذ ${minutes} دقيقة`;
+    if (hours < 24) return `منذ ${hours} ساعة`;
+    if (days < 30) return `منذ ${days} يوم`;
+    if (months < 12) return `منذ ${months} شهر`;
+    return `منذ ${years} سنة`;
   }
-  if (diffMs < day) {
-    const h = Math.floor(diffMs / hour);
-    return `${h} ساعة | ${h} h ago`;
-  }
-
-  const d = Math.floor(diffMs / day);
-  return `${d} يوم | ${d} d ago`;
+  if (seconds < 60) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 30) return `${days}d ago`;
+  if (months < 12) return `${months}mo ago`;
+  return `${years}y ago`;
 }
 
 function isModerator(user) {
-  if (!user) return false;
-  return ['ADMIN', 'MODERATOR'].includes(user.role);
+  return user && ['ADMIN', 'MODERATOR'].includes(user.role);
 }
 
-module.exports = {
-  startsWithArabic,
-  getDirection,
-  detectDir,
-  timeAgo,
-  isModerator
-};
+module.exports = { startsWithArabic, getDirection, detectDir, timeAgo, isModerator };

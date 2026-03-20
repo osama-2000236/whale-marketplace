@@ -1,173 +1,105 @@
-<%- include('../partials/header') %>
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head><%- include('../partials/head') %></head>
+<body class="<%= bodyClass %>">
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="page-container">
+    <div class="forum-breadcrumb">
+      <a href="/forum"><%= t('forum.title') %></a> &rsaquo;
+      <% if (thread.category) { %><a href="/forum/c/<%= thread.category.slug %>"><%= lang === 'ar' && thread.category.nameAr ? thread.category.nameAr : thread.category.name %></a> &rsaquo;<% } %>
+    </div>
 
-<section class="page-section">
-  <div class="container" style="max-width: 960px;">
     <div class="thread-header">
-      <div class="section-header-inline" style="margin-bottom: 10px; align-items: start;">
-        <div>
-          <a href="/forum/<%= thread.category.slug %>" class="muted">← <%= thread.category.nameAr || thread.category.name %></a>
-          <h1 dir="auto"><%= thread.title %></h1>
-        </div>
-        <div>
-          <% if (thread.isPinned) { %><span class="pinned-badge">مثبّت | PINNED</span><% } %>
-          <% if (thread.isSolved) { %><span class="solved-badge">محلول | SOLVED</span><% } %>
-        </div>
-      </div>
-      <div class="muted">
-        <span>👁️ <%= thread.views %></span>
-        <span> • </span>
-        <span>💬 <%= thread.replyCount %></span>
-        <span> • </span>
-        <span>بواسطة | by <a href="/u/<%= thread.author.username %>"><%= thread.author.username %></a></span>
-        <span class="rep-badge">REP <%= thread.author.reputationPoints || 0 %></span>
+      <h1><%= thread.title %></h1>
+      <% if (thread.pinned) { %><span class="pin-badge"><%= t('forum.pinned') %></span><% } %>
+      <% if (thread.solved) { %><span class="solved-badge"><%= t('forum.solved') %></span><% } %>
+      <div class="thread-meta">
+        <%- include('../partials/avatar', { user: thread.author, size: 'sm' }) %>
+        <a href="/u/<%= thread.author.username %>"><%= thread.author.username %></a>
+        <span><%= timeAgo(thread.createdAt) %></span>
       </div>
     </div>
 
-    <article class="post-card">
-      <div class="post-author">
-        <%- include('../partials/avatar', { user: thread.author, size: 'md' }) %>
-        <div>
-          <strong><%= thread.author.username %></strong>
-          <div class="muted"><%= new Date(thread.createdAt).toLocaleString('en-GB') %></div>
+    <div class="thread-body">
+      <%- thread.bodyHtml || thread.body %>
+    </div>
+
+    <% if (typeof replies !== 'undefined' && replies.length) { %>
+    <div class="replies-section">
+      <h2><%= replies.length %> <%= t('forum.replies') %></h2>
+      <% replies.forEach(reply => { %>
+      <div class="reply-card" id="reply-<%= reply.id %>">
+        <div class="reply-header">
+          <%- include('../partials/avatar', { user: reply.author, size: 'sm' }) %>
+          <a href="/u/<%= reply.author.username %>"><%= reply.author.username %></a>
+          <span class="reply-time"><%= timeAgo(reply.createdAt) %></span>
+          <% if (reply.accepted) { %><span class="accepted-badge"><%= t('forum.accepted_answer') %></span><% } %>
         </div>
+        <div class="reply-body"><%- reply.bodyHtml || reply.body %></div>
+        <div class="reply-actions">
+          <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+          <button class="btn btn-sm btn-outline like-btn" data-reply-id="<%= reply.id %>" data-liked="<%= reply.likedBy && reply.likedBy.includes(currentUser.id) ? 'true' : 'false' %>">
+            <span class="like-count"><%= reply.likedBy ? reply.likedBy.length : 0 %></span> <%= t('forum.like') %>
+          </button>
+          <% if (thread.authorId === currentUser.id && !reply.accepted) { %>
+          <button class="btn btn-sm btn-outline accept-btn" data-reply-id="<%= reply.id %>"><%= t('forum.accept_answer') %></button>
+          <% } %>
+          <% } %>
+        </div>
+
+        <% if (reply.children && reply.children.length) { %>
+        <div class="nested-replies">
+          <% reply.children.forEach(child => { %>
+          <div class="reply-card nested" id="reply-<%= child.id %>">
+            <div class="reply-header">
+              <%- include('../partials/avatar', { user: child.author, size: 'xs' }) %>
+              <a href="/u/<%= child.author.username %>"><%= child.author.username %></a>
+              <span class="reply-time"><%= timeAgo(child.createdAt) %></span>
+            </div>
+            <div class="reply-body"><%- child.bodyHtml || child.body %></div>
+          </div>
+          <% }) %>
+        </div>
+        <% } %>
       </div>
-      <div class="post-body" dir="auto"><%- thread.bodyHtml %></div>
-    </article>
-
-    <section id="replies" style="margin-top: 20px;">
-      <h2 style="margin-bottom: 10px;">Replies | الردود</h2>
-
-      <% if (currentUser) { %>
-        <div class="panel-card" style="margin-bottom: 12px;">
-          <form method="POST" action="/forum/<%= thread.category.slug %>/<%= thread.slug %>/reply" class="auth-form">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <textarea name="body" rows="4" minlength="3" required placeholder="اكتب ردك هنا..."></textarea>
-            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">إرسال الرد | Reply</button>
-          </form>
-        </div>
-      <% } else { %>
-        <div class="panel-card" style="margin-bottom: 12px;">
-          <a href="/auth/register" class="btn btn-secondary">سجل للرد | Register to reply</a>
-        </div>
-      <% } %>
-
-      <% if (!thread.replies.length) { %>
-        <div class="panel-card">لا يوجد ردود بعد | No replies yet.</div>
-      <% } %>
-
-      <% thread.replies.forEach((reply) => { %>
-        <article class="post-card <%= reply.isAccepted ? 'solution' : '' %>" id="reply-<%= reply.id %>">
-          <div class="post-author">
-            <%- include('../partials/avatar', { user: reply.author, size: 'sm' }) %>
-            <div>
-              <strong><%= reply.author.username %></strong>
-              <span class="rep-badge">REP <%= reply.author.reputationPoints || 0 %></span>
-              <div class="muted"><%= new Date(reply.createdAt).toLocaleString('en-GB') %></div>
-            </div>
-            <% if (reply.isAccepted) { %>
-              <span class="solution-badge">✅ حل معتمد | Accepted solution</span>
-            <% } %>
-          </div>
-
-          <div class="post-body" dir="auto"><%- reply.bodyHtml %></div>
-
-          <div class="post-actions">
-            <% if (currentUser) { %>
-              <button type="button" class="btn btn-secondary btn-like" data-reply-id="<%= reply.id %>">👍 <span><%= reply.likesCount %></span></button>
-
-              <button type="button" class="btn btn-secondary btn-reply-toggle" data-target="reply-form-<%= reply.id %>">↩️ رد | Reply</button>
-
-              <% if (thread.authorId === currentUser.id) { %>
-                <button type="button" class="btn btn-gold btn-accept" data-reply-id="<%= reply.id %>">✔ اعتماد كحل | Mark Solution</button>
-              <% } %>
-            <% } else { %>
-              <a href="/auth/login" class="btn btn-secondary">سجّل دخول للتفاعل | Login to react</a>
-            <% } %>
-          </div>
-
-          <% if (currentUser) { %>
-            <div class="panel-card" id="reply-form-<%= reply.id %>" style="display:none; margin: 0 16px 16px;">
-              <form method="POST" action="/forum/<%= thread.category.slug %>/<%= thread.slug %>/reply" class="auth-form">
-                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                <input type="hidden" name="parentId" value="<%= reply.id %>">
-                <textarea name="body" rows="3" minlength="3" required placeholder="اكتب ردك على هذا التعليق..."></textarea>
-                <button type="submit" class="btn btn-primary" style="margin-top: 8px;">رد | Reply</button>
-              </form>
-            </div>
-          <% } %>
-
-          <% if (reply.children && reply.children.length) { %>
-            <div style="padding: 0 16px 16px 40px;">
-              <% reply.children.forEach((child) => { %>
-                <div class="post-card" style="margin-bottom: 10px;">
-                  <div class="post-author">
-                    <%- include('../partials/avatar', { user: child.author, size: 'sm' }) %>
-                    <div>
-                      <strong><%= child.author.username %></strong>
-                      <span class="rep-badge">REP <%= child.author.reputationPoints || 0 %></span>
-                    </div>
-                  </div>
-                  <div class="post-body" dir="auto"><%- child.bodyHtml %></div>
-                </div>
-              <% }) %>
-            </div>
-          <% } %>
-        </article>
       <% }) %>
-    </section>
+    </div>
+    <% } %>
+
+    <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+    <div class="reply-form-section">
+      <h3><%= t('forum.post_reply') %></h3>
+      <form method="post" action="/forum/t/<%= thread.slug %>/reply" class="whale-form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="form-group">
+          <textarea name="body" rows="4" required placeholder="<%= t('forum.reply_placeholder') %>"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary"><%= t('forum.post_reply') %></button>
+      </form>
+    </div>
+    <% } else { %>
+    <p class="auth-prompt"><a href="/auth/login"><%= t('auth.login') %></a> <%= t('forum.to_reply') %></p>
+    <% } %>
   </div>
-</section>
-
-<script>
-  (function () {
-    const csrf = '<%= csrfToken %>';
-
-    document.querySelectorAll('.btn-reply-toggle').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const el = document.getElementById(btn.dataset.target);
-        if (el) {
-          el.style.display = el.style.display === 'none' ? 'block' : 'none';
-        }
-      });
-    });
-
-    document.querySelectorAll('.btn-like').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.replyId;
-        const res = await fetch(`/forum/reply/${id}/like`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-csrf-token': csrf
-          }
-        });
-
-        if (!res.ok) return;
-        const data = await res.json();
-        const countNode = btn.querySelector('span');
-        if (countNode) {
-          countNode.textContent = data.likesCount;
-        }
-      });
-    });
-
-    document.querySelectorAll('.btn-accept').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const id = btn.dataset.replyId;
-        const res = await fetch(`/forum/reply/${id}/accept`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-csrf-token': csrf
-          }
-        });
-
-        if (res.ok) {
-          window.location.reload();
-        }
-      });
-    });
-  })();
-</script>
-
+</main>
 <%- include('../partials/footer') %>
+<script>
+document.querySelectorAll('.like-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id = this.dataset.replyId;
+    fetch('/forum/reply/' + id + '/like', { method: 'POST', headers: { 'X-CSRF-Token': '<%= csrfToken %>', 'Content-Type': 'application/json' } })
+      .then(function(r) { return r.json(); })
+      .then(function(d) { btn.querySelector('.like-count').textContent = d.likes || 0; });
+  });
+});
+document.querySelectorAll('.accept-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    var id = this.dataset.replyId;
+    fetch('/forum/reply/' + id + '/accept', { method: 'POST', headers: { 'X-CSRF-Token': '<%= csrfToken %>', 'Content-Type': 'application/json' } })
+      .then(function() { location.reload(); });
+  });
+});
+</script>
+</body>
+</html>

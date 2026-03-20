@@ -1,25 +1,21 @@
 const express = require('express');
-
 const router = express.Router();
 
-function renderPage(view, titleKey) {
-  return (req, res, next) => {
-    try {
-      return res.render(view, { pageTitle: res.locals.t(titleKey) });
-    } catch (error) {
-      return next(error);
-    }
-  };
-}
+const pages = [
+  { path: '/about', view: 'pages/about', titleKey: 'about.title' },
+  { path: '/contact', view: 'pages/contact', titleKey: 'contact.title' },
+  { path: '/safety', view: 'pages/safety', titleKey: 'safety.title' },
+  { path: '/pricing', view: 'pages/pricing', titleKey: 'pricing.title' },
+  { path: '/terms', view: 'pages/terms', titleKey: 'terms.title' },
+  { path: '/privacy', view: 'pages/privacy', titleKey: 'privacy.title' },
+  { path: '/buyer-protection', view: 'pages/buyer-protection', titleKey: 'buyer_protection.title' },
+  { path: '/unsubscribe', view: 'pages/unsubscribe', titleKey: 'unsubscribe.title' },
+];
 
-router.get('/about', renderPage('pages/about', 'about.title'));
-router.get('/contact', renderPage('pages/contact', 'contact.title'));
-router.get('/safety', renderPage('pages/safety', 'safety.title'));
-router.get('/pricing', renderPage('pages/pricing', 'pricing.title'));
-router.get('/forum', renderPage('pages/forum', 'nav.forum'));
-router.get('/terms', renderPage('pages/terms', 'footer.terms'));
-router.get('/privacy', renderPage('pages/privacy', 'footer.privacy'));
-router.get('/buyer-protection', renderPage('pages/buyer-protection', 'legal.buyer_protection_title'));
-router.get('/unsubscribe', renderPage('pages/unsubscribe', 'legal.unsubscribe_title'));
+for (const page of pages) {
+  router.get(page.path, (req, res) => {
+    res.render(page.view, { title: res.locals.t(page.titleKey) });
+  });
+}
 
 module.exports = router;

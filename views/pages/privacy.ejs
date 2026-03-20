@@ -1,23 +1,24 @@
-<%- include('../partials/header', { title: t('footer.privacy') + ' — Whale' }) %>
-<main class="container section">
-  <div style="max-width:760px;margin:0 auto">
-    <h1 class="page-title"><%= t('footer.privacy') %></h1>
-    <p style="color:var(--c-mist);margin-bottom:24px"><%= t('legal.last_updated') %></p>
-
-    <% const sections = Array.from({ length: 7 }, (_unused, index) => {
-      const num = index + 1;
-      return {
-        h: t(`legal.privacy.${num}.title`),
-        b: t(`legal.privacy.${num}.body`)
-      };
-    }); %>
-
-    <% sections.forEach((s) => { %>
-      <div class="card" style="padding:20px;margin-bottom:12px">
-        <h3 style="font-size:15px;font-weight:700;margin-bottom:8px"><%= s.h %></h3>
-        <p style="font-size:14px;line-height:1.8;color:var(--c-slate)"><%= s.b %></p>
-      </div>
-    <% }); %>
+<!DOCTYPE html>
+<html lang="<%= lang %>" dir="<%= dir %>">
+<head><%- include('../partials/head') %></head>
+<body class="<%= bodyClass %>">
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="page-container content-page">
+    <h1><%= t('pages.privacy_title') %></h1>
+    <div class="content-body">
+      <p><%= t('pages.privacy_intro') %></p>
+      <h2><%= t('pages.privacy_collect_title') %></h2>
+      <p><%= t('pages.privacy_collect_body') %></p>
+      <h2><%= t('pages.privacy_use_title') %></h2>
+      <p><%= t('pages.privacy_use_body') %></p>
+      <h2><%= t('pages.privacy_share_title') %></h2>
+      <p><%= t('pages.privacy_share_body') %></p>
+      <h2><%= t('pages.privacy_rights_title') %></h2>
+      <p><%= t('pages.privacy_rights_body') %></p>
+    </div>
   </div>
 </main>
 <%- include('../partials/footer') %>
+</body>
+</html>

@@ -1,207 +1,130 @@
 <%- include('partials/admin-header') %>
+<div class="admin-page">
+  <h1><%= t('admin.whale_moderation') %></h1>
 
-<div class="admin-header-bar">
-  <h1>🐳 Whale Moderation | إدارة سوق Whale</h1>
-</div>
-
-<div class="admin-card">
-  <h3>Active Listings | الإعلانات النشطة</h3>
-  <table class="data-table">
+  <!-- Pending Verifications -->
+  <% if (typeof pendingVerifications !== 'undefined' && pendingVerifications.length) { %>
+  <h2><%= t('admin.pending_verifications') %></h2>
+  <table class="admin-table">
     <thead>
       <tr>
-        <th>Title</th>
-        <th>Seller</th>
-        <th>Category</th>
-        <th>Price</th>
-        <th>Created</th>
-        <th>Action</th>
+        <th><%= t('admin.seller') %></th>
+        <th><%= t('admin.sales') %></th>
+        <th><%= t('admin.actions') %></th>
       </tr>
     </thead>
     <tbody>
-      <% if (!listings.length) { %>
-        <tr><td colspan="6">No active listings</td></tr>
-      <% } %>
-      <% listings.forEach((listing) => { %>
-        <tr>
-          <td dir="auto"><%= listing.title %></td>
-          <td><%= listing.seller.username %></td>
-          <td><%= listing.category ? listing.category.name : '-' %></td>
-          <td><%= listing.price %> ₪</td>
-          <td><%= new Date(listing.createdAt).toLocaleDateString('en-GB') %></td>
-          <td>
-            <button
-              type="button"
-              class="btn btn-sm btn-danger js-suspend"
-              data-id="<%= listing.id %>"
-              data-csrf="<%= csrfToken %>"
-            >
-              Suspend
-            </button>
-          </td>
-        </tr>
+      <% pendingVerifications.forEach(sp => { %>
+      <tr>
+        <td>
+          <% if (sp.user && sp.user.avatar) { %><img src="<%= sp.user.avatar %>" alt="" class="thumb-xs"><% } %>
+          <%= sp.user ? sp.user.username : sp.userId %>
+        </td>
+        <td><%= sp.totalSales || 0 %></td>
+        <td>
+          <form method="post" action="/admin/whale/verify-seller" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="userId" value="<%= sp.userId %>">
+            <button type="submit" class="btn btn-sm btn-primary"><%= t('admin.verify') %></button>
+          </form>
+        </td>
+      </tr>
       <% }) %>
     </tbody>
   </table>
-</div>
+  <% } %>
 
-<div class="admin-card">
-  <h3>Orders Requiring Attention | الطلبات التي تحتاج متابعة</h3>
-  <table class="data-table">
+  <!-- Active Listings -->
+  <% if (typeof listings !== 'undefined' && listings.length) { %>
+  <h2><%= t('admin.active_listings') %> (<%= listings.length %>)</h2>
+  <table class="admin-table">
     <thead>
       <tr>
-        <th>Order #</th>
-        <th>Listing</th>
-        <th>Buyer</th>
-        <th>Seller</th>
-        <th>Status</th>
+        <th><%= t('admin.title') %></th>
+        <th><%= t('admin.seller') %></th>
+        <th><%= t('admin.category') %></th>
+        <th><%= t('admin.actions') %></th>
       </tr>
     </thead>
     <tbody>
-      <% if (!orders.length) { %>
-        <tr><td colspan="5">No pending/disputed orders</td></tr>
-      <% } %>
-      <% orders.forEach((order) => { %>
-        <tr>
-          <td><%= order.orderNumber %></td>
-          <td dir="auto"><%= order.listing.title %></td>
-          <td><%= order.buyer.username %></td>
-          <td><%= order.seller.username %></td>
-          <td><span class="status-pill <%= order.orderStatus === 'DISPUTED' ? 'expired' : 'trial' %>"><%= order.orderStatus %></span></td>
-        </tr>
+      <% listings.forEach(listing => { %>
+      <tr>
+        <td><a href="/whale/listing/<%= listing.slug || listing.id %>"><%= listing.title %></a></td>
+        <td><%= listing.seller ? listing.seller.username : '—' %></td>
+        <td><%= listing.category ? listing.category.name : '—' %></td>
+        <td>
+          <form method="post" action="/admin/whale/suspend-listing" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="listingId" value="<%= listing.id %>">
+            <input type="text" name="reason" placeholder="<%= t('admin.reason') %>" class="input-sm">
+            <button type="submit" class="btn btn-sm btn-outline btn-danger"><%= t('admin.suspend') %></button>
+          </form>
+        </td>
+      </tr>
       <% }) %>
     </tbody>
   </table>
-</div>
+  <% } %>
 
-<div class="admin-card">
-  <h3>Open Disputes | النزاعات المفتوحة</h3>
-  <table class="data-table">
+  <!-- Pending/Disputed Orders -->
+  <% if (typeof orders !== 'undefined' && orders.length) { %>
+  <h2><%= t('admin.pending_orders') %> (<%= orders.length %>)</h2>
+  <table class="admin-table">
     <thead>
       <tr>
-        <th>Order</th>
-        <th>Reason</th>
-        <th>Description</th>
-        <th>Opened</th>
-        <th>Resolve</th>
+        <th>#</th>
+        <th><%= t('whale.buyer') %></th>
+        <th><%= t('whale.seller') %></th>
+        <th><%= t('whale.amount') %></th>
+        <th><%= t('whale.status') %></th>
       </tr>
     </thead>
     <tbody>
-      <% if (!disputes.length) { %>
-        <tr><td colspan="5">No open disputes</td></tr>
-      <% } %>
-      <% disputes.forEach((dispute) => { %>
-        <tr>
-          <td><%= dispute.order?.orderNumber || '-' %></td>
-          <td><%= dispute.reason %></td>
-          <td dir="auto"><%= dispute.description %></td>
-          <td><%= new Date(dispute.createdAt).toLocaleDateString('en-GB') %></td>
-          <td>
-            <form class="js-resolve-dispute" data-id="<%= dispute.id %>" data-csrf="<%= csrfToken %>">
-              <select name="winner">
-                <option value="buyer">Buyer wins</option>
-                <option value="seller">Seller wins</option>
-              </select>
-              <input type="text" name="resolution" placeholder="Resolution note">
-              <button type="submit" class="btn btn-sm btn-primary">Resolve</button>
-            </form>
-          </td>
-        </tr>
+      <% orders.forEach(order => { %>
+      <tr>
+        <td><a href="/whale/orders/<%= order.id %>"><%= order.orderNumber %></a></td>
+        <td><%= order.buyer ? order.buyer.username : '—' %></td>
+        <td><%= order.seller ? order.seller.username : '—' %></td>
+        <td>&#8362;<%= order.amount %></td>
+        <td><span class="status-badge status-<%= {PENDING:'warning',DISPUTED:'danger'}[order.orderStatus] || 'neutral' %>"><%= order.orderStatus %></span></td>
+      </tr>
       <% }) %>
     </tbody>
   </table>
-</div>
+  <% } %>
 
-<div class="admin-card">
-  <h3>Seller Verification Queue | طلبات التوثيق</h3>
-  <table class="data-table">
+  <!-- Open Disputes -->
+  <% if (typeof disputes !== 'undefined' && disputes.length) { %>
+  <h2><%= t('admin.open_disputes') %> (<%= disputes.length %>)</h2>
+  <table class="admin-table">
     <thead>
       <tr>
-        <th>User</th>
-        <th>Total Sales</th>
-        <th>Revenue</th>
-        <th>Action</th>
+        <th><%= t('admin.dispute') %></th>
+        <th><%= t('admin.order') %></th>
+        <th><%= t('admin.actions') %></th>
       </tr>
     </thead>
     <tbody>
-      <% if (!pendingVerifications.length) { %>
-        <tr><td colspan="4">No pending verification candidates</td></tr>
-      <% } %>
-      <% pendingVerifications.forEach((row) => { %>
-        <tr>
-          <td><%= row.user.username %></td>
-          <td><%= row.totalSales %></td>
-          <td><%= row.totalRevenue %> ₪</td>
-          <td>
-            <button
-              type="button"
-              class="btn btn-sm btn-primary js-verify-seller"
-              data-user-id="<%= row.userId %>"
-              data-csrf="<%= csrfToken %>"
-            >
-              Verify seller
-            </button>
-          </td>
-        </tr>
+      <% disputes.forEach(dispute => { %>
+      <tr>
+        <td><%= dispute.id.substring(0, 8) %></td>
+        <td><% if (dispute.order) { %><a href="/whale/orders/<%= dispute.order.id %>">#<%= dispute.order.orderNumber %></a><% } else { %>—<% } %></td>
+        <td>
+          <form method="post" action="/admin/whale/resolve-dispute" class="inline-form">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <input type="hidden" name="disputeId" value="<%= dispute.id %>">
+            <select name="winner">
+              <option value="buyer"><%= t('admin.refund_buyer') %></option>
+              <option value="seller"><%= t('admin.release_seller') %></option>
+            </select>
+            <input type="text" name="resolution" placeholder="<%= t('admin.resolution') %>" class="input-sm">
+            <button type="submit" class="btn btn-sm btn-primary"><%= t('admin.resolve') %></button>
+          </form>
+        </td>
+      </tr>
       <% }) %>
     </tbody>
   </table>
+  <% } %>
 </div>
-
-<script>
-  async function postJson(url, payload, csrf) {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-csrf-token': csrf
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  }
-
-  document.querySelectorAll('.js-verify-seller').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      try {
-        await postJson('/admin/whale/verify-seller', { userId: btn.dataset.userId }, btn.dataset.csrf);
-        window.location.reload();
-      } catch (_err) {
-        alert('Failed to verify seller');
-      }
-    });
-  });
-
-  document.querySelectorAll('.js-suspend').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const reason = prompt('Reason for suspension');
-      if (!reason) return;
-      try {
-        await postJson('/admin/whale/suspend-listing', { listingId: btn.dataset.id, reason }, btn.dataset.csrf);
-        window.location.reload();
-      } catch (_err) {
-        alert('Failed to suspend listing');
-      }
-    });
-  });
-
-  document.querySelectorAll('.js-resolve-dispute').forEach((form) => {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const winner = form.querySelector('select[name="winner"]').value;
-      const resolution = form.querySelector('input[name="resolution"]').value;
-      try {
-        await postJson('/admin/whale/resolve-dispute', {
-          disputeId: form.dataset.id,
-          winner,
-          resolution
-        }, form.dataset.csrf);
-        window.location.reload();
-      } catch (_err) {
-        alert('Failed to resolve dispute');
-      }
-    });
-  });
-</script>
-
 <%- include('partials/admin-footer') %>

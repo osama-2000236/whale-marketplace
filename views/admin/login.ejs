@@ -1,35 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<%= lang %>" dir="<%= dir %>">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="csrf-token" content="<%= csrfToken || '' %>">
-  <title>Admin Login - Whale</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <title><%= t('admin.login') %></title>
+  <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
 </head>
-<body class="login-page">
-  <div class="login-container">
-    <div class="login-logo">
-      <h1>Whale <span>ADMIN</span></h1>
-      <p>Admin Panel</p>
-    </div>
-    <% if (error) { %>
-    <div class="alert alert-error"><%= error %></div>
+<body class="admin-body <%= bodyClass %>">
+<div class="admin-login-page">
+  <div class="auth-card">
+    <h1><%= t('admin.login') %></h1>
+    <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger"><%= error %></div>
     <% } %>
-    <form method="POST" action="/admin/login">
+    <form method="post" action="/admin/login" class="whale-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-group">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username" required autofocus>
+        <label><%= t('auth.email_or_username') %></label>
+        <input type="text" name="identifier" required autofocus>
       </div>
       <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" required>
+        <label><%= t('auth.password') %></label>
+        <input type="password" name="password" required>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">Login</button>
+      <button type="submit" class="btn btn-primary btn-lg btn-block"><%= t('admin.login') %></button>
     </form>
-    <a href="/whale" class="login-back">← Back to Whale</a>
   </div>
+</div>
 </body>
 </html>

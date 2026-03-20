@@ -1,21 +1,16 @@
 const express = require('express');
-
 const router = express.Router();
 
 router.post('/lang', (req, res) => {
-  const { lang } = req.body;
-  if (['ar', 'en'].includes(lang) && req.session) {
-    req.session.lang = lang;
-  }
-  return res.redirect(req.get('Referer') || '/whale');
+  const lang = req.body.lang;
+  if (['ar', 'en'].includes(lang)) req.session.lang = lang;
+  res.redirect('back');
 });
 
 router.post('/theme', (req, res) => {
-  const { theme } = req.body;
-  if (['light', 'dark'].includes(theme) && req.session) {
-    req.session.theme = theme;
-  }
-  return res.redirect(req.get('Referer') || '/whale');
+  const theme = req.body.theme;
+  if (['light', 'dark'].includes(theme)) req.session.theme = theme;
+  res.redirect('back');
 });
 
 module.exports = router;

@@ -1,120 +1,82 @@
 <%- include('partials/admin-header') %>
+<div class="admin-page">
+  <h1><%= t('admin.subscriptions') %></h1>
 
-<div class="admin-header-bar">
-  <h1>💳 إدارة الاشتراكات | Subscriptions</h1>
-</div>
-
-<div class="stats-grid">
-  <div class="stat-card stat-green">
-    <div class="stat-number">₪ <%= Number(totalRevenue || 0).toLocaleString() %></div>
-    <div class="stat-label">إجمالي الإيراد | Total Revenue (NIS)</div>
+  <div class="admin-card">
+    <h2><%= t('admin.manual_activate') %></h2>
+    <form method="post" action="/admin/subscriptions/activate" class="whale-form inline-form-row">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-group">
+        <label><%= t('admin.user_id') %></label>
+        <input type="text" name="userId" required placeholder="User ID">
+      </div>
+      <div class="form-group">
+        <label><%= t('admin.months') %></label>
+        <input type="number" name="planMonths" value="1" min="1" max="12" required>
+      </div>
+      <div class="form-group">
+        <label><%= t('admin.note') %></label>
+        <input type="text" name="note" placeholder="<%= t('admin.optional') %>">
+      </div>
+      <button type="submit" class="btn btn-primary"><%= t('admin.activate') %></button>
+    </form>
   </div>
-  <div class="stat-card">
-    <div class="stat-number"><%= users.length %></div>
-    <div class="stat-label">المستخدمون | Users</div>
-  </div>
-</div>
 
-<div class="admin-card">
-  <h3>اشتراكات المستخدمين | User Subscriptions</h3>
-  <table class="data-table">
+  <% if (typeof totalRevenue !== 'undefined') { %>
+  <div class="stat-card inline-stat">
+    <div class="stat-value">&#8362;<%= totalRevenue %></div>
+    <div class="stat-label"><%= t('admin.total_revenue') %></div>
+  </div>
+  <% } %>
+
+  <% if (typeof payments !== 'undefined' && payments.length) { %>
+  <h2><%= t('admin.recent_payments') %></h2>
+  <table class="admin-table">
     <thead>
       <tr>
-        <th>المستخدم | User</th>
-        <th>الخطة | Plan</th>
-        <th>نهاية التجربة | Trial Ends</th>
-        <th>مدفوع حتى | Paid Until</th>
-        <th>الإجراء | Action</th>
+        <th><%= t('admin.user') %></th>
+        <th><%= t('payment.amount') %></th>
+        <th><%= t('payment.provider') %></th>
+        <th><%= t('payment.status') %></th>
+        <th><%= t('payment.date') %></th>
       </tr>
     </thead>
     <tbody>
-      <% users.forEach((user) => { %>
-        <tr>
-          <td><strong><%= user.username %></strong></td>
-          <td>
-            <% if (!user.subscription) { %>
-              <span class="status-pill free">free</span>
-            <% } else if (user.subscription.plan === 'pro') { %>
-              <span class="status-pill active">pro</span>
-            <% } else { %>
-              <span class="status-pill free"><%= user.subscription.plan %></span>
-            <% } %>
-          </td>
-          <td><%= user.subscription && user.subscription.trialEndsAt ? new Date(user.subscription.trialEndsAt).toLocaleDateString('en-GB') : '-' %></td>
-          <td><%= user.subscription && user.subscription.paidUntil ? new Date(user.subscription.paidUntil).toLocaleDateString('en-GB') : '-' %></td>
-          <td>
-            <form class="manual-activate-form" data-user-id="<%= user.id %>">
-              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-              <select name="planMonths">
-                <option value="1">1 شهر | 1m</option>
-                <option value="3">3 أشهر | 3m</option>
-                <option value="6">6 أشهر | 6m</option>
-                <option value="12">12 شهر | 12m</option>
-              </select>
-              <input type="text" name="note" value="تفعيل يدوي من الإدارة | Admin manual activation">
-              <button type="submit" class="btn btn-sm btn-primary">تفعيل | Activate</button>
-            </form>
-          </td>
-        </tr>
+      <% payments.forEach(p => { %>
+      <tr>
+        <td><%= p.user ? p.user.username : p.userId %></td>
+        <td><%= p.amount %> <%= p.currency || '' %></td>
+        <td><%= p.provider || '—' %></td>
+        <td><span class="status-badge status-<%= p.status === 'success' ? 'success' : 'neutral' %>"><%= p.status %></span></td>
+        <td><%= new Date(p.createdAt).toLocaleDateString() %></td>
+      </tr>
       <% }) %>
     </tbody>
   </table>
-</div>
+  <% } %>
 
-<div class="admin-card">
-  <h3>المدفوعات الأخيرة | Recent Payments</h3>
-  <table class="data-table">
+  <% if (typeof users !== 'undefined' && users.length) { %>
+  <h2><%= t('admin.users_with_subscriptions') %></h2>
+  <table class="admin-table">
     <thead>
       <tr>
-        <th>المستخدم | User</th>
-        <th>المزوّد | Provider</th>
-        <th>المبلغ | Amount</th>
-        <th>الحالة | Status</th>
-        <th>التاريخ | Date</th>
+        <th><%= t('admin.username') %></th>
+        <th><%= t('admin.plan') %></th>
+        <th><%= t('admin.paid_until') %></th>
+        <th><%= t('admin.trial_ends') %></th>
       </tr>
     </thead>
     <tbody>
-      <% if (!recentPayments.length) { %>
-        <tr><td colspan="5">لا توجد مدفوعات بعد | No payments yet.</td></tr>
-      <% } %>
-      <% recentPayments.forEach((payment) => { %>
-        <tr>
-          <td><%= payment.user ? payment.user.username : '-' %></td>
-          <td><%= payment.provider %></td>
-          <td><%= payment.amount %> <%= payment.currency %></td>
-          <td><span class="status-pill <%= payment.status === 'success' ? 'active' : payment.status === 'pending' ? 'trial' : 'expired' %>"><%= payment.status %></span></td>
-          <td><%= new Date(payment.createdAt).toLocaleString('en-GB') %></td>
-        </tr>
+      <% users.filter(u => u.subscription).forEach(u => { var sub = u.subscription; %>
+      <tr>
+        <td><%= u.username %></td>
+        <td><%= sub.plan %></td>
+        <td><%= sub.paidUntil ? new Date(sub.paidUntil).toLocaleDateString() : '—' %></td>
+        <td><%= sub.trialEndsAt ? new Date(sub.trialEndsAt).toLocaleDateString() : '—' %></td>
+      </tr>
       <% }) %>
     </tbody>
   </table>
+  <% } %>
 </div>
-
-<script>
-  document.querySelectorAll('.manual-activate-form').forEach((form) => {
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const userId = form.dataset.userId;
-      const csrf = form.querySelector('input[name="_csrf"]').value;
-      const planMonths = form.querySelector('select[name="planMonths"]').value;
-      const note = form.querySelector('input[name="note"]').value;
-
-      const res = await fetch('/admin/subscriptions/activate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrf
-        },
-        body: JSON.stringify({ userId, planMonths, note })
-      });
-
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        alert('فشل التفعيل | Activation failed');
-      }
-    });
-  });
-</script>
-
 <%- include('partials/admin-footer') %>
