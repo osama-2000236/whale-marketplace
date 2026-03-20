@@ -3,7 +3,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Force cache bust by adding a comment with build version
-# v2 — fix package-lock sync
+# v3 — move dotenv to production dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev
 
