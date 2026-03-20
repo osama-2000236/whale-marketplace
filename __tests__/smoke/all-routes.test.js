@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../server');
 const prisma = require('../../lib/prisma');
-const { createTestUser, createTestListing, cleanTestData } = require('../helpers/db');
+const { createTestUser, createTestListing, cleanTestData, skipIfNoDb } = require('../helpers/db');
 const { getCsrfToken } = require('../helpers/http');
 
 let proAgent;
@@ -17,6 +17,7 @@ async function login(agent, identifier, password) {
 }
 
 beforeAll(async () => {
+  if (skipIfNoDb()) return;
   const pro = await createTestUser({ username: 'test_smoke_pro', password: 'pass' });
   await prisma.subscription.upsert({
     where: { userId: pro.id },
@@ -31,6 +32,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  if (skipIfNoDb()) return;
   await cleanTestData();
 });
 
@@ -48,6 +50,7 @@ const PUBLIC_ROUTES = [
 describe('Public routes smoke test', () => {
   PUBLIC_ROUTES.forEach((route) => {
     test(`GET ${route} returns 200/302`, async () => {
+      if (skipIfNoDb()) return;
       const res = await request(app).get(route);
       expect([200, 302]).toContain(res.status);
       expect(res.status).not.toBe(500);
@@ -68,6 +71,7 @@ const AUTH_ROUTES = [
 describe('Auth-required routes redirect guests', () => {
   AUTH_ROUTES.forEach((route) => {
     test(`GET ${route} rejects guest`, async () => {
+      if (skipIfNoDb()) return;
       const res = await request(app).get(route);
       expect([302, 401]).toContain(res.status);
       expect(res.status).not.toBe(500);
@@ -78,6 +82,7 @@ describe('Auth-required routes redirect guests', () => {
 describe('Auth-required routes for Pro user', () => {
   AUTH_ROUTES.forEach((route) => {
     test(`GET ${route} works for logged user`, async () => {
+      if (skipIfNoDb()) return;
       const res = await proAgent.get(route);
       expect([200, 302]).toContain(res.status);
       expect(res.status).not.toBe(500);
@@ -87,11 +92,13 @@ describe('Auth-required routes for Pro user', () => {
 
 describe('Listing routes', () => {
   test('GET /whale/listing/:id returns 200', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get(`/whale/listing/${listing.id}`);
     expect(res.status).toBe(200);
   });
 
   test('GET /whale/listing/:id invalid uuid returns 404/400', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale/listing/not-a-real-uuid');
     expect([404, 400]).toContain(res.status);
   });
@@ -99,6 +106,7 @@ describe('Listing routes', () => {
 
 describe('Error pages', () => {
   test('404 page renders', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/definitely-does-not-exist-xyz-abc');
     expect(res.status).toBe(404);
     expect(res.text).not.toContain('Cannot GET');

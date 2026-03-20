@@ -4,7 +4,8 @@ const prisma = require('../../../lib/prisma');
 const {
   createTestUser,
   createTestListing,
-  cleanTestData
+  cleanTestData,
+  skipIfNoDb
 } = require('../../helpers/db');
 const { getCsrfToken } = require('../../helpers/http');
 
@@ -38,6 +39,7 @@ describe('Whale cart + search route coverage', () => {
   let slugListing;
 
   beforeAll(async () => {
+    if (skipIfNoDb()) return;
     await cleanTestData();
 
     seller = await createTestUser({ username: 'test_cart_seller', password: 'pass' });
@@ -93,10 +95,12 @@ describe('Whale cart + search route coverage', () => {
   });
 
   afterAll(async () => {
+    if (skipIfNoDb()) return;
     await cleanTestData();
   });
 
   test('GET /whale/search/suggestions returns empty for short query', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale/search/suggestions?q=a');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.suggestions)).toBe(true);
@@ -104,6 +108,7 @@ describe('Whale cart + search route coverage', () => {
   });
 
   test('GET /whale/search/suggestions returns listing and category suggestions', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get('/whale/search/suggestions?q=suggest');
     expect(res.status).toBe(200);
 
@@ -113,6 +118,7 @@ describe('Whale cart + search route coverage', () => {
   });
 
   test('GET /whale/search/suggestions uses session language for labels', async () => {
+    if (skipIfNoDb()) return;
     await postWithToken(buyerAgent, '/prefs/lang', { lang: 'en' }, '/whale');
     const res = await buyerAgent.get('/whale/search/suggestions?q=suggest');
     expect(res.status).toBe(200);
@@ -125,23 +131,27 @@ describe('Whale cart + search route coverage', () => {
   });
 
   test('GET /whale/listing/:idOrSlug serves listing by slug', async () => {
+    if (skipIfNoDb()) return;
     const res = await request(app).get(`/whale/listing/${slugListing.slug}`);
     expect(res.status).toBe(200);
     expect(res.text).toContain('Slug Coverage Listing');
   });
 
   test('GET /whale/cart renders for authenticated users', async () => {
+    if (skipIfNoDb()) return;
     const res = await buyerAgent.get('/whale/cart');
     expect(res.status).toBe(200);
   });
 
   test('POST /whale/cart/add validates missing listingId', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(buyerAgent, '/whale/cart/add', {}, '/whale/cart');
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('missing_listingId');
   });
 
   test('POST /whale/cart/add blocks adding own listing', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       sellerAgent,
       '/whale/cart/add',
@@ -154,6 +164,7 @@ describe('Whale cart + search route coverage', () => {
   });
 
   test('POST /whale/cart/add then /whale/cart/remove works', async () => {
+    if (skipIfNoDb()) return;
     const addRes = await postWithToken(
       buyerAgent,
       '/whale/cart/add',
@@ -175,6 +186,7 @@ describe('Whale cart + search route coverage', () => {
   });
 
   test('POST /whale/cart/checkout redirects when cart is empty', async () => {
+    if (skipIfNoDb()) return;
     const res = await postWithToken(
       emptyBuyerAgent,
       '/whale/cart/checkout',
@@ -190,6 +202,7 @@ describe('Whale cart + search route coverage', () => {
   });
 
   test('POST /whale/cart/checkout blocks multi-item card checkout', async () => {
+    if (skipIfNoDb()) return;
     await postWithToken(
       buyerAgent,
       '/whale/cart/add',
@@ -221,6 +234,7 @@ describe('Whale cart + search route coverage', () => {
   });
 
   test('POST /whale/cart/checkout creates order(s) for COD flow', async () => {
+    if (skipIfNoDb()) return;
     await postWithToken(
       buyerAgent,
       '/whale/cart/add',
