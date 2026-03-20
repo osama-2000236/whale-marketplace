@@ -1,6 +1,6 @@
 function sanitizeText(input, maxLen = 5000) {
-  if (input == null) return '';
-  return String(input)
+  if (typeof input !== 'string') return '';
+  return input
     .replace(/<[^>]*>/g, '')
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     .trim()
@@ -32,8 +32,8 @@ function isValidEmail(input) {
 }
 
 function sanitizeTags(input, maxTags = 10, maxLen = 40) {
-  if (!input) return [];
-  const raw = Array.isArray(input) ? input : String(input).split(',');
+  if (!input || (typeof input !== 'string' && !Array.isArray(input))) return [];
+  const raw = Array.isArray(input) ? input : input.split(',');
   return raw
     .map((t) => sanitizeText(t, maxLen).toLowerCase())
     .filter((t) => t.length > 0)

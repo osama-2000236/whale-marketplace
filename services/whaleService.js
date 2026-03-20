@@ -339,7 +339,7 @@ async function createOrder({ listingId, buyerId, quantity = 1, paymentMethod, sh
 
   // Send emails (fire-and-forget)
   const buyer = await prisma.user.findUnique({ where: { id: buyerId }, select: { username: true, email: true } });
-  emailService.sendOrderPlaced(order, buyer, listing).catch(() => {});
+  emailService.sendOrderPlaced(order, buyer, listing).catch((e) => console.error('Email error:', e.message));
 
   return order;
 }
@@ -350,16 +350,19 @@ async function sellerConfirmOrder(orderId, sellerId) {
   if (order.sellerId !== sellerId) throw new Error('Not authorized');
   if (order.orderStatus !== 'PENDING') throw new Error('Order cannot be confirmed');
 
-  await prisma.$transaction(async (tx) => {
-    await tx.order.update({ where: { id: orderId }, data: { orderStatus: 'SELLER_CONFIRMED' } });
+  const updated = await prisma.$transaction(async (tx) => {
+    const upd = await tx.order.update({ where: { id: orderId }, data: { orderStatus: 'SELLER_CONFIRMED' } });
     await tx.orderEvent.create({ data: { orderId, event: 'seller_confirmed', actorId: sellerId } });
     await tx.notification.create({
       data: { userId: order.buyerId, type: 'SYSTEM', message: `Seller confirmed your order #${order.orderNumber}`, referenceId: orderId, referenceType: 'order' },
     });
+    return upd;
   });
 
   const buyer = await prisma.user.findUnique({ where: { id: order.buyerId }, select: { email: true, username: true } });
-  emailService.sendOrderConfirmed(order, buyer).catch(() => {});
+  emailService.sendOrderConfirmed(updated, buyer).catch((e) => console.error('Email error:', e.message));
+
+  return updated;
 }
 
 async function sellerShipOrder(orderId, sellerId, { trackingNumber, shippingCompany, estimatedDelivery }) {
@@ -368,8 +371,8 @@ async function sellerShipOrder(orderId, sellerId, { trackingNumber, shippingComp
   if (order.sellerId !== sellerId) throw new Error('Not authorized');
   if (!['PENDING', 'SELLER_CONFIRMED'].includes(order.orderStatus)) throw new Error('Order cannot be shipped');
 
-  await prisma.$transaction(async (tx) => {
-    await tx.order.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const upd = await tx.order.update({
       where: { id: orderId },
       data: {
         orderStatus: 'SHIPPED',
@@ -382,10 +385,13 @@ async function sellerShipOrder(orderId, sellerId, { trackingNumber, shippingComp
     await tx.notification.create({
       data: { userId: order.buyerId, type: 'SYSTEM', message: `Your order #${order.orderNumber} has been shipped!`, referenceId: orderId, referenceType: 'order' },
     });
+    return upd;
   });
 
   const buyer = await prisma.user.findUnique({ where: { id: order.buyerId }, select: { email: true, username: true } });
-  emailService.sendOrderShipped(order, buyer, trackingNumber, shippingCompany).catch(() => {});
+  emailService.sendOrderShipped(updated, buyer, trackingNumber, shippingCompany).catch((e) => console.error('Email error:', e.message));
+
+  return updated;
 }
 
 async function buyerConfirmDelivery(orderId, buyerId) {
@@ -395,8 +401,8 @@ async function buyerConfirmDelivery(orderId, buyerId) {
   if (!['SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(order.orderStatus)) throw new Error('Order not eligible for delivery confirmation');
 
   const now = new Date();
-  await prisma.$transaction(async (tx) => {
-    await tx.order.update({
+  const updated = await prisma.$transaction(async (tx) => {
+    const upd = await tx.order.update({
       where: { id: orderId },
       data: { orderStatus: 'COMPLETED', paymentStatus: 'released', deliveredAt: now, confirmedAt: now },
     });
@@ -412,10 +418,13 @@ async function buyerConfirmDelivery(orderId, buyerId) {
     await tx.notification.create({
       data: { userId: order.buyerId, type: 'SYSTEM', message: `Order #${order.orderNumber} completed! Thank you.`, referenceId: orderId, referenceType: 'order' },
     });
+    return upd;
   });
 
   const seller = await prisma.user.findUnique({ where: { id: order.sellerId }, select: { email: true, username: true } });
-  emailService.sendOrderCompleted(order, seller).catch(() => {});
+  emailService.sendOrderCompleted(updated, seller).catch((e) => console.error('Email error:', e.message));
+
+  return updated;
 }
 
 async function cancelOrder(orderId, actorId, reason) {

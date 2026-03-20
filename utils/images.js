@@ -1,21 +1,26 @@
-const PLACEHOLDER = '/images/placeholder.png';
+const PLACEHOLDER_IMAGE = '/images/placeholder.png';
 const DEFAULT_WIDTHS = [210, 420, 630];
 
 function isCloudinaryUrl(url) {
   return typeof url === 'string' && url.includes('res.cloudinary.com');
 }
 
-function cloudinaryTransform(url, width, options = {}) {
+function transformCloudinaryUrl(url, { width, height, quality = 'auto', format = 'auto', crop = 'fill', gravity = 'auto' } = {}) {
   if (!isCloudinaryUrl(url)) return url;
-  const quality = options.quality || 'auto';
-  const format = options.format || 'auto';
-  const transform = `w_${width},q_${quality},f_${format},c_limit`;
-  return url.replace('/upload/', `/upload/${transform}/`);
+  const parts = [`c_${crop}`, `g_${gravity}`, `q_${quality}`, `f_${format}`];
+  if (width) parts.push(`w_${width}`);
+  if (height) parts.push(`h_${height}`);
+  return url.replace('/upload/', `/upload/${parts.join(',')}/`);
+}
+
+// Backward-compatible alias
+function cloudinaryTransform(url, width, options = {}) {
+  return transformCloudinaryUrl(url, { width, ...options });
 }
 
 function buildResponsiveImage(url, options = {}) {
   if (!url) {
-    return { src: PLACEHOLDER, srcset: '', webpSrcset: '', placeholder: PLACEHOLDER, width: 420, height: 315 };
+    return { src: PLACEHOLDER_IMAGE, srcset: '', webpSrcset: '', placeholder: PLACEHOLDER_IMAGE, width: 420, height: 315 };
   }
 
   const widths = options.widths || DEFAULT_WIDTHS;
@@ -28,21 +33,23 @@ function buildResponsiveImage(url, options = {}) {
     return { src: url, srcset: '', webpSrcset: '', placeholder: url, width: baseWidth, height };
   }
 
-  const srcset = widths.map((w) => `${cloudinaryTransform(url, w)} ${w}w`).join(', ');
+  const srcset = widths
+    .map((w) => `${transformCloudinaryUrl(url, { width: w, height: Math.round((w * ah) / aw), format: 'jpg' })} ${w}w`)
+    .join(', ');
   const webpSrcset = widths
-    .map((w) => `${cloudinaryTransform(url, w, { format: 'webp' })} ${w}w`)
+    .map((w) => `${transformCloudinaryUrl(url, { width: w, height: Math.round((w * ah) / aw), format: 'webp' })} ${w}w`)
     .join(', ');
   const sizes = options.sizes || `(max-width: 600px) ${widths[0]}px, ${widths[1]}px`;
 
   return {
-    src: cloudinaryTransform(url, baseWidth),
+    src: transformCloudinaryUrl(url, { width: baseWidth, height }),
     srcset,
     webpSrcset,
-    placeholder: cloudinaryTransform(url, widths[0], { quality: 30 }),
+    placeholder: transformCloudinaryUrl(url, { width: widths[0], height: Math.round((widths[0] * ah) / aw), quality: 20 }),
     width: baseWidth,
     height,
     sizes,
   };
 }
 
-module.exports = { buildResponsiveImage, cloudinaryTransform, PLACEHOLDER };
+module.exports = { buildResponsiveImage, cloudinaryTransform, transformCloudinaryUrl, isCloudinaryUrl, PLACEHOLDER: PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE };
