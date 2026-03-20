@@ -4,16 +4,124 @@
 <body class="<%= bodyClass %>">
 <%- include('partials/navbar') %>
 <main class="main-content">
-  <div class="page-container">
-    <div class="welcome-hero">
-      <h1><%= t('home.title') %></h1>
-      <p class="welcome-subtitle"><%= t('home.subtitle') %></p>
-      <div class="welcome-cta">
-        <a href="/whale" class="btn btn-primary btn-lg"><%= t('home.browse') %></a>
-        <a href="/auth/register" class="btn btn-outline btn-lg"><%= t('home.join') %></a>
+
+  <!-- Hero -->
+  <section class="whale-hero home-hero">
+    <% if (currentUser) { %>
+    <div class="hero-auth">
+      <h1><%= t('home.personal_greeting', { name: currentUser.username }) %></h1>
+      <p class="hero-subtitle"><%= t('home.personal_sub') %></p>
+      <div class="hero-actions">
+        <a href="/whale" class="btn btn-primary btn-lg"><%= t('home.quick_browse') %></a>
+        <% if (isPro) { %><a href="/whale/sell" class="btn btn-outline btn-lg" style="color:#fff;border-color:rgba(255,255,255,.5)"><%= t('home.quick_sell') %></a><% } %>
+        <a href="/whale/orders" class="btn btn-outline btn-lg" style="color:#fff;border-color:rgba(255,255,255,.5)"><%= t('home.quick_orders') %></a>
       </div>
     </div>
-  </div>
+    <% } else { %>
+    <div class="hero-guest">
+      <h1><%= t('home.hero_title') %></h1>
+      <p class="hero-subtitle"><%= t('home.hero_sub') %></p>
+      <div class="hero-actions">
+        <a href="/whale" class="btn btn-primary btn-lg"><%= t('home.cta_browse') %></a>
+        <a href="/auth/register" class="btn btn-outline btn-lg" style="color:#fff;border-color:rgba(255,255,255,.5)"><%= t('home.guest_cta') %></a>
+      </div>
+    </div>
+    <% } %>
+  </section>
+
+  <!-- Stats counters -->
+  <% if (typeof stats !== 'undefined' && stats) { %>
+  <section class="home-stats-section">
+    <div class="home-stats">
+      <div class="home-stat"><span class="home-stat-num"><%= stats.listings %></span><span class="home-stat-label"><%= t('home.stats_listings') %></span></div>
+      <div class="home-stat"><span class="home-stat-num"><%= stats.sellers %></span><span class="home-stat-label"><%= t('home.stats_sellers') %></span></div>
+      <div class="home-stat"><span class="home-stat-num"><%= stats.cities %></span><span class="home-stat-label"><%= t('home.stats_cities') %></span></div>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- Categories -->
+  <% if (typeof categories !== 'undefined' && categories.length) { %>
+  <section class="home-section">
+    <h2><%= t('home.popular_cats') %></h2>
+    <div class="home-category-grid">
+      <% categories.slice(0, 8).forEach(cat => { %>
+      <a href="/whale?category=<%= cat.slug %>" class="home-cat-card">
+        <span class="home-cat-icon"><%= cat.icon %></span>
+        <span class="home-cat-name"><%= lang === 'ar' ? cat.nameAr : cat.name %></span>
+        <span class="home-cat-count"><%= cat._count ? cat._count.listings : 0 %> <%= t('home.counter_active') %></span>
+      </a>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- Latest listings -->
+  <% if (typeof latestListings !== 'undefined' && latestListings.length) { %>
+  <section class="home-section">
+    <div class="home-section-header">
+      <h2><%= t('home.new_listings') %></h2>
+      <a href="/whale" class="btn btn-outline btn-sm"><%= t('home.see_all') %></a>
+    </div>
+    <div class="listings-grid">
+      <% latestListings.forEach(listing => { %>
+      <%- include('partials/listing-card', { listing }) %>
+      <% }) %>
+    </div>
+  </section>
+  <% } %>
+
+  <!-- How it works -->
+  <section class="home-section home-how">
+    <h2><%= t('home.how_title') %></h2>
+    <div class="home-steps">
+      <div class="home-step">
+        <span class="home-step-num">1</span>
+        <h3><%= t('home.step1_t') %></h3>
+        <p><%= t('home.step1_d') %></p>
+      </div>
+      <div class="home-step">
+        <span class="home-step-num">2</span>
+        <h3><%= t('home.step2_t') %></h3>
+        <p><%= t('home.step2_d') %></p>
+      </div>
+      <div class="home-step">
+        <span class="home-step-num">3</span>
+        <h3><%= t('home.step3_t') %></h3>
+        <p><%= t('home.step3_d') %></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust / Why Whale -->
+  <section class="home-section home-trust">
+    <h2><%= t('home.trust_title') %></h2>
+    <div class="home-trust-grid">
+      <div class="home-trust-card">
+        <span class="home-trust-icon">🛡️</span>
+        <h3><%= t('app.trust_promise') %></h3>
+      </div>
+      <div class="home-trust-card">
+        <span class="home-trust-icon">🚚</span>
+        <h3><%= t('home.step3_d') %></h3>
+      </div>
+      <div class="home-trust-card">
+        <span class="home-trust-icon">⭐</span>
+        <h3><%= t('home.step2_d') %></h3>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <% if (!currentUser) { %>
+  <section class="home-section home-cta-section">
+    <div class="home-cta-box">
+      <h2><%= t('home.guest_cta') %></h2>
+      <a href="/auth/register" class="btn btn-primary btn-lg"><%= t('nav.register') %></a>
+    </div>
+  </section>
+  <% } %>
+
 </main>
 <%- include('partials/footer') %>
 </body>

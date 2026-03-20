@@ -11,7 +11,13 @@ webRouter.get('/u/:username', async (req, res, next) => {
   try {
     const profile = await userService.getUserProfileByUsername(req.params.username, req.user?.id);
     if (!profile) return res.status(404).render('404', { title: 'Not Found' });
-    res.render('profile/user-profile', { title: profile.username, profile });
+    res.render('profile/user-profile', {
+      title: profile.username,
+      profile,
+      listings: profile.listings || [],
+      posts: profile.posts || [],
+      isFollowing: profile.isFollowing || false,
+    });
   } catch (e) { next(e); }
 });
 

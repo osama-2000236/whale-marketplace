@@ -159,8 +159,25 @@ app.use(async (req, res, next) => {
 // Health check
 app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
 
-// Root redirect
-app.get('/', (_req, res) => res.redirect('/whale'));
+// Home / Landing page
+app.get('/', async (req, res, next) => {
+  try {
+    const prismaClient = require('./lib/prisma');
+    const [categories, latestListings, listingCount, sellerCount, cityCount] = await Promise.all([
+      prismaClient.marketCategory.findMany({ orderBy: { order: 'asc' }, include: { _count: { select: { listings: { where: { status: 'ACTIVE' } } } } } }),
+      prismaClient.marketListing.findMany({ where: { status: 'ACTIVE' }, orderBy: { createdAt: 'desc' }, take: 8, include: { seller: { select: { id: true, username: true, avatar: true, isVerified: true, sellerProfile: true } }, category: true } }),
+      prismaClient.marketListing.count({ where: { status: 'ACTIVE' } }),
+      prismaClient.sellerProfile.count(),
+      prismaClient.marketListing.groupBy({ by: ['city'], where: { status: 'ACTIVE' } }).then(r => r.length),
+    ]);
+    res.render('index', {
+      title: res.locals.t('app.name'),
+      categories,
+      latestListings,
+      stats: { listings: listingCount, sellers: sellerCount, cities: cityCount },
+    });
+  } catch (e) { next(e); }
+});
 
 // Legacy redirects
 app.use('/marketplace', (_req, res) => res.redirect('/whale'));
