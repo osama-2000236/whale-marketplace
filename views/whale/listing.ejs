@@ -57,7 +57,7 @@
 
         <% if (listing.seller?.sellerProfile?.whatsapp) { %>
         <a href="https://wa.me/<%= listing.seller.sellerProfile.whatsapp %>?text=<%= encodeURIComponent(listing.title) %>" target="_blank" rel="noopener" class="btn btn-whatsapp btn-block" onclick="fetch('/whale/listing/<%= listing.id %>/wa-click',{method:'POST',headers:{'X-CSRF-Token':'<%= csrfToken %>'}})">
-          WhatsApp 📱
+          <%= t('footer.contact_wa') %> 📱
         </a>
         <% } %>
 
@@ -78,7 +78,7 @@
             <% if (listing.seller.sellerProfile) { var sp = listing.seller.sellerProfile; %>
             <div class="seller-stats-mini">
               <span>★ <%= sp.averageRating.toFixed(1) %> (<%= sp.reviewCount %>)</span>
-              <span>🛒 <%= sp.totalSales %> sales</span>
+              <span>🛒 <%= sp.totalSales %> <%= t('whale.sales') %></span>
             </div>
             <% } %>
             <span class="seller-joined"><%= t('whale.member_since') %> <%= new Date(listing.seller.createdAt).getFullYear() %></span>

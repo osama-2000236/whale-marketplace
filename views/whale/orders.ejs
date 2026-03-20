@@ -17,13 +17,13 @@
       <a href="/whale/orders/<%= order.id %>" class="order-card">
         <img src="<%= order.listing && order.listing.images && order.listing.images[0] ? order.listing.images[0] : '/images/placeholder.png' %>" alt="" class="order-thumb">
         <div class="order-info">
-          <h3><%= order.listing ? order.listing.title : 'Order' %></h3>
+          <h3><%= order.listing ? order.listing.title : t('whale.order') %></h3>
           <p class="order-number">#<%= order.orderNumber %></p>
           <p class="order-amount">₪<%= order.amount %></p>
         </div>
         <div class="order-status">
-          <% var statusColors = { PENDING: 'warning', SELLER_CONFIRMED: 'info', SHIPPED: 'info', COMPLETED: 'success', CANCELLED: 'danger', DISPUTED: 'danger', REFUNDED: 'warning' }; var os = order.orderStatus || 'PENDING'; %>
-          <span class="status-badge status-<%= statusColors[os] || 'neutral' %>"><%= t('status.' + os.toLowerCase()) %></span>
+          <% var os = order.orderStatus || 'PENDING'; %>
+          <span class="status-badge status-<%= os %>"><%= t('status.' + os.toLowerCase()) %></span>
           <span class="order-date"><%= timeAgo(order.createdAt) %></span>
         </div>
       </a>

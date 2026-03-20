@@ -36,7 +36,7 @@
           <% } %>
           <form method="post" action="/admin/whale/listings/<%= listing.id %>/delete" class="inline-form">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm btn-outline btn-danger" onclick="return confirm('Delete?')"><%= t('admin.delete') %></button>
+            <button type="submit" class="btn btn-sm btn-outline btn-danger" onclick="return confirm('<%= t("ui.confirm_delete") %>')"><%= t('admin.delete') %></button>
           </form>
         </td>
       </tr>

@@ -28,20 +28,20 @@
         <td>
           <form method="post" action="/admin/products/<%= product.id %>/toggle-featured" class="inline-form">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm <%= product.featured ? 'btn-primary' : 'btn-outline' %>"><%= product.featured ? 'Yes' : 'No' %></button>
+            <button type="submit" class="btn btn-sm <%= product.featured ? 'btn-primary' : 'btn-outline' %>"><%= product.featured ? t('ui.yes') : t('ui.no') %></button>
           </form>
         </td>
         <td>
           <form method="post" action="/admin/products/<%= product.id %>/toggle-active" class="inline-form">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm <%= product.isActive ? 'btn-primary' : 'btn-outline' %>"><%= product.isActive ? 'Yes' : 'No' %></button>
+            <button type="submit" class="btn btn-sm <%= product.isActive ? 'btn-primary' : 'btn-outline' %>"><%= product.isActive ? t('ui.yes') : t('ui.no') %></button>
           </form>
         </td>
         <td>
           <a href="/admin/products/<%= product.id %>/edit" class="btn btn-sm btn-outline"><%= t('admin.edit') %></a>
           <form method="post" action="/admin/products/<%= product.id %>/delete" class="inline-form">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm btn-outline btn-danger" onclick="return confirm('Delete?')"><%= t('admin.delete') %></button>
+            <button type="submit" class="btn btn-sm btn-outline btn-danger" onclick="return confirm('<%= t("ui.confirm_delete") %>')"><%= t('admin.delete') %></button>
           </form>
         </td>
       </tr>

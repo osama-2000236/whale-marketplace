@@ -75,7 +75,7 @@
             <form method="post" action="/prefs/lang" style="display:inline;">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <input type="hidden" name="lang" value="<%= lang === 'ar' ? 'en' : 'ar' %>">
-              <button type="submit" class="btn btn-sm btn-outline"><%= lang === 'ar' ? 'Switch to English' : 'التبديل إلى العربية' %></button>
+              <button type="submit" class="btn btn-sm btn-outline"><%= t('settings.switch_lang') %></button>
             </form>
           </div>
           <div class="settings-row">

@@ -9,7 +9,7 @@
       <span class="condition-badge condition-<%= listing.condition.toLowerCase() %>"><%= t('condition.' + listing.condition.toLowerCase()) %></span>
       <% } %>
       <% if (listing._count && listing._count.orders > 3) { %>
-      <span class="proof-pill">🛒 <%= listing._count.orders %> sold</span>
+      <span class="proof-pill">🛒 <%= listing._count.orders %> <%= t('whale.sold') %></span>
       <% } %>
     </div>
     <div class="listing-card-body">
