@@ -3,17 +3,7 @@ const router = express.Router();
 const { requireAuth } = require('../middleware/auth');
 const forumService = require('../services/forumService');
 const { sanitizeText, sanitizeTags } = require('../utils/sanitize');
-const { marked } = require('marked');
-const createDOMPurify = require('isomorphic-dompurify');
-const DOMPurify = createDOMPurify;
-
-const SAFE_TAGS = ['p', 'br', 'strong', 'em', 'code', 'pre', 'ul', 'ol', 'li', 'blockquote', 'a', 'h3', 'h4'];
-
-function renderMarkdown(text) {
-  if (!text) return '';
-  const raw = marked.parse(text);
-  return DOMPurify.sanitize(raw, { ALLOWED_TAGS: SAFE_TAGS, ALLOWED_ATTR: ['href', 'target', 'rel'] });
-}
+const { renderMarkdown } = require('../lib/markdown');
 
 router.get('/', async (req, res, next) => {
   try {

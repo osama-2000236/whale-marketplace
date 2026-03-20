@@ -6,6 +6,7 @@
   <title><%= typeof t === 'function' ? t('error.title') : 'Error' %></title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/WHALE_UI_SYSTEM_V2.css">
+  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %><meta name="csrf-token" content="<%= csrfToken %>"><% } %>
 </head>
 <body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
 <main class="main-content">

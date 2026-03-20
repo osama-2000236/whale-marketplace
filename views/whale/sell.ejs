@@ -6,6 +6,9 @@
 <main class="main-content">
   <div class="form-page">
     <h1><%= t('whale.create_listing') %></h1>
+    <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+    <% } %>
     <form method="post" action="/whale/sell" enctype="multipart/form-data" class="whale-form">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <div class="form-row">

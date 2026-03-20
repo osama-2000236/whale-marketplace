@@ -65,7 +65,7 @@ app.use(cookieParser());
 // ─── SESSIONS ───────────────────────────────────────────────────────────────
 
 app.use(session({
-  name: 'whale.sid',
+  name: 'connect.sid',
   secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
@@ -165,6 +165,7 @@ app.get('/', (_req, res) => res.redirect('/whale'));
 // Legacy redirects
 app.use('/marketplace', (_req, res) => res.redirect('/whale'));
 app.use('/market', (_req, res) => res.redirect('/whale'));
+app.use('/rooms', (_req, res) => res.redirect('/forum'));
 
 const authRoutes = require('./routes/auth');
 const paymentRouter = require('./routes/payment');

@@ -348,7 +348,7 @@ async function sellerConfirmOrder(orderId, sellerId) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error('Order not found');
   if (order.sellerId !== sellerId) throw new Error('Not authorized');
-  if (order.orderStatus !== 'PENDING') throw new Error('Order cannot be confirmed');
+  if (order.orderStatus !== 'PENDING') throw new Error('Invalid state');
 
   const updated = await prisma.$transaction(async (tx) => {
     const upd = await tx.order.update({ where: { id: orderId }, data: { orderStatus: 'SELLER_CONFIRMED' } });
@@ -369,7 +369,7 @@ async function sellerShipOrder(orderId, sellerId, { trackingNumber, shippingComp
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error('Order not found');
   if (order.sellerId !== sellerId) throw new Error('Not authorized');
-  if (!['PENDING', 'SELLER_CONFIRMED'].includes(order.orderStatus)) throw new Error('Order cannot be shipped');
+  if (!['PENDING', 'SELLER_CONFIRMED'].includes(order.orderStatus)) throw new Error('Invalid state');
 
   const updated = await prisma.$transaction(async (tx) => {
     const upd = await tx.order.update({
@@ -398,7 +398,7 @@ async function buyerConfirmDelivery(orderId, buyerId) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
   if (!order) throw new Error('Order not found');
   if (order.buyerId !== buyerId) throw new Error('Not authorized');
-  if (!['SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(order.orderStatus)) throw new Error('Order not eligible for delivery confirmation');
+  if (!['SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(order.orderStatus)) throw new Error('Invalid state');
 
   const now = new Date();
   const updated = await prisma.$transaction(async (tx) => {

@@ -77,7 +77,7 @@ webRouter.post('/auth/login', guestOnly, authWriteLimiter, async (req, res) => {
     delete req.session.returnTo;
     return res.redirect(returnTo);
   } catch (e) {
-    return res.render('auth/login', {
+    return res.status(401).render('auth/login', {
       title: res.locals.t('login.title'),
       error: e.message,
       oauthEnabled: getOauthEnabled(),
@@ -126,7 +126,7 @@ webRouter.post('/auth/register', guestOnly, authWriteLimiter, async (req, res) =
     emailService.sendWelcome(user).catch(() => {});
     return res.redirect('/whale');
   } catch (e) {
-    return res.render('auth/register', {
+    return res.status(400).render('auth/register', {
       title: res.locals.t('register.title'),
       error: e.message,
       formData: req.body,
@@ -140,8 +140,7 @@ webRouter.post('/auth/logout', requireAuth, (req, res) => {
   req.session.destroy(() => res.redirect('/auth/login'));
 });
 
-webRouter.get('/auth/me', (req, res) => {
-  if (!req.user) return res.json({ user: null });
+webRouter.get('/auth/me', requireAuth, (req, res) => {
   return res.json({ user: req.user });
 });
 

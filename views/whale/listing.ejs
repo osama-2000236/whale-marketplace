@@ -51,7 +51,8 @@
           <button type="submit" class="btn btn-outline btn-lg btn-block"><%= t('whale.add_to_cart') %></button>
         </form>
         <% } else if (!currentUser) { %>
-        <a href="/auth/login?returnTo=/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-primary btn-lg btn-block"><%= t('whale.buy_now') %></a>
+        <a href="/auth/register?returnTo=/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-primary btn-lg btn-block"><%= t('listing.register_contact') %></a>
+        <a href="/auth/login?returnTo=/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-outline btn-lg btn-block"><%= t('listing.buy_now') %></a>
         <% } %>
 
         <% if (listing.seller?.sellerProfile?.whatsapp) { %>

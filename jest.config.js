@@ -3,6 +3,7 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.js'],
   setupFilesAfterEnv: ['./jest.setup.js'],
   testTimeout: 15000,
+  maxWorkers: 1,
   verbose: true,
   collectCoverage: true,
   collectCoverageFrom: [

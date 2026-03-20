@@ -112,8 +112,8 @@ router.get('/search/suggestions', async (req, res) => {
     ]);
 
     const suggestions = [
-      ...listings.map((l) => ({ type: 'listing', title: res.locals.lang === 'ar' && l.titleAr ? l.titleAr : l.title, price: l.price, image: l.images?.[0], url: `/whale/listing/${l.slug || l.id}` })),
-      ...cats.map((c) => ({ type: 'category', title: res.locals.lang === 'ar' ? c.nameAr : c.name, icon: c.icon, url: `/whale?category=${c.slug}` })),
+      ...listings.map((l) => { const label = res.locals.lang === 'ar' && l.titleAr ? l.titleAr : l.title; return { type: 'listing', title: label, label, price: l.price, image: l.images?.[0], url: `/whale/listing/${l.slug || l.id}` }; }),
+      ...cats.map((c) => { const label = res.locals.lang === 'ar' ? c.nameAr : c.name; return { type: 'category', title: label, label, icon: c.icon, url: `/whale?category=${c.slug}` }; }),
     ];
 
     res.json({ suggestions });
@@ -199,7 +199,7 @@ router.get('/sell', requireAuth, requirePro, async (req, res) => {
   res.render('whale/sell', { title: res.locals.t('whale.sell'), categories });
 });
 
-router.post('/sell', requireAuth, requirePro, upload.array('images', 6), async (req, res, next) => {
+router.post('/sell', requireAuth, requirePro, upload.array('images', 6), async (req, res) => {
   try {
     const images = await storeFiles(req.files);
     const listing = await svc.createListing(req.user.id, {
@@ -220,7 +220,8 @@ router.post('/sell', requireAuth, requirePro, upload.array('images', 6), async (
     });
     res.redirect(`/whale/listing/${listing.slug || listing.id}?created=1`);
   } catch (e) {
-    next(e);
+    const categories = await prisma.marketCategory.findMany({ orderBy: { order: 'asc' }, include: { subcategories: true } }).catch(() => []);
+    res.status(400).render('whale/sell', { title: res.locals.t('whale.sell'), categories, error: e.message });
   }
 });
 
@@ -236,7 +237,7 @@ router.get('/listing/:id/edit', requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/listing/:id/edit', requireAuth, upload.array('images', 6), async (req, res, next) => {
+router.post('/listing/:id/edit', requireAuth, upload.array('images', 6), async (req, res) => {
   try {
     const images = req.files?.length ? await storeFiles(req.files) : undefined;
     await svc.updateListing(req.params.id, req.user.id, {
@@ -255,22 +256,28 @@ router.post('/listing/:id/edit', requireAuth, upload.array('images', 6), async (
       negotiable: req.body.negotiable !== undefined ? (req.body.negotiable === 'on' || req.body.negotiable === 'true') : undefined,
       images,
     });
-    res.redirect(`/whale/listing/${req.params.id}`);
-  } catch (e) { next(e); }
+    res.redirect(`/whale/listing/${req.params.id}?updated=1`);
+  } catch (e) {
+    res.redirect(`/whale/listing/${req.params.id}/edit?error=1`);
+  }
 });
 
-router.post('/listing/:id/mark-sold', requireAuth, async (req, res, next) => {
+router.post('/listing/:id/mark-sold', requireAuth, async (req, res) => {
   try {
     await svc.markSold(req.params.id, req.user.id);
     res.redirect('/whale/my-listings');
-  } catch (e) { next(e); }
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
-router.post('/listing/:id/delete', requireAuth, async (req, res, next) => {
+router.post('/listing/:id/delete', requireAuth, async (req, res) => {
   try {
     await svc.deleteListing(req.params.id, req.user.id);
     res.redirect('/whale/my-listings');
-  } catch (e) { next(e); }
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
 // ─── BUY / CHECKOUT ─────────────────────────────────────────────────────────
@@ -285,7 +292,7 @@ router.get('/listing/:id/buy', requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/listing/:id/buy', requireAuth, async (req, res, next) => {
+router.post('/listing/:id/buy', requireAuth, async (req, res) => {
   try {
     const { buyerName, buyerPhone, buyerCity, buyerAddress, quantity, paymentMethod, shippingMethod, shippingCompany, buyerNote } = req.body;
 
@@ -311,7 +318,9 @@ router.post('/listing/:id/buy', requireAuth, async (req, res, next) => {
       return res.redirect(`/payment/start?orderId=${order.id}`);
     }
     res.redirect(`/whale/orders/${order.id}?placed=1`);
-  } catch (e) { next(e); }
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
 // ─── CART ───────────────────────────────────────────────────────────────────
@@ -326,10 +335,12 @@ router.get('/cart', async (req, res, next) => {
 
 router.post('/cart/add', async (req, res) => {
   try {
+    if (!req.body.listingId) return res.status(400).json({ error: 'missing_listingId' });
     const count = await cartService.addToCart(req, req.body.listingId, sanitizeInt(req.body.quantity, { min: 1, defaultVal: 1 }));
     res.json({ ok: true, cartCount: count });
   } catch (e) {
-    res.status(400).json({ error: e.message });
+    const errorMap = { 'Cannot add your own listing': 'own_listing', 'Listing not available': 'not_available' };
+    res.status(400).json({ error: errorMap[e.message] || e.message });
   }
 });
 
@@ -341,12 +352,12 @@ router.post('/cart/remove', async (req, res) => {
 router.post('/cart/checkout', requireAuth, async (req, res, next) => {
   try {
     const cart = await cartService.getCartWithDetails(req);
-    if (!cart.items.length) return res.redirect('/whale/cart');
+    if (!cart.items.length) return res.redirect('/whale/cart?error=empty');
 
     const { paymentMethod, shippingMethod, buyerName, buyerPhone, buyerCity, buyerAddress, shippingCompany, buyerNote } = req.body;
 
     if (paymentMethod === 'card' && cart.items.length > 1) {
-      return res.redirect('/whale/cart?error=card_single_only');
+      return res.redirect('/whale/cart?error=card_multi_not_supported');
     }
 
     const shippingAddress = (shippingMethod === 'company') ? {
@@ -426,11 +437,11 @@ router.get('/orders/:id', requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/orders/:id/confirm', requireAuth, async (req, res, next) => {
-  try { await svc.sellerConfirmOrder(req.params.id, req.user.id); res.redirect(`/whale/orders/${req.params.id}`); } catch (e) { next(e); }
+router.post('/orders/:id/confirm', requireAuth, async (req, res) => {
+  try { await svc.sellerConfirmOrder(req.params.id, req.user.id); res.redirect(`/whale/orders/${req.params.id}`); } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.post('/orders/:id/ship', requireAuth, async (req, res, next) => {
+router.post('/orders/:id/ship', requireAuth, async (req, res) => {
   try {
     await svc.sellerShipOrder(req.params.id, req.user.id, {
       trackingNumber: req.body.trackingNumber,
@@ -438,18 +449,18 @@ router.post('/orders/:id/ship', requireAuth, async (req, res, next) => {
       estimatedDelivery: req.body.estimatedDelivery,
     });
     res.redirect(`/whale/orders/${req.params.id}`);
-  } catch (e) { next(e); }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.post('/orders/:id/confirm-delivery', requireAuth, async (req, res, next) => {
-  try { await svc.buyerConfirmDelivery(req.params.id, req.user.id); res.redirect(`/whale/orders/${req.params.id}`); } catch (e) { next(e); }
+router.post('/orders/:id/confirm-delivery', requireAuth, async (req, res) => {
+  try { await svc.buyerConfirmDelivery(req.params.id, req.user.id); res.redirect(`/whale/orders/${req.params.id}`); } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.post('/orders/:id/cancel', requireAuth, async (req, res, next) => {
-  try { await svc.cancelOrder(req.params.id, req.user.id, req.body.reason); res.redirect(`/whale/orders/${req.params.id}`); } catch (e) { next(e); }
+router.post('/orders/:id/cancel', requireAuth, async (req, res) => {
+  try { await svc.cancelOrder(req.params.id, req.user.id, req.body.reason); res.redirect(`/whale/orders/${req.params.id}`); } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.post('/orders/:id/review', requireAuth, async (req, res, next) => {
+router.post('/orders/:id/review', requireAuth, async (req, res) => {
   try {
     await svc.createReview(req.params.id, req.user.id, {
       rating: sanitizeInt(req.body.rating, { min: 1, max: 5, defaultVal: 5 }),
@@ -457,7 +468,7 @@ router.post('/orders/:id/review', requireAuth, async (req, res, next) => {
       body: sanitizeText(req.body.body, 2000),
     });
     res.redirect(`/whale/orders/${req.params.id}`);
-  } catch (e) { next(e); }
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // ─── SELLER PAGES ───────────────────────────────────────────────────────────

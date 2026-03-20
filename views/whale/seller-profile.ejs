@@ -30,9 +30,9 @@
     </div>
 
     <div class="seller-stats-bar">
-      <div class="stat-item"><strong><%= stats.totalListings || 0 %></strong> <%= t('whale.listings') %></div>
-      <div class="stat-item"><strong><%= stats.completedOrders || 0 %></strong> <%= t('whale.sales') %></div>
-      <div class="stat-item"><strong><%= stats.averageRating ? stats.averageRating.toFixed(1) : '—' %></strong> <%= t('whale.rating') %></div>
+      <div class="stat-item"><strong><%= listings.length %></strong> <%= t('whale.listings') %></div>
+      <div class="stat-item"><strong><%= seller.sellerProfile ? (seller.sellerProfile.totalSales || 0) : 0 %></strong> <%= t('whale.sales') %></div>
+      <div class="stat-item"><strong><%= seller.sellerProfile && seller.sellerProfile.averageRating ? seller.sellerProfile.averageRating.toFixed(1) : '—' %></strong> <%= t('whale.rating') %></div>
     </div>
 
     <% if (listings.length) { %>
