@@ -1,9 +1,12 @@
 <% var img = listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png'; %>
 <% var imgData = imageSet(img); %>
-<article class="listing-card">
+<article class="listing-card v3-animate">
   <a href="/whale/listing/<%= listing.slug || listing.id %>" class="listing-card-link">
     <div class="listing-card-img">
       <img src="<%= imgData.src %>" alt="<%= listing.title %>" loading="lazy" width="<%= imgData.width %>" height="<%= imgData.height %>">
+      <button class="card-save-btn" aria-label="Save listing" onclick="event.preventDefault();event.stopPropagation();">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
       <% if (listing.isBoosted) { %><span class="boost-ribbon">⚡</span><% } %>
       <% if (listing.condition && listing.condition !== 'GOOD') { %>
       <span class="condition-badge condition-<%= listing.condition.toLowerCase() %>"><%= t('condition.' + listing.condition.toLowerCase()) %></span>
