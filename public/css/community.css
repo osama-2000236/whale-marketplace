@@ -3170,6 +3170,12 @@ a:hover {
   height: 20px;
   flex-shrink: 0;
 }
+.btn-oauth.btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: auto;
+  filter: grayscale(0.6);
+}
 .auth-switch {
   text-align: center;
   margin-top: 20px;
@@ -3179,6 +3185,64 @@ a:hover {
 .auth-switch a {
   color: var(--ui-brand, #1472a3);
   font-weight: 600;
+}
+
+/* ───────── Settings Page ───────── */
+.settings-grid {
+  display: grid;
+  gap: 24px;
+  max-width: 720px;
+}
+.settings-card {
+  background: var(--ui-surface-1, #fff);
+  border: 1px solid var(--ui-border-soft, #d6e3ec);
+  border-radius: var(--ui-radius-md, 14px);
+  padding: 24px;
+}
+.settings-card h2 {
+  font-size: var(--fs-h3, 1.2rem);
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--ui-border-soft, #d6e3ec);
+}
+.avatar-upload {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.avatar-lg {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: var(--ui-brand-soft, #dff1fb);
+  color: var(--ui-brand, #1472a3);
+}
+.settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.settings-label {
+  font-weight: 600;
+  min-width: 120px;
+  color: var(--ui-ink-muted, #4d6477);
+}
+.form-hint {
+  color: var(--ui-ink-soft, #7f98ab);
+  font-size: var(--fs-caption, 0.8rem);
+  margin-top: 4px;
 }
 
 /* ───────── Home / Landing Page ───────── */

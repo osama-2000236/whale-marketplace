@@ -28,6 +28,31 @@ webRouter.post('/u/:username/follow', requireAuth, async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
+// Settings
+webRouter.get('/settings', requireAuth, async (req, res) => {
+  res.render('profile/settings', {
+    title: res.locals.t('settings.title'),
+    success: req.query.saved === '1' ? true : false,
+  });
+});
+
+webRouter.post('/settings', requireAuth, upload.single('avatar'), async (req, res) => {
+  try {
+    const { storeOneFile: storeFile } = require('../utils/upload');
+    const avatar = req.file ? await storeFile(req.file) : undefined;
+    await userService.updateMyProfile(req.user.id, {
+      bio: req.body.bio,
+      avatar,
+    });
+    res.redirect('/settings?saved=1');
+  } catch (e) {
+    res.render('profile/settings', {
+      title: res.locals.t('settings.title'),
+      error: e.message,
+    });
+  }
+});
+
 // API
 apiRouter.get('/:username', async (req, res) => {
   const profile = await userService.getUserProfileByUsername(req.params.username, req.user?.id);

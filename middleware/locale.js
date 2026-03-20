@@ -1,5 +1,5 @@
 const { t } = require('../lib/i18n');
-const { getCityOptions } = require('../lib/cities');
+const { getCityOptions, getCityName } = require('../lib/cities');
 
 module.exports = function locale(req, res, next) {
   const defaultLang = process.env.DEFAULT_LANG === 'en' ? 'en' : 'ar';
@@ -18,6 +18,9 @@ module.exports = function locale(req, res, next) {
 
   const cart = Array.isArray(req.session?.cart) ? req.session.cart : [];
   res.locals.cartCount = cart.length;
+
+  // Helper functions for templates
+  res.locals.getCityName = (idOrValue, l) => getCityName(idOrValue, l || res.locals.lang);
 
   // Compatibility aliases
   res.locals.user = req.user || res.locals.currentUser || null;
