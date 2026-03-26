@@ -16,6 +16,7 @@ module.exports = defineConfig({
     navigationTimeout: 25000
   },
   projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
     { name: 'Desktop Chrome', use: { ...devices['Desktop Chrome'] } },
     { name: 'Desktop Firefox', use: { ...devices['Desktop Firefox'] } },
     { name: 'Mobile Safari', use: { ...devices['iPhone 13'] } },
