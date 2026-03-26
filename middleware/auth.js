@@ -7,7 +7,7 @@ const optionalAuth = (req, res, next) => {
 
 const requireAuth = (req, res, next) => {
   if (!req.user) {
-    req.session.flash = { type: 'warning', message: 'flash.auth_required' };
+    req.session.flash = { type: 'warning', message: 'Please log in to continue' };
     return res.redirect('/auth/login?next=' + encodeURIComponent(req.originalUrl));
   }
   res.locals.user = req.user;

@@ -55,9 +55,9 @@ describe('Order State Machine', () => {
     expect(result).toBe('DISPUTED');
   });
 
-  test('DELIVERED + deliver → COMPLETED (buyer)', () => {
+  test('DELIVERED + complete → COMPLETED (buyer)', () => {
     const order = makeOrder('DELIVERED');
-    const result = validateTransition(order, 'buyer1', 'MEMBER', 'deliver');
+    const result = validateTransition(order, 'buyer1', 'MEMBER', 'complete');
     expect(result).toBe('COMPLETED');
   });
 

@@ -78,9 +78,13 @@ async function authenticate(identifier, password) {
 }
 
 async function findOrCreateOAuth(provider, providerId, profile) {
+  const idField = provider + 'Id'; // googleId, facebookId, appleId
   const email = profile.emails?.[0]?.value?.toLowerCase();
 
-  let user = await prisma.user.findUnique({ where: { googleId: providerId } });
+  let user = await prisma.user.findUnique({
+    where: { [idField]: providerId },
+    include: { subscription: true, sellerProfile: true },
+  });
   if (user) {
     await prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } });
     return { user, isNew: false };
@@ -91,7 +95,8 @@ async function findOrCreateOAuth(provider, providerId, profile) {
     if (user) {
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { googleId: providerId, lastSeenAt: new Date() },
+        data: { [idField]: providerId, lastSeenAt: new Date() },
+        include: { subscription: true, sellerProfile: true },
       });
       return { user, isNew: false };
     }
@@ -109,12 +114,14 @@ async function findOrCreateOAuth(provider, providerId, profile) {
     finalUsername = username.slice(0, 27) + '_' + counter++;
   }
 
+  const slug = slugify(finalUsername, { lower: true, strict: true });
+
   user = await prisma.user.create({
     data: {
       username: finalUsername,
-      slug: finalUsername,
+      slug,
       email: email || `${finalUsername}@oauth.whale`,
-      googleId: providerId,
+      [idField]: providerId,
       avatarUrl: profile.photos?.[0]?.value || null,
       isVerified: true,
       subscription: {

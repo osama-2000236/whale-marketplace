@@ -54,7 +54,7 @@ describe('auth middleware', () => {
     const res = makeRes();
     const next = jest.fn();
     requireAuth(req, res, next);
-    expect(req.session.flash).toEqual({ type: 'warning', message: 'flash.auth_required' });
+    expect(req.session.flash).toEqual({ type: 'warning', message: 'Please log in to continue' });
     expect(res.redirect).toHaveBeenCalledWith('/auth/login?next=%2Fsecure%2Fpage');
     expect(next).not.toHaveBeenCalled();
   });

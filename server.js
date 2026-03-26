@@ -166,6 +166,9 @@ function ensureLocals(res) {
     inTrial: false,
     notifCount: 0,
     flash: { success: [], error: [], info: [] },
+    hasGoogle: !!process.env.GOOGLE_CLIENT_ID,
+    hasFacebook: !!process.env.FACEBOOK_APP_ID,
+    hasApple: !!process.env.APPLE_SERVICE_ID,
   };
   for (const [k, v] of Object.entries(defaults)) {
     if (res.locals[k] === undefined) res.locals[k] = v;

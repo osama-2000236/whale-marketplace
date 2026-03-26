@@ -66,8 +66,12 @@
       <% } %>
       <% if (user) { %>
       <a href="/whale/saved" class="icon-btn" title="<%= t('nav.saved') %>">
-        🤍 <% if (typeof unreadCount !== 'undefined' && unreadCount > 0) { %>
-        <span class="notification-count"><%= unreadCount %></span>
+        🤍
+      </a>
+
+      <a href="/notifications" class="icon-btn" title="Notifications">
+        🔔 <% if (typeof notifCount !== 'undefined' && notifCount > 0) { %>
+        <span class="notification-count"><%= notifCount %></span>
         <% } %>
       </a>
 
