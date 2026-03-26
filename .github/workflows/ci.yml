@@ -141,7 +141,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx playwright test --project="Desktop Chrome"
+        run: npx playwright test --project=chromium
         env:
           PORT: 3000
           SITE_URL: http://localhost:3000
