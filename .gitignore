@@ -5,4 +5,3 @@ dist/
 public/uploads/*
 !public/uploads/.gitkeep
 .prisma/
-prisma/migrations/
