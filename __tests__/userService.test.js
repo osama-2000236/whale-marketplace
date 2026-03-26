@@ -17,7 +17,7 @@ jest.mock('../lib/prisma', () => ({
   $transaction: jest.fn(),
 }));
 
-jest.mock('bcrypt', () => ({
+jest.mock('bcryptjs', () => ({
   hash: jest.fn(),
   compare: jest.fn(),
 }));
