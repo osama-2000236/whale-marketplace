@@ -1,7 +1,12 @@
+# ──────────────────────────────────────────────────────────────
+# Whale Marketplace — Railway Deployment Configuration
+# ──────────────────────────────────────────────────────────────
+
 [build]
 builder = "dockerfile"
 
 [deploy]
+startCommand = "node entrypoint.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"

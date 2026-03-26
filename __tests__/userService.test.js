@@ -27,7 +27,7 @@ jest.mock('../services/emailService', () => ({
 }));
 
 const prisma = require('../lib/prisma');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const emailService = require('../services/emailService');
 const userService = require('../services/userService');
 
