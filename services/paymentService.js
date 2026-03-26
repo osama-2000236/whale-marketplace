@@ -1,5 +1,6 @@
 const prisma = require('../lib/prisma');
 const crypto = require('crypto');
+const axios = require('axios');
 
 // Pricing tiers (USD)
 const PLANS = {

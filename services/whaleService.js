@@ -19,6 +19,7 @@ async function getListings(filters = {}) {
   const where = { status: 'ACTIVE' };
 
   if (q) {
+    const search = q.trim();
     where.OR = [
       { title: { contains: q, mode: 'insensitive' } },
       { titleAr: { contains: q, mode: 'insensitive' } },
@@ -416,12 +417,10 @@ async function toggleSaved(userId, listingId) {
   const existing = await prisma.savedListing.findUnique({
     where: { userId_listingId: { userId, listingId } },
   });
-
   if (existing) {
     await prisma.savedListing.delete({ where: { userId_listingId: { userId, listingId } } });
     return { saved: false };
   }
-
   await prisma.savedListing.create({ data: { userId, listingId } });
   return { saved: true };
 }

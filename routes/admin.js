@@ -131,6 +131,24 @@ router.post('/orders/:id/resolve', async (req, res, next) => {
     req.session.flash = { type: 'danger', message: err.message };
     res.redirect('/admin/orders');
   }
+  if (config.social) {
+    config.social.facebook = req.body.socialFacebook || config.social.facebook;
+    config.social.instagram = req.body.socialInstagram || config.social.instagram;
+    config.social.tiktok = req.body.socialTiktok || config.social.tiktok;
+  }
+  writeJSON('config.json', config);
+  res.redirect('/admin/settings?saved=1');
 });
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+
+function parseSpecs(body) {
+  if (!body['spec_key[]']) return null;
+  const keys = Array.isArray(body['spec_key[]']) ? body['spec_key[]'] : [body['spec_key[]']];
+  const vals = Array.isArray(body['spec_val[]']) ? body['spec_val[]'] : [body['spec_val[]']];
+  const specs = {};
+  keys.forEach((k, i) => { if (k && vals[i]) specs[k] = vals[i]; });
+  return Object.keys(specs).length ? specs : null;
+}
 
 module.exports = router;

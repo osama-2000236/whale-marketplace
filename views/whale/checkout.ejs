@@ -104,3 +104,12 @@
   </div>
 </main>
 <%- include('../partials/footer') %>
+<script>
+document.querySelectorAll('input[name="shippingMethod"]').forEach(function(r) {
+  r.addEventListener('change', function() {
+    document.getElementById('addressFields').style.display = this.value === 'company' ? '' : 'none';
+  });
+});
+</script>
+</body>
+</html>
