@@ -35,7 +35,8 @@
       headers: { 'Content-Type': 'application/json', 'x-csrf-token': token || '' },
       body: JSON.stringify({ locale: locale }),
     })
-      .then(function () {
+      .then(function (response) {
+        if (!response.ok) throw new Error('Locale switch failed');
         location.reload();
       })
       .catch(function () {
