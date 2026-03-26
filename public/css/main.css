@@ -1523,3 +1523,22 @@ main button {
 .w-full {
   width: 100%;
 }
+
+.list-reset {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stack-sm > * + * {
+  margin-top: 0.25rem;
+}
+
+.text-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.text-link:hover {
+  text-decoration: underline;
+}

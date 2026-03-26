@@ -5,6 +5,19 @@ const userService = require('../services/userService');
 const { sanitizeBody } = require('../utils/sanitize');
 const { safeRedirect } = require('../utils/safeRedirect');
 
+function getOAuthViewFlags() {
+  return {
+    hasGoogle: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    hasFacebook: Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+    hasApple: Boolean(
+      process.env.APPLE_SERVICE_ID &&
+        process.env.APPLE_TEAM_ID &&
+        process.env.APPLE_KEY_ID &&
+        process.env.APPLE_PRIVATE_KEY
+    ),
+  };
+}
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'test' ? 10_000 : 20,
@@ -14,7 +27,11 @@ const authLimiter = rateLimit({
 // Login page
 router.get('/login', (req, res) => {
   if (req.user) return res.redirect('/whale');
-  res.render('auth/login', { title: res.locals.t('auth.login'), next: req.query.next || '/whale' });
+  res.render('auth/login', {
+    title: res.locals.t('auth.login'),
+    next: req.query.next || '/whale',
+    ...getOAuthViewFlags(),
+  });
 });
 
 // Login handler
@@ -39,7 +56,7 @@ router.post('/login', authLimiter, (req, res, next) => {
 // Register page
 router.get('/register', (req, res) => {
   if (req.user) return res.redirect('/whale');
-  res.render('auth/register', { title: res.locals.t('auth.register') });
+  res.render('auth/register', { title: res.locals.t('auth.register'), ...getOAuthViewFlags() });
 });
 
 // Register handler

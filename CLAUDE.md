@@ -33,7 +33,7 @@ This file documents the current v2.0 architecture and stack so AI prompts and PR
 ## App Structure
 
 - `server.js`: app wiring (session, auth, locale, CSRF, routes, errors)
-- `routes/`: feature routes (`auth`, `whale`, `payment`, `admin`, etc.)
+- `routes/`: feature routes (`auth`, `whale`, `payment`, `notifications`, `admin`, etc.)
 - `services/`: business logic (`whaleService`, `userService`, `paymentService`, `emailService`)
 - `views/`: EJS templates + shared partials
 - `public/`: CSS/JS/static assets
@@ -51,11 +51,14 @@ This file documents the current v2.0 architecture and stack so AI prompts and PR
   - `/auth/google`
   - `/auth/facebook`
   - `/auth/apple` (+ POST callback for Apple)
+- Notifications flow:
+  - `GET /notifications` (auth required, marks unread notifications as read)
 
 ## Testing
 
 - Unit/integration: Jest (`__tests__/**/*.test.js`)
 - UI flows and regression: Playwright (`*.spec.js`)
+- Current baseline: 14 Jest suites, 123+ tests passing
 - Linting/format:
   - `npm run lint`
   - `npm run format`
