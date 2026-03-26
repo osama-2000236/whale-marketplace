@@ -1,0 +1,5 @@
+**/*.ejs
+coverage/
+playwright-report/
+test-results/
+node_modules/

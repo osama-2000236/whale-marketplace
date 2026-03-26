@@ -68,11 +68,5 @@ try {
   // Any other migration error: log and continue (e.g. already applied)
 }
 
-// Start server
-console.log('[entrypoint] Loading server...');
-try {
-  require('./server');
-} catch (err) {
-  console.error('[entrypoint] FATAL — server failed to load:', err);
-  process.exit(1);
-}
+console.log('[whale] Starting server...');
+require('./server');

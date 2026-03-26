@@ -1,78 +1,56 @@
-<%- include('../partials/header') %>
-
-<section class="page-section">
-  <div class="container upgrade-page">
-    <h1 class="page-title">PRO UPGRADE | ترقية برو</h1>
-
-    <% if (reason === 'feature') { %>
-      <div class="alert alert-info">هذه الميزة تتطلب اشتراك Pro | This feature requires Pro access</div>
-    <% } %>
-
-    <% if (error) { %>
-      <div class="alert alert-error">حدث خطأ بالدفع | Payment error, try again</div>
-    <% } %>
-
-    <% if (cancelled) { %>
-      <div class="alert alert-warning">تم إلغاء عملية الدفع | Payment was cancelled</div>
-    <% } %>
-
-    <div class="plans-row">
-      <div class="plan-card selected-free">
-        <div class="plan-name">FREE</div>
-        <div class="plan-price">₪0</div>
-        <p>تصفح المجتمع والمحتوى | Browse community content</p>
-      </div>
-
-      <div class="plan-card selected-pro">
-        <div class="plan-name">PRO</div>
-        <div class="plan-price">₪<%= Number(process.env.SUBSCRIPTION_PRICE_NIS || 20) %></div>
-        <p>نشر إعلانات + مزايا متقدمة | Post listings + premium access</p>
-      </div>
-    </div>
-
-    <% if (sub) { %>
-      <div class="panel-card" style="margin-bottom:16px;">
-        <strong>الخطة الحالية | Current plan:</strong>
-        <%= sub.plan %>
-        <% if (daysLeft > 0) { %>
-          <span class="trial-badge" style="margin-inline-start:10px;">باقي <%= daysLeft %> يوم | <%= daysLeft %> days left</span>
-        <% } %>
-      </div>
-    <% } %>
-
-    <div class="panel-card">
-      <h3>ابدأ الدفع | Start payment</h3>
-      <form action="/payment/start" method="POST" class="auth-form">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-        <div class="form-group">
-          <label>مدة الاشتراك | Plan duration</label>
-          <select name="planMonths">
-            <option value="1">1 month / شهر واحد</option>
-            <option value="3">3 months / 3 أشهر</option>
-            <option value="6">6 months / 6 أشهر</option>
-            <option value="12">12 months / 12 شهر</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label>مزود الدفع | Provider</label>
-          <select name="provider">
-            <option value="paymob">Paymob (موصى به | recommended)</option>
-            <option value="paypal">PayPal (بديل | fallback)</option>
-          </select>
-        </div>
-
-        <button type="submit" class="btn-gold">⚡ فعّل Pro الآن / Activate Pro</button>
-      </form>
-
-      <% if (!currentUser) { %>
-        <p class="muted" style="margin-top:12px;">يجب تسجيل الدخول أولاً | Login required before checkout</p>
-      <% } else { %>
-        <a href="/payment/history" class="btn btn-secondary" style="margin-top:12px; display:inline-block;">سجل المدفوعات | Payment History</a>
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container" style="max-width: 800px">
+    <%- include('../partials/flash') %>
+    <div class="text-center mb-3">
+      <h1><%= t('upgrade.title') %></h1>
+      <p class="text-muted"><%= t('upgrade.subtitle') %></p>
+      <% if (user.subscription) { %>
+      <p class="text-sm">
+        <%= t('upgrade.current_plan') %>:
+        <span class="badge badge-info"><%= user.subscription.plan %></span>
+      </p>
       <% } %>
     </div>
-  </div>
-</section>
 
+    <div class="grid-stats" style="grid-template-columns: repeat(3, 1fr)">
+      <% [[1,'$5','upgrade.monthly'],[6,'$25','upgrade.semiannual'],[12,'$45','upgrade.annual']].forEach(([months,price,key]) => { %>
+      <div class="card text-center" style="padding: 2rem">
+        <h3><%= t(key) %></h3>
+        <div style="font-size: 2.5rem; font-weight: 800; color: var(--brand); margin: 1rem 0">
+          <%= price %>
+        </div>
+        <p class="text-muted text-sm mb-2">
+          <%= months %> <%= locale === 'ar' ? 'شهر' : 'months' %>
+        </p>
+
+        <form method="POST" action="/upgrade/paymob" style="margin-bottom: 0.5rem">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="planMonths" value="<%= months %>" />
+          <button type="submit" class="btn btn-primary btn-block">
+            <%= t('upgrade.pay_paymob') %>
+          </button>
+        </form>
+        <form method="POST" action="/upgrade/stripe" style="margin-bottom: 0.5rem">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="planMonths" value="<%= months %>" />
+          <button type="submit" class="btn btn-secondary btn-block">
+            <%= locale === 'ar' ? '💳 فيزا / ماستركارد' : '💳 Visa / Mastercard' %>
+          </button>
+        </form>
+        <form method="POST" action="/upgrade/paypal">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="planMonths" value="<%= months %>" />
+          <button type="submit" class="btn btn-ghost btn-block">
+            <%= t('upgrade.pay_paypal') %>
+          </button>
+        </form>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+</main>
 <%- include('../partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <div class="page-header flex items-center justify-between">
+      <h1><%= t('admin.orders') %></h1>
+      <form method="GET" action="/admin/orders" class="flex gap-1">
+        <select
+          name="status"
+          class="select"
+          style="max-width: 200px"
+          onchange="this.form.submit()"
+        >
+          <option value="">All</option>
+          <% ['PENDING', 'CONFIRMED', 'SHIPPED', 'COMPLETED', 'CANCELLED', 'DISPUTED'].forEach(
+            (s) => {
+          %>
+            <option value="<%= s %>" <%= status === s ? 'selected' : '' %>>
+              <%= t('status.' + s) %>
+            </option>
+          <% }) %>
+        </select>
+      </form>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th><%= locale === 'ar' ? 'المنتج' : 'Item' %></th>
+            <th><%= locale === 'ar' ? 'المشتري' : 'Buyer' %></th>
+            <th><%= locale === 'ar' ? 'البائع' : 'Seller' %></th>
+            <th><%= t('order.status') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% orders.forEach(o => { %>
+            <tr>
+              <td><code><%= o.orderNumber.slice(-8) %></code></td>
+              <td><%= o.listing?.title %></td>
+              <td><%= o.buyer?.username %></td>
+              <td><%= o.seller?.username %></td>
+              <td><%- include('../partials/order-status', { status: o.status }) %></td>
+              <td>
+                <a href="/whale/orders/<%= o.id %>" class="btn btn-ghost btn-sm">
+                  <%= locale === 'ar' ? 'عرض' : 'View' %>
+                </a>
+                <% if (o.status === 'DISPUTED') { %>
+                  <form
+                    method="POST"
+                    action="/admin/orders/<%= o.id %>/resolve"
+                    style="display: inline"
+                  >
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" name="resolution" value="complete" class="btn btn-primary btn-sm">Complete for Buyer</button>
+                    <button type="submit" name="resolution" value="cancel" class="btn btn-secondary btn-sm">Cancel &amp; Refund</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<%- include('../partials/footer') %>

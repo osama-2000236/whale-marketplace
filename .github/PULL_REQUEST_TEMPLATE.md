@@ -1,11 +1,13 @@
 ## Summary
+
 <!-- Describe what this PR does in 1-3 sentences -->
 
 ## Changes
-<!-- List the key changes -->
--
+
+## <!-- List the key changes -->
 
 ## Checklist
+
 Before merging, confirm all of the following:
 
 - [ ] ✅ All tests passing (`npm run test` + `npm run test:ui`)
@@ -18,7 +20,9 @@ Before merging, confirm all of the following:
 - [ ] 🐳 Whale escrow flow not broken
 
 ## Screenshots
+
 <!-- If UI changes, add before/after screenshots -->
 
 ## Test Plan
+
 <!-- How was this tested? -->

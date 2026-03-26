@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: whale
+      POSTGRES_PASSWORD: whale
+      POSTGRES_DB: whale
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://whale:whale@db:5432/whale
+    volumes:
+      - ./public/uploads:/app/public/uploads
+
+volumes:
+  pgdata:

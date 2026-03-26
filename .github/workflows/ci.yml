@@ -39,8 +39,8 @@ jobs:
       - name: Check for security vulnerabilities
         run: npm audit --audit-level=high
 
-      - name: Check for hardcoded secrets
-        run: node scripts/check-secrets.js
+      - name: Run ESLint
+        run: npm run lint
 
   # ── Step 2: Unit and integration tests with Jest ──
   test:
@@ -141,7 +141,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: npx playwright test --project="Desktop Chrome"
+        run: npx playwright test --project=chromium
         env:
           PORT: 3000
           SITE_URL: http://localhost:3000

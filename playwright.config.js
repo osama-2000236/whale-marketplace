@@ -1,31 +1,62 @@
+// playwright.config.js
+// ============================================================
+//  Playwright Configuration — UI/UX QA Test Suite
+//  Run: npx playwright test --reporter=html
+// ============================================================
+
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
-  testDir: './__uitests__',
-  timeout: 30000,
-  retries: 1,
-  workers: 1,
-  globalSetup: require.resolve('./__uitests__/global-setup.js'),
-  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+  testDir: './',
+  testMatch: '**/*.spec.js',
+  fullyParallel: true,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 2 : undefined,
+  timeout: 30_000,
+  expect: { timeout: 5_000 },
+
+  reporter: [['html', { outputFolder: 'playwright-report', open: 'never' }], ['list']],
+
   use: {
-    baseURL: process.env.TEST_BASE_URL || 'http://localhost:3000',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    baseURL: process.env.BASE_URL || 'http://localhost:3001',
     trace: 'on-first-retry',
-    actionTimeout: 8000,
-    navigationTimeout: 25000
+    screenshot: 'only-on-failure',
+    video: 'on-first-retry',
+    actionTimeout: 10_000,
+    navigationTimeout: 15_000,
   },
-  projects: [
-    { name: 'Desktop Chrome', use: { ...devices['Desktop Chrome'] } },
-    { name: 'Desktop Firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'Mobile Safari', use: { ...devices['iPhone 13'] } },
-    { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
-    { name: 'Tablet', use: { ...devices['iPad Pro'] } }
-  ],
+
   webServer: {
-    command: 'node server.js',
-    port: 3000,
-    reuseExistingServer: true,
-    timeout: 120000
-  }
+    command: 'cross-env NODE_ENV=test PORT=3001 node entrypoint.js',
+    url: 'http://localhost:3001',
+    reuseExistingServer: false,
+    timeout: 120_000,
+  },
+
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 14'] },
+    },
+    {
+      name: 'tablet',
+      use: { ...devices['iPad (gen 7)'] },
+    },
+  ],
 });

@@ -1,0 +1,93 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <%- include('../partials/flash') %>
+
+    <!-- Hero -->
+    <section class="hero">
+      <h1><%= t('home.hero.title') %></h1>
+      <p><%= t('home.hero.subtitle') %></p>
+      <div class="hero-actions">
+        <a href="/whale" class="btn btn-primary btn-lg"><%= t('home.hero.browse') %></a>
+        <a href="/whale/sell" class="btn btn-ghost btn-lg"><%= t('home.hero.sell') %></a>
+      </div>
+    </section>
+
+    <!-- Categories -->
+    <section class="section">
+      <h2 class="section-title"><%= t('home.categories') %></h2>
+      <div class="grid-categories">
+        <% categories.forEach(cat => { %>
+        <a href="/whale?category=<%= cat.slug %>" class="category-card">
+          <div class="category-card-icon"><%= cat.icon %></div>
+          <div class="category-card-name"><%= locale === 'ar' ? cat.nameAr : cat.name %></div>
+        </a>
+        <% }) %>
+      </div>
+    </section>
+
+    <!-- Trust -->
+    <section class="section">
+      <h2 class="section-title text-center"><%= t('home.trust.title') %></h2>
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="trust-card-icon">🛡️</div>
+          <h3><%= t('home.trust.escrow') %></h3>
+          <p><%= t('home.trust.escrow.desc') %></p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">✅</div>
+          <h3><%= t('home.trust.verified') %></h3>
+          <p><%= t('home.trust.verified.desc') %></p>
+        </div>
+        <div class="trust-card">
+          <div class="trust-card-icon">⚖️</div>
+          <h3><%= t('home.trust.dispute') %></h3>
+          <p><%= t('home.trust.dispute.desc') %></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Listings -->
+    <section class="section">
+      <h2 class="section-title"><%= t('home.recent') %></h2>
+      <div class="grid-listings">
+        <% listings.forEach(listing => { %>
+        <%- include('../partials/listing-card', { listing }) %>
+        <% }) %>
+      </div>
+      <div class="text-center mt-3">
+        <a href="/whale" class="btn btn-ghost"><%= t('whale.browse') %> →</a>
+      </div>
+    </section>
+
+    <!-- CTA (guests only) -->
+    <% if (!user) { %>
+    <section class="cta-banner">
+      <h2><%= t('home.cta') %></h2>
+      <p><%= t('home.cta.desc') %></p>
+      <a
+        href="/auth/register"
+        class="btn btn-primary btn-lg"
+        style="background: white; color: var(--brand); border-color: white"
+      >
+        <%= t('nav.register') %>
+      </a>
+    </section>
+    <% } else if (!canSell) { %>
+    <section class="cta-banner">
+      <h2><%= locale === 'ar' ? 'ابدأ البيع اليوم' : 'Start Selling Today' %></h2>
+      <p><%= locale === 'ar' ? 'ترقّ لحساب بائع وابدأ عرض منتجاتك' : 'Upgrade to a seller account and start listing your products' %></p>
+      <a
+        href="/upgrade"
+        class="btn btn-primary btn-lg"
+        style="background: white; color: var(--brand); border-color: white"
+      >
+        <%= t('nav.upgrade') %>
+      </a>
+    </section>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

@@ -1,0 +1,92 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <!-- Seller header -->
+    <div class="card mb-2">
+      <div
+        class="card-body"
+        style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap"
+      >
+        <div class="avatar avatar-xl">
+          <% if (profile.avatarUrl) { %>
+          <img src="<%= profile.avatarUrl %>" alt="" />
+          <% } else { %>
+          <%= profile.username.charAt(0).toUpperCase() %>
+          <% } %>
+        </div>
+        <div style="flex: 1">
+          <h1 style="font-size: 1.5rem; margin-bottom: 0.25rem">
+            <%= profile.sellerProfile?.displayName || profile.username %>
+          </h1>
+          <div class="text-muted">@<%= profile.username %></div>
+          <% if (profile.sellerProfile) { %>
+          <div class="flex items-center gap-1 mt-1">
+            <span class="stars">
+              <% for(let i=1;i<=5;i++){%>
+              <span class="<%= i<=Math.round(profile.sellerProfile.avgRating)?'':'empty'%>">★</span>
+              <%}%>
+            </span>
+            <span class="text-sm text-muted">
+              (<%= profile.sellerProfile.reviewCount %> <%= locale === 'ar' ? 'تقييم' : 'reviews'
+              %>)
+            </span>
+            <% if (profile.sellerProfile.city) { %>
+            <span class="text-muted">&middot; <%= profile.sellerProfile.city %></span>
+            <% } %>
+            <% if (profile.sellerProfile.isVerified) { %>
+            <span class="badge badge-success"><%= locale === 'ar' ? 'موثق' : 'Verified' %></span>
+            <% } %>
+          </div>
+          <% } %>
+          <% if (profile.bio) { %>
+          <p class="mt-1 text-muted"><%= profile.bio %></p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Listings -->
+    <h2 class="section-title"><%= locale === 'ar' ? 'منتجات البائع' : 'Seller Listings' %></h2>
+    <% if (profile.listings.length === 0) { %>
+    <div class="empty-state">
+      <p><%= locale === 'ar' ? 'لا توجد منتجات' : 'No listings yet' %></p>
+    </div>
+    <% } else { %>
+    <div class="grid-listings">
+      <% profile.listings.forEach(listing => { %>
+      <%- include('../partials/listing-card', { listing
+      }) %>
+      <% }) %>
+    </div>
+    <% } %>
+
+    <!-- Reviews -->
+    <% if (profile.reviews && profile.reviews.length > 0) { %>
+    <h2 class="section-title mt-3"><%= t('listing.reviews') %></h2>
+    <div class="card">
+      <% profile.reviews.forEach(review => { %>
+      <div class="review-card">
+        <div class="review-header">
+          <div class="avatar avatar-sm">
+            <%= review.reviewer.username.charAt(0).toUpperCase() %>
+          </div>
+          <div>
+            <strong><%= review.reviewer.username %></strong>
+            <div class="stars">
+              <% for(let i=1;i<=5;i++){%>
+              <span class="<%= i<=review.rating?'':'empty'%>">★</span>
+              <%}%>
+            </div>
+          </div>
+        </div>
+        <% if (review.body) { %>
+        <p class="review-body"><%= review.body %></p>
+        <% } %>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

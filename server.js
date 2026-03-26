@@ -1,331 +1,207 @@
-/**
- * Whale Marketplace - Server Bootstrap
- * Node.js + Express + Prisma
- */
-
-// Catch fatal errors that would otherwise kill the process silently
-process.on('uncaughtException', (err) => {
-  console.error('UNCAUGHT EXCEPTION:', err);
-  process.exit(1);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('UNHANDLED REJECTION:', reason);
-});
-
-try { require('dotenv').config(); } catch (_) { /* dotenv unavailable in production — env vars set by platform */ }
-
-// eslint-disable-next-line no-console
-console.log('[WHALE] server.js loading — NODE_ENV=' + process.env.NODE_ENV);
-
+require('dotenv').config();
 const express = require('express');
-const path = require('path');
 const session = require('express-session');
-const cookieParser = require('cookie-parser');
+const PgSession = require('connect-pg-simple')(session);
 const helmet = require('helmet');
-const compression = require('compression');
-const cors = require('cors');
+const { csrfSync } = require('csrf-sync');
 const rateLimit = require('express-rate-limit');
-const csrf = require('csurf');
-
-const prisma = require('./lib/prisma');
-const { optionalAuth } = require('./middleware/auth');
-const { injectSubStatus, startSubscriptionCron } = require('./middleware/subscription');
-const locale = require('./middleware/locale');
 const passport = require('./lib/passport');
-const { ensureAdminFromEnv } = require('./services/userService');
-const notificationService = require('./services/notificationService');
-const { t } = require('./lib/i18n');
-const { getDirection, startsWithArabic } = require('./utils/text');
-const { buildResponsiveImage } = require('./utils/images');
+const { localeMiddleware } = require('./middleware/locale');
+const { subscriptionMiddleware } = require('./middleware/subscription');
+const { optionalAuth } = require('./middleware/auth');
+const path = require('path');
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
-const isProd = process.env.NODE_ENV === 'production';
 
-// Trust proxy in production (Railway, Heroku, etc.) for correct req.ip and secure cookies
-if (isProd) app.set('trust proxy', 1);
-app.disable('x-powered-by');
-
-const authRoutes = require('./routes/auth');
-const paymentRouter = require('./routes/payment');
-const welcomeRouter = require('./routes/welcome');
-const whaleRouter = require('./routes/whale');
-const pagesRouter = require('./routes/pages');
-const sitemapRouter = require('./routes/sitemap');
-const notificationRoutes = require('./routes/notifications');
-
-function timeAgo(input, lang = 'ar') {
-  if (!input) return '';
-  const date = new Date(input);
-  const now = new Date();
-  const diffMs = Math.max(0, now - date);
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  const week = 7 * day;
-
-  if (diffMs < minute) return t('time.just_now', lang);
-  if (diffMs < hour) {
-    const m = Math.floor(diffMs / minute);
-    return t('time.minutes_ago', lang, { n: m });
-  }
-  if (diffMs < day) {
-    const h = Math.floor(diffMs / hour);
-    return t('time.hours_ago', lang, { n: h });
-  }
-  if (diffMs < week) {
-    const d = Math.floor(diffMs / day);
-    return t('time.days_ago', lang, { n: d });
-  }
-  return date.toLocaleDateString(lang === 'ar' ? 'ar-PS' : 'en-GB');
-}
-
+// 1. Security headers
 app.use(
   helmet({
-    contentSecurityPolicy: isProd
-      ? {
-          directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net', 'https://www.googletagmanager.com', 'https://accept.paymob.com'],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://cdn.jsdelivr.net'],
-            imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
-            fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
-            connectSrc: ["'self'", 'https://www.google-analytics.com', 'https://accept.paymob.com'],
-            frameSrc: ["'self'", 'https://accept.paymob.com'],
-            objectSrc: ["'none'"],
-            baseUri: ["'self'"],
-            formAction: ["'self'"],
-            frameAncestors: ["'none'"],
-            upgradeInsecureRequests: []
-          }
-        }
-      : false,
-    crossOriginEmbedderPolicy: false,
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-    hsts: isProd ? { maxAge: 31536000, includeSubDomains: true, preload: true } : false
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
+        fontSrc: ["'self'", 'fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'res.cloudinary.com'],
+        scriptSrc: ["'self'"],
+        connectSrc: ["'self'"],
+        frameAncestors: ["'none'"],
+      },
+    },
   })
 );
 
-app.use(compression());
+// 2. Body parsing (preserve raw body for Stripe webhook signature verification)
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      if (req.originalUrl.startsWith('/webhooks/stripe')) {
+        req.rawBody = buf;
+      }
+    },
+  })
+);
 
-// CORS: restrict to known origins in production
-const corsOptions = isProd
-  ? { origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : false, credentials: true }
-  : { origin: true, credentials: true };
-app.use(cors(corsOptions));
+// 3. Static files
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ extended: true, limit: '5mb' }));
-app.use(cookieParser());
-
-// Session: require a real secret in production
-const sessionSecret = process.env.SESSION_SECRET;
-if (isProd && !sessionSecret) {
-  // eslint-disable-next-line no-console
-  console.error('FATAL: SESSION_SECRET environment variable is required in production');
-  // Flush stderr before exiting
-  process.stderr.write('', () => process.exit(1));
-  setTimeout(() => process.exit(1), 1000);
-}
-
+// 4. Session
 app.use(
   session({
-    name: 'whale.sid',
-    secret: sessionSecret || 'dev-only-secret-not-for-production',
+    store: new PgSession({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: isProd,
       httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    }
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
   })
 );
 
+// 5. Passport
 app.use(passport.initialize());
+app.use(passport.session());
 
-// Global rate limiter — always active, stricter in production
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: isProd ? 300 : 1000,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many requests. Please try again later.' },
-    skip: (req) => req.path === '/health' || req.path === '/api/health'
-  })
-);
+// 6. Locale
+app.use(localeMiddleware);
 
-// Stricter rate limit on API write endpoints
-app.use(
-  '/api',
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: isProd ? 100 : 500,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'API rate limit exceeded.' }
-  })
-);
+// 7. CSRF (exclude webhooks)
+const { csrfSynchronisedProtection, generateToken } = csrfSync({
+  getTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'],
+});
+app.use((req, res, next) => {
+  if (req.path.startsWith('/webhooks/')) return next();
+  // Apple Sign In sends a POST callback — exempt from CSRF
+  if (req.path === '/auth/apple/callback' && req.method === 'POST') return next();
+  csrfSynchronisedProtection(req, res, next);
+});
+app.use((req, res, next) => {
+  res.locals.csrfToken = generateToken(req);
+  next();
+});
 
-app.use(
-  express.static(path.join(__dirname, 'public'), {
-    maxAge: isProd ? '7d' : 0
-  })
-);
+// 8. Auth (populate res.locals.user)
+app.use(optionalAuth);
 
+// 9. Subscription status
+app.use(subscriptionMiddleware);
+
+// 10. Flash messages
+app.use((req, res, next) => {
+  res.locals.flash = req.session.flash || null;
+  delete req.session.flash;
+  // Flash helper
+  req.flash = (type, message) => {
+    req.session.flash = { type, message };
+  };
+  next();
+});
+
+// 11. Notification count
+app.use(async (req, res, next) => {
+  if (req.user) {
+    try {
+      const prisma = require('./lib/prisma');
+      res.locals.unreadCount = await prisma.notification.count({
+        where: { userId: req.user.id, isRead: false },
+      });
+    } catch {
+      res.locals.unreadCount = 0;
+    }
+  } else {
+    res.locals.unreadCount = 0;
+  }
+  next();
+});
+
+// 12. View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-app.use(optionalAuth);
-app.use(injectSubStatus);
-app.use(locale);
+// 13. Global rate limit
+const isTestEnv = process.env.NODE_ENV === 'test';
+app.use(
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isTestEnv ? 1_000_000 : 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+  })
+);
 
-const csrfProtection = csrf({
-  cookie: {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: 'lax'
-  }
-});
-
-app.use((req, res, next) => {
-  if (req.path === '/webhooks/paymob') return next();
-  if (req.method === 'POST' && req.path === '/auth/apple/callback') return next();
-  return csrfProtection(req, res, next);
-});
-
-app.use(async (req, res, next) => {
-  try {
-    const config = require('./data/config.json');
-
-    res.locals.config = config;
-    res.locals.currentPath = req.path;
-    res.locals.path = req.path;
-    res.locals.currentUser = req.user || null;
-    res.locals.isAdmin = Boolean(req.user && req.user.role === 'ADMIN') || Boolean(req.session?.isAdmin);
-    res.locals.whatsappNumber = process.env.WHATSAPP_NUMBER || config.contact.whatsapp;
-    res.locals.getDirection = getDirection;
-    res.locals.startsWithArabic = startsWithArabic;
-    res.locals.timeAgo = (value) => timeAgo(value, res.locals.lang || 'ar');
-    res.locals.imageSet = (url, options) => buildResponsiveImage(url, options);
-    res.locals.csrfToken = req.csrfToken();
-
-    if (req.user?.id) {
-      const [navNotifications, unreadNotificationsCount] = await Promise.all([
-        notificationService.getNotifications(req.user.id, 10).catch(() => []),
-        notificationService.getUnreadCount(req.user.id).catch(() => 0)
-      ]);
-
-      res.locals.navNotifications = navNotifications;
-      res.locals.unreadNotificationsCount = unreadNotificationsCount;
-    } else {
-      res.locals.navNotifications = [];
-      res.locals.unreadNotificationsCount = 0;
-    }
-
-    return next();
-  } catch (error) {
-    return next(error);
-  }
-});
-
-// Health check at root level — Railway expects 200, not a redirect
-app.get('/health', (_req, res) => res.status(200).json({ status: 'ok' }));
-
-// Whale-first routing
-app.get('/', (_req, res) => res.redirect('/whale'));
-
-// Redirect legacy paths to Whale
-app.use('/marketplace', (_req, res) => res.redirect('/whale'));
-app.use('/market', (_req, res) => res.redirect('/whale'));
-app.use('/rooms', (_req, res) => res.redirect('/whale'));
-app.use('/posts', (_req, res) => res.redirect('/whale'));
-app.use('/products', (_req, res) => res.redirect('/whale'));
-
-// Web routes
-app.use(authRoutes.webRouter);
-app.use('/', paymentRouter);
-app.use('/', welcomeRouter);
-app.use('/whale', whaleRouter);
-app.use('/prefs', require('./routes/prefs'));
-app.use(notificationRoutes.webRouter);
-app.use('/', sitemapRouter);
-app.use('/', pagesRouter);
+// 14. Routes
+app.use('/', require('./routes/index'));
+app.use('/auth', require('./routes/auth'));
+app.use('/whale', require('./routes/whale'));
+app.use('/profile', require('./routes/profile'));
+app.use('/notifications', require('./routes/notifications'));
+app.use('/', require('./routes/payment'));
+app.use('/webhooks', require('./routes/webhooks'));
 app.use('/admin', require('./routes/admin'));
 
-// Health check — used by Railway to verify the app is running
-app.use('/api', require('./routes/api'));
+// 15. Redirects
+app.get('/marketplace', (req, res) => res.redirect(301, '/whale'));
+app.get('/market', (req, res) => res.redirect(301, '/whale'));
+app.get('/rooms', (req, res) => res.redirect(301, '/whale'));
+app.get('/search', (req, res) =>
+  res.redirect(301, '/whale?q=' + encodeURIComponent(req.query.q || ''))
+);
 
-// JSON API routes
-app.use('/api/auth', authRoutes.apiRouter);
-app.use('/api/notifications', notificationRoutes.apiRouter);
+// 16. Ensure all template locals exist (safety net for 404/error pages)
+function ensureLocals(res) {
+  const defaults = {
+    csrfToken: '',
+    locale: 'en',
+    dir: 'ltr',
+    theme: 'light',
+    t: (k) => k,
+    user: null,
+    canSell: false,
+    isPro: false,
+    inTrial: false,
+    notifCount: 0,
+    flash: { success: [], error: [], info: [] },
+    hasGoogle: !!process.env.GOOGLE_CLIENT_ID,
+    hasFacebook: !!process.env.FACEBOOK_APP_ID,
+    hasApple: !!process.env.APPLE_SERVICE_ID,
+  };
+  for (const [k, v] of Object.entries(defaults)) {
+    if (res.locals[k] === undefined) res.locals[k] = v;
+  }
+}
 
+// 17. 404
 app.use((req, res) => {
-  res.status(404).render('404', { title: 'Page Not Found' });
+  ensureLocals(res);
+  res.status(404).render('404', { title: '404' });
 });
 
+// 18. Error handler
 app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    if (req.path.startsWith('/api/')) {
-      return res.status(403).json({ error: 'Invalid CSRF token' });
-    }
+  ensureLocals(res);
 
+  if (err.code === 'EBADCSRFTOKEN' || (err.message && err.message.toLowerCase().includes('csrf'))) {
     return res.status(403).render('error', {
-      title: 'CSRF Error',
-      message: 'جلسة غير صالحة، الرجاء تحديث الصفحة والمحاولة مجددا | Invalid session token, refresh and retry'
+      title: 'Error',
+      message: 'Invalid CSRF token — please refresh and try again.',
+      status: 403,
     });
   }
-
-  // Log full error server-side but never expose stack trace to client
-  // eslint-disable-next-line no-console
-  console.error('Server Error:', err.stack || err);
-
-  if (req.path.startsWith('/api/')) {
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-
-  return res.status(500).render('error', {
-    title: 'Server Error',
-    message: isProd ? 'Something went wrong' : err.message
+  console.error(err.stack || err);
+  res.status(err.status || 500).render('error', {
+    title: 'Error',
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+    status: err.status || 500,
   });
 });
 
-async function start() {
-  try {
-    await ensureAdminFromEnv().catch((e) => console.warn('Admin bootstrap skipped:', e.message));
-    startSubscriptionCron();
-    app.listen(PORT, '0.0.0.0', () => {
-      // eslint-disable-next-line no-console
-      console.log(`
-╔═════════════════════════════════════════════════════════╗
-║   WHALE · Palestine's Big Marketplace                 ║
-║   Server: http://localhost:${PORT}                          ║
-║   API:    http://localhost:${PORT}/api                      ║
-╚═════════════════════════════════════════════════════════╝
-`);
-    });
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
-
-if (process.env.NODE_ENV !== 'test') {
-  start();
-}
-
-process.on('SIGINT', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
-
-process.on('SIGTERM', async () => {
-  await prisma.$disconnect();
-  process.exit(0);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Whale running on port ${PORT}`));
 
 module.exports = app;
-module.exports.start = start;

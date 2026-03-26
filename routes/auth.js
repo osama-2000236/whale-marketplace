@@ -1,290 +1,132 @@
-const express = require('express');
-const rateLimit = require('express-rate-limit');
-
-const { guestOnly, requireAuth, optionalAuth } = require('../middleware/auth');
-const prisma = require('../lib/prisma');
+const router = require('express').Router();
 const passport = require('../lib/passport');
-const {
-  registerUser,
-  authenticateUser,
-  getCurrentUser
-} = require('../services/userService');
-const referralService = require('../services/referralService');
-const emailService = require('../services/emailService');
-const { upload, storeOneFile } = require('../utils/upload');
+const rateLimit = require('express-rate-limit');
+const userService = require('../services/userService');
+const { sanitizeBody } = require('../utils/sanitize');
+const { safeRedirect } = require('../utils/safeRedirect');
 
-const webRouter = express.Router();
-const apiRouter = express.Router();
-const authWriteLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'test' ? 1000 : 25,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many auth requests' }
-});
-const oauthStartLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'test' ? 1000 : 40,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many auth requests' }
-});
-
-function setUserSession(req, user) {
-  req.session.userId = user.id;
-  req.session.isAdmin = user.role === 'ADMIN';
-  req.session.adminUser = user.role === 'ADMIN' ? user.username : null;
-}
-
-function getOauthEnabled() {
+function getOAuthViewFlags() {
   return {
-    google: strategyAvailable('google'),
-    facebook: strategyAvailable('facebook'),
-    apple: strategyAvailable('apple')
+    hasGoogle: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+    hasFacebook: Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
+    hasApple: Boolean(
+      process.env.APPLE_SERVICE_ID &&
+        process.env.APPLE_TEAM_ID &&
+        process.env.APPLE_KEY_ID &&
+        process.env.APPLE_PRIVATE_KEY
+    ),
   };
 }
 
-function strategyAvailable(name) {
-  return Boolean(passport._strategy(name));
-}
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 10_000 : 20,
+  message: 'Too many attempts. Please try again later.',
+});
 
-function startOAuth(name, options = {}) {
-  return (req, res, next) => {
-    if (!strategyAvailable(name)) {
-      return res.redirect(`/auth/login?error=${name}_unavailable`);
-    }
-    return passport.authenticate(name, { session: false, ...options })(req, res, next);
-  };
-}
-
-async function finalizeOAuthLogin(req, res) {
-  if (!req.user || !req.user.id) {
-    return res.redirect('/auth/login?error=auth_failed');
-  }
-
-  setUserSession(req, req.user);
-  req.session.lang = req.session.lang || (process.env.DEFAULT_LANG === 'en' ? 'en' : 'ar');
-
-  if (req.session.pendingRef) {
-    await referralService.markCodeUsed(req.session.pendingRef).catch(() => {});
-    delete req.session.pendingRef;
-  }
-
-  const returnTo = req.session.returnTo || '/whale';
-  delete req.session.returnTo;
-  return res.redirect(returnTo);
-}
-
-async function handleRegister(req, res, isApi) {
-  try {
-    const avatar = req.file ? await storeOneFile(req.file, 'uploads/avatars') : null;
-    const user = await registerUser({
-      username: req.body.username,
-      email: req.body.email,
-      password: req.body.password,
-      avatar
-    });
-
-    // 1) Create subscription with 30-day Pro trial for all new users
-    await prisma.subscription.create({
-      data: {
-        userId: user.id,
-        plan: 'pro',
-        trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      }
-    });
-
-    // 2) Apply referral code if present in session or body
-    const incomingRef = req.session.pendingRef || req.body.ref;
-    const refCode = typeof incomingRef === 'string' ? incomingRef.trim().toUpperCase() : '';
-    if (refCode) {
-      const referral = await prisma.referralCode.findUnique({ where: { code: refCode } });
-      if (referral) {
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { referralCodeId: referral.id }
-        });
-        await referralService.markCodeUsed(refCode);
-      }
-      delete req.session.pendingRef;
-    }
-
-    setUserSession(req, user);
-    await emailService.sendWelcome(user).catch(() => {});
-
-    if (isApi) {
-      return res.status(201).json({ user });
-    }
-
-    return res.redirect('/whale');
-  } catch (error) {
-    if (isApi) {
-      return res.status(400).json({ error: error.message });
-    }
-
-    return res.status(400).render('auth/register', {
-      title: `${res.locals.t('register.title')} | Whale`,
-      error: error.message,
-      formData: {
-        username: req.body.username,
-        email: req.body.email,
-        ref: req.body.ref || req.session.pendingRef || ''
-      },
-      oauthEnabled: getOauthEnabled(),
-      query: req.query || {}
-    });
-  }
-}
-
-async function handleLogin(req, res, isApi) {
-  try {
-    const user = await authenticateUser(req.body.identifier || req.body.email || req.body.username, req.body.password);
-    setUserSession(req, user);
-
-    if (isApi) {
-      return res.json({ user });
-    }
-
-    const returnTo = req.session.returnTo || '/whale';
-    delete req.session.returnTo;
-    return res.redirect(returnTo);
-  } catch (error) {
-    if (isApi) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    return res.status(401).render('auth/login', {
-      title: `${res.locals.t('login.title')} | Whale`,
-      error: res.locals.t('error.invalid_credentials'),
-      oauthEnabled: getOauthEnabled(),
-      query: req.query || {}
-    });
-  }
-}
-
-async function handleLogout(req, res, isApi) {
-  req.session.destroy(() => {
-    if (isApi) {
-      return res.json({ ok: true });
-    }
-    return res.redirect('/auth/login');
+// Login page
+router.get('/login', (req, res) => {
+  if (req.user) return res.redirect('/whale');
+  res.render('auth/login', {
+    title: res.locals.t('auth.login'),
+    next: req.query.next || '/whale',
+    ...getOAuthViewFlags(),
   });
-}
+});
 
-async function handleMe(req, res) {
-  const user = req.user ? await getCurrentUser(req.user.id) : null;
-  if (!user) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
-  return res.json({ user });
-}
+// Login handler
+router.post('/login', authLimiter, (req, res, next) => {
+  const nextUrl = safeRedirect(req.body.next, '/whale');
 
-webRouter.get('/auth/login', guestOnly, (req, res, next) => {
-  try {
-    return res.render('auth/login', {
-      title: `${res.locals.t('login.title')} | Whale`,
-      error: null,
-      query: req.query || {},
-      oauthEnabled: getOauthEnabled()
+  passport.authenticate('local', (err, user, info) => {
+    if (err) return next(err);
+    if (!user) {
+      const errorKey = 'auth.error.' + (info?.message || 'USER_NOT_FOUND');
+      req.session.flash = { type: 'danger', message: res.locals.t(errorKey) };
+      return res.redirect('/auth/login');
+    }
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
+      res.redirect(nextUrl);
     });
-  } catch (error) {
-    return next(error);
+  })(req, res, next);
+});
+
+// Register page
+router.get('/register', (req, res) => {
+  if (req.user) return res.redirect('/whale');
+  res.render('auth/register', { title: res.locals.t('auth.register'), ...getOAuthViewFlags() });
+});
+
+// Register handler
+router.post('/register', authLimiter, async (req, res, next) => {
+  try {
+    const data = sanitizeBody(req.body, { username: 30, email: 255, password: 128 });
+
+    const user = await userService.register(data);
+
+    req.logIn(user, (err) => {
+      if (err) return next(err);
+      req.session.flash = { type: 'success', message: res.locals.t('flash.register_success') };
+      res.redirect('/whale');
+    });
+  } catch (err) {
+    const messages = {
+      INVALID_USERNAME: 'Username must be 3-30 alphanumeric characters',
+      INVALID_EMAIL: 'Invalid email address',
+      WEAK_PASSWORD: 'Password must be at least 8 characters',
+      EMAIL_TAKEN: 'Email already registered',
+      USERNAME_TAKEN: 'Username already taken',
+    };
+    req.session.flash = { type: 'danger', message: messages[err.message] || err.message };
+    res.redirect('/auth/register');
   }
 });
 
-webRouter.get('/auth/register', guestOnly, (req, res, next) => {
-  try {
-    if (req.query.ref) {
-      req.session.pendingRef = String(req.query.ref).trim().toUpperCase();
-    }
+// Google OAuth
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-    return res.render('auth/register', {
-      title: `${res.locals.t('register.title')} | Whale`,
-      error: null,
-      formData: {
-        ref: req.session.pendingRef || ''
-      },
-      query: req.query || {},
-      oauthEnabled: getOauthEnabled()
-    });
-  } catch (error) {
-    return next(error);
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { failureRedirect: '/auth/login' }),
+  (req, res) => {
+    req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
+    res.redirect('/whale');
   }
+);
+
+// Facebook OAuth
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+
+router.get(
+  '/facebook/callback',
+  passport.authenticate('facebook', { failureRedirect: '/auth/login' }),
+  (req, res) => {
+    req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
+    res.redirect('/whale');
+  }
+);
+
+// Apple Sign In
+router.get('/apple', passport.authenticate('apple'));
+
+router.post(
+  '/apple/callback',
+  passport.authenticate('apple', { failureRedirect: '/auth/login' }),
+  (req, res) => {
+    req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
+    res.redirect('/whale');
+  }
+);
+
+// Logout
+router.post('/logout', (req, res) => {
+  req.logout(() => {
+    req.session.destroy(() => {
+      res.redirect('/');
+    });
+  });
 });
 
-// Web registration uses a regular form so CSRF validation works with the global parser.
-// Avatar upload can still be handled by the API route or later profile editing.
-webRouter.post('/auth/register', guestOnly, authWriteLimiter, (req, res) => handleRegister(req, res, false));
-webRouter.post('/auth/login', guestOnly, authWriteLimiter, (req, res) => handleLogin(req, res, false));
-webRouter.post('/auth/logout', requireAuth, (req, res) => handleLogout(req, res, false));
-webRouter.get('/auth/me', optionalAuth, handleMe);
-webRouter.get('/auth/csrf', (_req, res) => res.json({ csrfToken: res.locals.csrfToken }));
-
-// OAuth - Google
-webRouter.get('/auth/google', guestOnly, oauthStartLimiter, startOAuth('google', { scope: ['profile', 'email'] }));
-
-webRouter.get(
-  '/auth/google/callback',
-  guestOnly,
-  (req, res, next) => passport.authenticate('google', {
-    session: false,
-    failureRedirect: '/auth/login?error=google_failed'
-  })(req, res, next),
-  async (req, res) => {
-    try {
-      await finalizeOAuthLogin(req, res);
-    } catch (_error) {
-      res.redirect('/auth/login?error=google_failed');
-    }
-  }
-);
-
-// OAuth - Facebook
-webRouter.get('/auth/facebook', guestOnly, oauthStartLimiter, startOAuth('facebook', { scope: ['email', 'public_profile'] }));
-
-webRouter.get(
-  '/auth/facebook/callback',
-  guestOnly,
-  (req, res, next) => passport.authenticate('facebook', {
-    session: false,
-    failureRedirect: '/auth/login?error=facebook_failed'
-  })(req, res, next),
-  async (req, res) => {
-    try {
-      await finalizeOAuthLogin(req, res);
-    } catch (_error) {
-      res.redirect('/auth/login?error=facebook_failed');
-    }
-  }
-);
-
-// OAuth - Apple
-webRouter.get('/auth/apple', guestOnly, oauthStartLimiter, startOAuth('apple'));
-
-webRouter.post(
-  '/auth/apple/callback',
-  guestOnly,
-  express.urlencoded({ extended: true }),
-  (req, res, next) => passport.authenticate('apple', {
-    session: false,
-    failureRedirect: '/auth/login?error=apple_failed'
-  })(req, res, next),
-  async (req, res) => {
-    try {
-      await finalizeOAuthLogin(req, res);
-    } catch (_error) {
-      res.redirect('/auth/login?error=apple_failed');
-    }
-  }
-);
-
-apiRouter.post('/register', authWriteLimiter, upload.single('avatar'), (req, res) => handleRegister(req, res, true));
-apiRouter.post('/login', authWriteLimiter, (req, res) => handleLogin(req, res, true));
-apiRouter.post('/logout', requireAuth, (req, res) => handleLogout(req, res, true));
-apiRouter.get('/me', optionalAuth, handleMe);
-apiRouter.get('/csrf', (_req, res) => res.json({ csrfToken: res.locals.csrfToken }));
-
-module.exports = {
-  webRouter,
-  apiRouter
-};
+module.exports = router;
