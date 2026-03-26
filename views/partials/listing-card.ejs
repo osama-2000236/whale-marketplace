@@ -1,43 +1,41 @@
-<% var img = listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png'; %>
-<% var imgData = imageSet(img); %>
-<article class="listing-card">
-  <a href="/whale/listing/<%= listing.slug || listing.id %>" class="listing-card-link">
-    <div class="listing-card-img">
-      <img src="<%= imgData.src %>" alt="<%= listing.title %>" loading="lazy" width="<%= imgData.width %>" height="<%= imgData.height %>">
-      <% if (listing.isBoosted) { %><span class="boost-ribbon">⚡</span><% } %>
-      <% if (listing.condition && listing.condition !== 'GOOD') { %>
-      <span class="condition-badge condition-<%= listing.condition.toLowerCase() %>"><%= t('condition.' + listing.condition.toLowerCase()) %></span>
-      <% } %>
-      <% if (listing._count && listing._count.orders > 3) { %>
-      <span class="proof-pill">🛒 <%= listing._count.orders %> <%= t('whale.sold') %></span>
+<a href="/whale/listing/<%= listing.slug %>" class="listing-card">
+  <div class="listing-card-image">
+    <% if (listing.images && listing.images.length > 0) { %>
+    <img src="<%= listing.images[0] %>" alt="<%= listing.title %>" loading="lazy" />
+    <% } else { %>
+    <div
+      style="
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-muted);
+        font-size: 2rem;
+      "
+    >
+      🐋
+    </div>
+    <% } %>
+    <div class="listing-card-badge">
+      <span class="badge badge-info"><%= t('condition.' + listing.condition) %></span>
+    </div>
+  </div>
+  <div class="listing-card-body">
+    <div class="listing-card-title">
+      <%= locale === 'ar' && listing.titleAr ? listing.titleAr : listing.title %>
+    </div>
+    <div class="listing-card-meta">
+      <span><%= listing.city %></span>
+      <% if (listing.category) { %>
+      <span>&middot;</span>
+      <span><%= locale === 'ar' ? listing.category.nameAr : listing.category.name %></span>
       <% } %>
     </div>
-    <div class="listing-card-body">
-      <h3 class="listing-card-title" dir="auto"><%= lang === 'ar' && listing.titleAr ? listing.titleAr : listing.title %></h3>
-      <div class="listing-card-price">
-        ₪<%= listing.price %>
-        <% if (listing.negotiable) { %><span class="negotiable-badge"><%= t('whale.negotiable') %></span><% } %>
-      </div>
-      <div class="listing-card-meta">
-        <% if (listing.seller) { %>
-        <span class="seller-info">
-          <% if (listing.seller.avatar) { %><img src="<%= listing.seller.avatar %>" alt="" class="avatar-xs"><% } %>
-          <%= listing.seller.username %>
-          <% if (listing.seller.isVerified) { %><span class="verified-check">✓</span><% } %>
-          <% if (listing.seller.sellerProfile && listing.seller.sellerProfile.averageRating > 0) { %>
-          <span class="star-sm">★ <%= listing.seller.sellerProfile.averageRating.toFixed(1) %></span>
-          <% } %>
-        </span>
-        <% } %>
-        <span class="listing-city"><%= typeof getCityName === 'function' ? getCityName(listing.city, lang) : listing.city %></span>
-        <span class="listing-time"><%= timeAgo(listing.createdAt) %></span>
-      </div>
-      <% if (listing.quantity && listing.quantity <= 2 && listing.quantity > 0) { %>
-      <span class="urgency-badge"><%= t('whale.few_left') %></span>
+    <div class="listing-card-price">
+      $<%= parseFloat(listing.price).toLocaleString() %> <% if (listing.negotiable) { %>
+      <span class="text-sm text-muted">(<%= t('listing.negotiable') %>)</span>
       <% } %>
     </div>
-  </a>
-  <% if (listing.status === 'SOLD') { %>
-  <div class="sold-overlay"><%= t('whale.sold') %></div>
-  <% } %>
-</article>
+  </div>
+</a>

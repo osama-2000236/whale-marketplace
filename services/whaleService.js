@@ -1,509 +1,418 @@
 const prisma = require('../lib/prisma');
 const slugify = require('slugify');
+const { cursorPagination, processCursorResults } = require('../utils/pagination');
 const emailService = require('./emailService');
+const { validateTransition } = require('./stateMachine');
 
-const ALLOWED_CONDITIONS = ['NEW', 'LIKE_NEW', 'USED', 'GOOD', 'FAIR', 'FOR_PARTS'];
-const ALLOWED_PAYMENT_METHODS = ['card', 'cod', 'wallet'];
-const ALLOWED_SHIPPING_METHODS = ['company', 'self_pickup', 'hand_to_hand'];
-
-const CATEGORY_GROUPS = [
-  { surface: 'pc-gaming', slugs: ['pc-gaming', 'pc-parts', 'gaming-gear'] },
-  { surface: 'home-garden', slugs: ['home-garden', 'home'] },
-];
-
-function normalizeCategorySlug(slug) {
-  for (const group of CATEGORY_GROUPS) {
-    if (group.slugs.includes(slug)) return group.surface;
-  }
-  return slug;
+// ── CATEGORIES ──
+async function getCategories() {
+  return prisma.category.findMany({
+    orderBy: { order: 'asc' },
+    include: { subcategories: { orderBy: { order: 'asc' } } },
+  });
 }
 
-function expandCategorySlugs(slug) {
-  for (const group of CATEGORY_GROUPS) {
-    if (group.slugs.includes(slug) || group.surface === slug) return group.slugs;
-  }
-  return [slug];
-}
+// ── LISTINGS ──
+async function getListings(filters = {}) {
+  const { q, categorySlug, city, condition, minPrice, maxPrice, sort, cursor } = filters;
 
-function parseMoney(value) {
-  if (!value) return NaN;
-  return Number(String(value).replace(/,/g, ''));
-}
-
-function hasDangerousHtml(value) {
-  if (!value) return false;
-  return /<script|on\w+\s*=/i.test(value);
-}
-
-function makeListingSlug(title, id) {
-  const base = slugify(title, { lower: true, strict: true, locale: 'ar' }) || 'listing';
-  return `${base}-${id.slice(0, 6)}`;
-}
-
-function buildListingWhere({ category, subcategory, city, condition, minPrice, maxPrice, q }) {
   const where = { status: 'ACTIVE' };
 
-  if (category) {
-    const slugs = expandCategorySlugs(category);
-    where.category = { slug: { in: slugs } };
-  }
-  if (subcategory) {
-    where.subcategory = { slug: subcategory };
-  }
-  if (city) where.city = city;
-  if (condition && ALLOWED_CONDITIONS.includes(condition)) where.condition = condition;
-  if (minPrice || maxPrice) {
-    where.price = {};
-    if (minPrice) where.price.gte = parseMoney(minPrice);
-    if (maxPrice) where.price.lte = parseMoney(maxPrice);
-  }
   if (q) {
     const search = q.trim();
     where.OR = [
-      { title: { contains: search, mode: 'insensitive' } },
-      { titleAr: { contains: search, mode: 'insensitive' } },
-      { tags: { has: search.toLowerCase() } },
+      { title: { contains: q, mode: 'insensitive' } },
+      { titleAr: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
     ];
   }
-
-  return where;
-}
-
-async function getListings({ category, subcategory, city, condition, minPrice, maxPrice, q, sort = 'newest', cursor, take = 24 }) {
-  const where = buildListingWhere({ category, subcategory, city, condition, minPrice, maxPrice, q });
-
-  let orderBy;
-  switch (sort) {
-    case 'cheapest': orderBy = [{ isBoosted: 'desc' }, { price: 'asc' }]; break;
-    case 'expensive': orderBy = [{ isBoosted: 'desc' }, { price: 'desc' }]; break;
-    case 'popular': orderBy = [{ isBoosted: 'desc' }, { views: 'desc' }]; break;
-    default: orderBy = [{ isBoosted: 'desc' }, { createdAt: 'desc' }];
+  if (categorySlug) {
+    const cat = await prisma.category.findUnique({ where: { slug: categorySlug } });
+    if (cat) where.categoryId = cat.id;
+  }
+  if (city) where.city = city;
+  if (condition) where.condition = condition;
+  if (minPrice || maxPrice) {
+    where.price = {};
+    if (minPrice) where.price.gte = parseFloat(minPrice);
+    if (maxPrice) where.price.lte = parseFloat(maxPrice);
   }
 
-  const query = {
+  const orderBy = {
+    newest: { createdAt: 'desc' },
+    oldest: { createdAt: 'asc' },
+    price_asc: { price: 'asc' },
+    price_desc: { price: 'desc' },
+    popular: { views: 'desc' },
+  }[sort] || { createdAt: 'desc' };
+
+  const pagination = cursorPagination(cursor);
+
+  const listings = await prisma.listing.findMany({
     where,
     orderBy,
-    take: take + 1,
+    ...pagination,
     include: {
-      seller: { select: { id: true, username: true, avatar: true, isVerified: true, sellerProfile: true } },
       category: true,
-      subcategory: true,
-      _count: { select: { orders: true, reviews: true } },
+      seller: { select: { username: true, slug: true, avatarUrl: true } },
     },
-  };
-  if (cursor) query.cursor = { id: cursor };
-  if (cursor) query.skip = 1;
-
-  const items = await prisma.marketListing.findMany(query);
-  const hasMore = items.length > take;
-  const listings = hasMore ? items.slice(0, take) : items;
-  const nextCursor = hasMore ? listings[listings.length - 1].id : null;
-
-  const totalCount = await prisma.marketListing.count({ where });
-
-  return { listings, hasMore, nextCursor, totalCount };
-}
-
-async function getListingFacets(filters = {}) {
-  const where = buildListingWhere(filters);
-
-  const agg = await prisma.marketListing.aggregate({
-    where: { status: 'ACTIVE' },
-    _min: { price: true },
-    _max: { price: true },
   });
 
-  const categories = await prisma.marketCategory.findMany({
-    include: { _count: { select: { listings: { where: { status: 'ACTIVE' } } } } },
-    orderBy: { order: 'asc' },
-  });
+  const { items, nextCursor } = processCursorResults(listings);
+  const total = await prisma.listing.count({ where });
 
-  const categoryCountMap = {};
-  for (const cat of categories) {
-    const key = normalizeCategorySlug(cat.slug);
-    categoryCountMap[key] = (categoryCountMap[key] || 0) + cat._count.listings;
-  }
-
-  return {
-    priceBounds: { min: agg._min.price || 0, max: agg._max.price || 10000 },
-    categoryCountMap,
-  };
+  return { listings: items, nextCursor, total };
 }
 
-async function getListing(id) {
-  return prisma.marketListing.findUnique({
-    where: { id },
+async function getListing(slugOrId) {
+  let listing = await prisma.listing.findUnique({
+    where: { slug: slugOrId },
     include: {
-      seller: { select: { id: true, username: true, avatar: true, isVerified: true, createdAt: true, sellerProfile: true, lastSeenAt: true } },
       category: true,
       subcategory: true,
-      reviews: {
-        take: 20,
-        orderBy: { createdAt: 'desc' },
-        include: { reviewer: { select: { id: true, username: true, avatar: true } } },
+      seller: {
+        include: { sellerProfile: true },
       },
-      _count: { select: { orders: true, reviews: true, savedBy: true } },
+      reviews: {
+        orderBy: { createdAt: 'desc' },
+        include: { reviewer: { select: { username: true, avatarUrl: true } } },
+      },
     },
   });
-}
 
-async function getListingByIdOrSlug(idOrSlug) {
-  let listing = await prisma.marketListing.findUnique({
-    where: { id: idOrSlug },
-    include: {
-      seller: { select: { id: true, username: true, avatar: true, isVerified: true, createdAt: true, sellerProfile: true, lastSeenAt: true } },
-      category: true, subcategory: true,
-      reviews: { take: 20, orderBy: { createdAt: 'desc' }, include: { reviewer: { select: { id: true, username: true, avatar: true } } } },
-      _count: { select: { orders: true, reviews: true, savedBy: true } },
-    },
-  });
   if (!listing) {
-    listing = await prisma.marketListing.findUnique({
-      where: { slug: idOrSlug },
+    listing = await prisma.listing.findUnique({
+      where: { id: slugOrId },
       include: {
-        seller: { select: { id: true, username: true, avatar: true, isVerified: true, createdAt: true, sellerProfile: true, lastSeenAt: true } },
-        category: true, subcategory: true,
-        reviews: { take: 20, orderBy: { createdAt: 'desc' }, include: { reviewer: { select: { id: true, username: true, avatar: true } } } },
-        _count: { select: { orders: true, reviews: true, savedBy: true } },
+        category: true,
+        subcategory: true,
+        seller: {
+          include: { sellerProfile: true },
+        },
+        reviews: {
+          orderBy: { createdAt: 'desc' },
+          include: { reviewer: { select: { username: true, avatarUrl: true } } },
+        },
       },
     });
   }
+
+  if (!listing) return null;
+
+  // Increment views atomically
+  await prisma.listing.update({ where: { id: listing.id }, data: { views: { increment: 1 } } });
+
   return listing;
 }
 
-async function incrementViews(listingId) {
-  return prisma.marketListing.update({ where: { id: listingId }, data: { views: { increment: 1 } } }).catch(() => {});
-}
-
-async function incrementWaClicks(listingId) {
-  return prisma.marketListing.update({ where: { id: listingId }, data: { waClicks: { increment: 1 } } }).catch(() => {});
-}
-
 async function createListing(sellerId, data) {
-  const { title, titleAr, description, descriptionAr, price, negotiable, condition, images, categoryId, subcategoryId, city, tags, specs, quantity } = data;
+  const {
+    title,
+    titleAr,
+    description,
+    descriptionAr,
+    price,
+    negotiable,
+    condition,
+    images,
+    categoryId,
+    subcategoryId,
+    city,
+    tags,
+    specs,
+  } = data;
 
-  if (!title || title.length < 3 || title.length > 200) throw new Error('Title must be 3-200 characters');
-  if (hasDangerousHtml(title)) throw new Error('Invalid title');
-  if (hasDangerousHtml(description)) throw new Error('Invalid description');
-  if (!description || description.length < 3) throw new Error('Description must be at least 3 characters');
-  const parsedPrice = parseMoney(price);
-  if (isNaN(parsedPrice) || parsedPrice < 1 || parsedPrice > 1000000) throw new Error('Price must be 1-1,000,000');
-  if (!city) throw new Error('City is required');
-  if (condition && !ALLOWED_CONDITIONS.includes(condition)) throw new Error('Invalid condition');
+  if (!title) throw new Error('TITLE_REQUIRED');
+  if (!price || parseFloat(price) <= 0) throw new Error('INVALID_PRICE');
+  if (!images || images.length === 0) throw new Error('IMAGE_REQUIRED');
+  if (!categoryId) throw new Error('CATEGORY_REQUIRED');
 
-  // Upsert seller profile
-  await prisma.sellerProfile.upsert({
-    where: { userId: sellerId },
-    create: { userId: sellerId, city },
-    update: {},
-  });
+  const cat = await prisma.category.findUnique({ where: { id: categoryId } });
+  if (!cat) throw new Error('CATEGORY_NOT_FOUND');
 
-  const listing = await prisma.marketListing.create({
+  let slug = slugify(title, { lower: true, strict: true });
+  const existing = await prisma.listing.findUnique({ where: { slug } });
+  if (existing) slug += '-' + Math.random().toString(36).slice(2, 7);
+
+  return prisma.listing.create({
     data: {
-      title, titleAr: titleAr || null,
-      description, descriptionAr: descriptionAr || null,
-      price: parsedPrice,
-      negotiable: Boolean(negotiable),
-      condition: condition || 'GOOD',
-      images: images || [],
-      sellerId,
-      categoryId: categoryId || null,
+      slug,
+      title,
+      titleAr: titleAr || null,
+      description,
+      descriptionAr: descriptionAr || null,
+      price: parseFloat(price),
+      negotiable: negotiable === true || negotiable === 'true' || negotiable === 'on',
+      condition: condition || 'USED',
+      images: Array.isArray(images) ? images : [images],
+      categoryId,
       subcategoryId: subcategoryId || null,
-      city,
-      tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []),
+      city: city || '',
+      sellerId,
+      status: 'ACTIVE',
+      tags: Array.isArray(tags)
+        ? tags
+        : tags
+          ? tags
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
       specs: specs || null,
-      quantity: quantity || 1,
+    },
+    include: { category: true },
+  });
+}
+
+async function updateListing(id, sellerId, data) {
+  const listing = await prisma.listing.findUnique({ where: { id } });
+  if (!listing) throw new Error('NOT_FOUND');
+  if (listing.sellerId !== sellerId) throw new Error('UNAUTHORIZED');
+
+  const update = {};
+  if (data.title !== undefined) {
+    update.title = data.title;
+    update.slug = slugify(data.title, { lower: true, strict: true });
+    const existing = await prisma.listing.findFirst({ where: { slug: update.slug, NOT: { id } } });
+    if (existing) update.slug += '-' + Math.random().toString(36).slice(2, 7);
+  }
+  if (data.titleAr !== undefined) update.titleAr = data.titleAr;
+  if (data.description !== undefined) update.description = data.description;
+  if (data.descriptionAr !== undefined) update.descriptionAr = data.descriptionAr;
+  if (data.price !== undefined) update.price = parseFloat(data.price);
+  if (data.negotiable !== undefined)
+    update.negotiable =
+      data.negotiable === true || data.negotiable === 'true' || data.negotiable === 'on';
+  if (data.condition !== undefined) update.condition = data.condition;
+  if (data.images !== undefined)
+    update.images = Array.isArray(data.images) ? data.images : [data.images];
+  if (data.categoryId !== undefined) update.categoryId = data.categoryId;
+  if (data.subcategoryId !== undefined) update.subcategoryId = data.subcategoryId || null;
+  if (data.city !== undefined) update.city = data.city;
+  if (data.tags !== undefined)
+    update.tags = Array.isArray(data.tags)
+      ? data.tags
+      : data.tags
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean);
+
+  return prisma.listing.update({
+    where: { id },
+    data: update,
+    include: { category: true },
+  });
+}
+
+async function deleteListing(id, actorId, isAdmin = false) {
+  const listing = await prisma.listing.findUnique({ where: { id } });
+  if (!listing) throw new Error('NOT_FOUND');
+  if (!isAdmin && listing.sellerId !== actorId) throw new Error('UNAUTHORIZED');
+
+  return prisma.listing.update({
+    where: { id },
+    data: { status: 'REMOVED' },
+  });
+}
+
+// ── ORDERS ──
+async function createOrder(data) {
+  const { listingId, buyerId, quantity, paymentMethod, shippingAddress, buyerNote } = data;
+
+  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+  if (!listing) throw new Error('LISTING_NOT_FOUND');
+  if (listing.status !== 'ACTIVE') throw new Error('LISTING_NOT_ACTIVE');
+  if (listing.sellerId === buyerId) throw new Error('CANNOT_BUY_OWN');
+
+  // Check for existing pending order
+  const pendingOrder = await prisma.order.findFirst({
+    where: { listingId, status: 'PENDING' },
+  });
+  if (pendingOrder) throw new Error('ORDER_ALREADY_PENDING');
+
+  const order = await prisma.order.create({
+    data: {
+      listingId,
+      buyerId,
+      sellerId: listing.sellerId,
+      quantity: parseInt(quantity) || 1,
+      amount: listing.price,
+      currency: listing.currency,
+      paymentMethod: paymentMethod || 'manual',
+      shippingAddress: shippingAddress || null,
+      buyerNote: buyerNote || null,
+      status: 'PENDING',
+      events: {
+        create: { event: 'created', actorId: buyerId, note: 'Order placed' },
+      },
+    },
+    include: {
+      listing: true,
+      buyer: { select: { id: true, username: true, email: true } },
+      seller: { select: { id: true, username: true, email: true } },
     },
   });
 
-  const slug = makeListingSlug(title, listing.id);
-  return prisma.marketListing.update({ where: { id: listing.id }, data: { slug } });
-}
-
-async function updateListing(listingId, sellerId, data) {
-  const listing = await prisma.marketListing.findUnique({ where: { id: listingId } });
-  if (!listing) throw new Error('Listing not found');
-  if (listing.sellerId !== sellerId) throw new Error('Forbidden');
-
-  const updateData = {};
-  if (data.title !== undefined) {
-    if (data.title.length < 3 || data.title.length > 200) throw new Error('Title must be 3-200 characters');
-    if (hasDangerousHtml(data.title)) throw new Error('Invalid content');
-    updateData.title = data.title;
-  }
-  if (data.titleAr !== undefined) updateData.titleAr = data.titleAr || null;
-  if (data.description !== undefined) {
-    if (data.description.length < 3) throw new Error('Description too short');
-    updateData.description = data.description;
-  }
-  if (data.descriptionAr !== undefined) updateData.descriptionAr = data.descriptionAr || null;
-  if (data.price !== undefined) {
-    const p = parseMoney(data.price);
-    if (isNaN(p) || p < 1 || p > 1000000) throw new Error('Invalid price');
-    updateData.price = p;
-  }
-  if (data.negotiable !== undefined) updateData.negotiable = Boolean(data.negotiable);
-  if (data.condition !== undefined) {
-    if (!ALLOWED_CONDITIONS.includes(data.condition)) throw new Error('Invalid condition');
-    updateData.condition = data.condition;
-  }
-  if (data.images) updateData.images = data.images;
-  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
-  if (data.subcategoryId !== undefined) updateData.subcategoryId = data.subcategoryId;
-  if (data.city !== undefined) updateData.city = data.city;
-  if (data.tags !== undefined) updateData.tags = Array.isArray(data.tags) ? data.tags : (typeof data.tags === 'string' ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
-  if (data.specs !== undefined) updateData.specs = data.specs;
-  if (data.quantity !== undefined) updateData.quantity = data.quantity;
-
-  return prisma.marketListing.update({ where: { id: listingId }, data: updateData });
-}
-
-async function markSold(listingId, sellerId) {
-  const listing = await prisma.marketListing.findUnique({ where: { id: listingId } });
-  if (!listing) throw new Error('Listing not found');
-  if (listing.sellerId !== sellerId) throw new Error('Forbidden');
-  return prisma.marketListing.update({ where: { id: listingId }, data: { status: 'SOLD' } });
-}
-
-async function deleteListing(listingId, sellerId, isAdmin = false) {
-  const listing = await prisma.marketListing.findUnique({ where: { id: listingId } });
-  if (!listing) throw new Error('Not found');
-  if (!isAdmin && listing.sellerId !== sellerId) throw new Error('Forbidden');
-  return prisma.marketListing.update({ where: { id: listingId }, data: { status: 'REMOVED' } });
-}
-
-function generateOrderNumber() {
-  const year = new Date().getFullYear();
-  const rand = String(Math.floor(10000 + Math.random() * 90000));
-  return `WH-${year}-${rand}`;
-}
-
-async function createOrder({ listingId, buyerId, quantity = 1, paymentMethod, shippingMethod, shippingAddress, shippingCompany, buyerNote }) {
-  const payment = String(paymentMethod || '').toLowerCase();
-  if (!ALLOWED_PAYMENT_METHODS.includes(payment)) throw new Error('Invalid payment method');
-  const shipping = String(shippingMethod || '').toLowerCase();
-  if (!ALLOWED_SHIPPING_METHODS.includes(shipping)) throw new Error('Invalid shipping method');
-
-  if (shipping === 'company' && shippingAddress) {
-    const addr = shippingAddress;
-    if (!addr.name || !addr.phone || !addr.city || !addr.address) {
-      throw new Error('Complete shipping address is required');
-    }
-    if (!/^\+?\d{9,15}$/.test(addr.phone.replace(/[\s-]/g, ''))) {
-      throw new Error('Invalid phone number');
-    }
-  }
-
-  const listing = await prisma.marketListing.findUnique({ where: { id: listingId }, include: { seller: true } });
-  if (!listing || listing.status !== 'ACTIVE') throw new Error('Listing not available');
-  if (listing.sellerId === buyerId) throw new Error('Cannot buy your own listing');
-  if (quantity > listing.quantity) throw new Error('Requested quantity exceeds stock');
-
-  const amount = listing.price * quantity;
-  const orderNumber = generateOrderNumber();
-
-  const order = await prisma.$transaction(async (tx) => {
-    const newOrder = await tx.order.create({
-      data: {
-        orderNumber,
-        listingId,
-        buyerId,
-        sellerId: listing.sellerId,
-        quantity,
-        amount,
-        paymentMethod: payment,
-        paymentStatus: payment === 'card' ? 'held' : 'pending',
-        shippingMethod: shipping,
-        shippingAddress: shippingAddress || null,
-        shippingCompany: shippingCompany || null,
-        buyerNote: buyerNote || null,
-      },
-    });
-
-    await tx.orderEvent.create({
-      data: { orderId: newOrder.id, event: 'created', note: 'Order placed', actorId: buyerId },
-    });
-
-    await tx.notification.create({
-      data: {
-        userId: listing.sellerId,
-        type: 'SALE_INQUIRY',
-        message: `New order #${orderNumber} for "${listing.title}"`,
-        referenceId: newOrder.id,
-        referenceType: 'order',
-      },
-    });
-
-    return newOrder;
+  // Notify seller
+  await prisma.notification.create({
+    data: {
+      userId: listing.sellerId,
+      type: 'ORDER',
+      title: 'طلب جديد | New Order',
+      body: `Order #${order.orderNumber} for "${listing.title}"`,
+      link: `/whale/orders/${order.id}`,
+    },
   });
 
-  // Send emails (fire-and-forget)
-  const buyer = await prisma.user.findUnique({ where: { id: buyerId }, select: { username: true, email: true } });
-  emailService.sendOrderPlaced(order, buyer, listing).catch((e) => console.error('Email error:', e.message));
+  emailService.sendOrderPlaced(order).catch(() => {});
 
   return order;
 }
 
-async function sellerConfirmOrder(orderId, sellerId) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new Error('Order not found');
-  if (order.sellerId !== sellerId) throw new Error('Not authorized');
-  if (order.orderStatus !== 'PENDING') throw new Error('Invalid state');
-
-  const updated = await prisma.$transaction(async (tx) => {
-    const upd = await tx.order.update({ where: { id: orderId }, data: { orderStatus: 'SELLER_CONFIRMED' } });
-    await tx.orderEvent.create({ data: { orderId, event: 'seller_confirmed', actorId: sellerId } });
-    await tx.notification.create({
-      data: { userId: order.buyerId, type: 'SYSTEM', message: `Seller confirmed your order #${order.orderNumber}`, referenceId: orderId, referenceType: 'order' },
-    });
-    return upd;
+async function transitionOrder(orderId, actorId, action, payload = {}) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      buyer: { select: { id: true, username: true, email: true, role: true } },
+      seller: { select: { id: true, username: true, email: true, role: true } },
+      listing: true,
+    },
   });
+  if (!order) throw new Error('ORDER_NOT_FOUND');
 
-  const buyer = await prisma.user.findUnique({ where: { id: order.buyerId }, select: { email: true, username: true } });
-  emailService.sendOrderConfirmed(updated, buyer).catch((e) => console.error('Email error:', e.message));
+  const actorUser =
+    actorId === order.buyerId ? order.buyer : actorId === order.sellerId ? order.seller : null;
+  const actorRole = actorUser?.role || 'MEMBER';
 
-  return updated;
-}
+  // If actor is admin but not a party, we need to fetch their role
+  let resolvedRole = actorRole;
+  if (!actorUser) {
+    const actor = await prisma.user.findUnique({ where: { id: actorId }, select: { role: true } });
+    resolvedRole = actor?.role || 'MEMBER';
+  }
 
-async function sellerShipOrder(orderId, sellerId, { trackingNumber, shippingCompany, estimatedDelivery }) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new Error('Order not found');
-  if (order.sellerId !== sellerId) throw new Error('Not authorized');
-  if (!['PENDING', 'SELLER_CONFIRMED'].includes(order.orderStatus)) throw new Error('Invalid state');
+  const newStatus = validateTransition(order, actorId, resolvedRole, action, payload);
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const upd = await tx.order.update({
-      where: { id: orderId },
-      data: {
-        orderStatus: 'SHIPPED',
-        trackingNumber: trackingNumber || null,
-        shippingCompany: shippingCompany || order.shippingCompany,
-        estimatedDelivery: estimatedDelivery ? new Date(estimatedDelivery) : null,
+  const updateData = { status: newStatus };
+  if (action === 'ship' && payload.trackingNumber) {
+    updateData.trackingNumber = payload.trackingNumber;
+    if (payload.shippingCompany) updateData.shippingCompany = payload.shippingCompany;
+  }
+  if (action === 'cancel' && payload.reason) {
+    updateData.cancelReason = payload.reason;
+  }
+
+  const updated = await prisma.order.update({
+    where: { id: orderId },
+    data: {
+      ...updateData,
+      events: {
+        create: {
+          event: action,
+          actorId,
+          note: payload.note || payload.reason || null,
+        },
       },
-    });
-    await tx.orderEvent.create({ data: { orderId, event: 'shipped', note: trackingNumber ? `Tracking: ${trackingNumber}` : null, actorId: sellerId } });
-    await tx.notification.create({
-      data: { userId: order.buyerId, type: 'SYSTEM', message: `Your order #${order.orderNumber} has been shipped!`, referenceId: orderId, referenceType: 'order' },
-    });
-    return upd;
+    },
+    include: {
+      buyer: { select: { id: true, username: true, email: true } },
+      seller: { select: { id: true, username: true, email: true } },
+      listing: true,
+      events: { orderBy: { createdAt: 'asc' } },
+    },
   });
 
-  const buyer = await prisma.user.findUnique({ where: { id: order.buyerId }, select: { email: true, username: true } });
-  emailService.sendOrderShipped(updated, buyer, trackingNumber, shippingCompany).catch((e) => console.error('Email error:', e.message));
+  // Notify the other party
+  const notifyUserId = actorId === order.buyerId ? order.sellerId : order.buyerId;
+  await prisma.notification.create({
+    data: {
+      userId: notifyUserId,
+      type: 'ORDER',
+      title: `Order ${newStatus}`,
+      body: `Order #${order.orderNumber} is now ${newStatus}`,
+      link: `/whale/orders/${order.id}`,
+    },
+  });
 
-  return updated;
-}
-
-async function buyerConfirmDelivery(orderId, buyerId) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new Error('Order not found');
-  if (order.buyerId !== buyerId) throw new Error('Not authorized');
-  if (!['SHIPPED', 'IN_TRANSIT', 'DELIVERED'].includes(order.orderStatus)) throw new Error('Invalid state');
-
-  const now = new Date();
-  const updated = await prisma.$transaction(async (tx) => {
-    const upd = await tx.order.update({
-      where: { id: orderId },
-      data: { orderStatus: 'COMPLETED', paymentStatus: 'released', deliveredAt: now, confirmedAt: now },
-    });
-    await tx.orderEvent.create({ data: { orderId, event: 'completed', note: 'Buyer confirmed delivery', actorId: buyerId } });
-    await tx.sellerProfile.upsert({
+  // Send emails based on transition
+  if (newStatus === 'CONFIRMED') emailService.sendOrderConfirmed(updated).catch(() => {});
+  if (newStatus === 'SHIPPED') emailService.sendOrderShipped(updated).catch(() => {});
+  if (newStatus === 'COMPLETED') {
+    emailService.sendOrderCompleted(updated).catch(() => {});
+    // Update seller stats
+    const sellerProfile = await prisma.sellerProfile.findUnique({
       where: { userId: order.sellerId },
-      create: { userId: order.sellerId, totalSales: 1, totalRevenue: order.amount },
-      update: { totalSales: { increment: 1 }, totalRevenue: { increment: order.amount } },
     });
-    await tx.notification.create({
-      data: { userId: order.sellerId, type: 'SYSTEM', message: `Order #${order.orderNumber} completed! Payment released.`, referenceId: orderId, referenceType: 'order' },
-    });
-    await tx.notification.create({
-      data: { userId: order.buyerId, type: 'SYSTEM', message: `Order #${order.orderNumber} completed! Thank you.`, referenceId: orderId, referenceType: 'order' },
-    });
-    return upd;
-  });
-
-  const seller = await prisma.user.findUnique({ where: { id: order.sellerId }, select: { email: true, username: true } });
-  emailService.sendOrderCompleted(updated, seller).catch((e) => console.error('Email error:', e.message));
+    if (sellerProfile) {
+      await prisma.sellerProfile.update({
+        where: { userId: order.sellerId },
+        data: {
+          totalSales: { increment: 1 },
+          totalRevenue: { increment: parseFloat(order.amount) },
+        },
+      });
+    }
+  }
 
   return updated;
 }
 
-async function cancelOrder(orderId, actorId, reason) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new Error('Order not found');
-  if (order.buyerId !== actorId && order.sellerId !== actorId) throw new Error('Not authorized');
-  if (['COMPLETED', 'CANCELLED', 'REFUNDED'].includes(order.orderStatus)) throw new Error('Order cannot be cancelled');
+// ── REVIEWS ──
+async function postReview(orderId, reviewerId, data) {
+  const { rating, body } = data;
 
-  const isBuyer = order.buyerId === actorId;
-  const otherUserId = isBuyer ? order.sellerId : order.buyerId;
-
-  await prisma.$transaction(async (tx) => {
-    await tx.order.update({
-      where: { id: orderId },
-      data: {
-        orderStatus: 'CANCELLED',
-        paymentStatus: order.paymentStatus === 'held' ? 'refunded' : order.paymentStatus,
-        cancelReason: reason || null,
-      },
-    });
-    await tx.orderEvent.create({
-      data: { orderId, event: 'cancelled', note: reason || null, actorId },
-    });
-    await tx.notification.create({
-      data: {
-        userId: otherUserId,
-        type: 'SYSTEM',
-        message: `Order #${order.orderNumber} has been cancelled.`,
-        referenceId: orderId,
-        referenceType: 'order',
-      },
-    });
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { review: true },
   });
-}
+  if (!order) throw new Error('ORDER_NOT_FOUND');
+  if (order.status !== 'COMPLETED') throw new Error('ORDER_NOT_COMPLETED');
+  if (order.buyerId !== reviewerId) throw new Error('NOT_BUYER');
+  if (order.review) throw new Error('ALREADY_REVIEWED');
+  if (!rating || rating < 1 || rating > 5) throw new Error('INVALID_RATING');
 
-async function createReview(orderId, reviewerId, { rating, title, body }) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new Error('Order not found');
-  if (order.buyerId !== reviewerId) throw new Error('Only the buyer can review');
-  if (order.orderStatus !== 'COMPLETED') throw new Error('Order not completed');
+  const review = await prisma.review.create({
+    data: {
+      orderId,
+      listingId: order.listingId,
+      reviewerId,
+      sellerId: order.sellerId,
+      rating: parseInt(rating),
+      body: body || null,
+    },
+    include: { reviewer: { select: { username: true, avatarUrl: true } } },
+  });
 
-  const existing = await prisma.sellerReview.findUnique({ where: { orderId } });
-  if (existing) throw new Error('Already reviewed');
+  // Recalculate seller ratings
+  const agg = await prisma.review.aggregate({
+    where: { sellerId: order.sellerId },
+    _avg: { rating: true },
+    _count: { rating: true },
+  });
 
-  const rNum = Number(rating);
-  if (isNaN(rNum) || rNum < 1 || rNum > 5) throw new Error('Rating must be between 1 and 5');
-  const r = Math.round(rNum);
+  await prisma.sellerProfile.update({
+    where: { userId: order.sellerId },
+    data: {
+      avgRating: agg._avg.rating || 0,
+      reviewCount: agg._count.rating || 0,
+    },
+  });
 
-  const review = await prisma.$transaction(async (tx) => {
-    const rev = await tx.sellerReview.create({
-      data: {
-        orderId,
-        listingId: order.listingId,
-        reviewerId,
-        sellerId: order.sellerId,
-        rating: r,
-        title: title || null,
-        body: body || null,
-      },
-    });
-
-    // Recalculate seller average
-    const agg = await tx.sellerReview.aggregate({
-      where: { sellerId: order.sellerId },
-      _avg: { rating: true },
-      _count: { rating: true },
-    });
-    await tx.sellerProfile.upsert({
-      where: { userId: order.sellerId },
-      create: { userId: order.sellerId, averageRating: agg._avg.rating || 0, reviewCount: agg._count.rating },
-      update: { averageRating: agg._avg.rating || 0, reviewCount: agg._count.rating },
-    });
-
-    return rev;
+  // Notify seller
+  await prisma.notification.create({
+    data: {
+      userId: order.sellerId,
+      type: 'REVIEW',
+      title: 'تقييم جديد | New Review',
+      body: `${rating} stars for order #${order.orderNumber}`,
+      link: `/whale/orders/${order.id}`,
+    },
   });
 
   return review;
 }
 
+// ── SAVED ──
 async function toggleSaved(userId, listingId) {
   const existing = await prisma.savedListing.findUnique({
     where: { userId_listingId: { userId, listingId } },
@@ -517,62 +426,96 @@ async function toggleSaved(userId, listingId) {
 }
 
 async function getSavedListings(userId) {
-  return prisma.savedListing.findMany({
+  const saved = await prisma.savedListing.findMany({
     where: { userId },
     orderBy: { savedAt: 'desc' },
     include: {
       listing: {
         include: {
-          seller: { select: { id: true, username: true, avatar: true, isVerified: true, sellerProfile: true } },
           category: true,
+          seller: { select: { username: true, slug: true, avatarUrl: true } },
         },
       },
     },
   });
+  return saved.map((s) => s.listing);
 }
 
+// ── DASHBOARD ──
 async function getSellerDashboard(sellerId) {
-  const profile = await prisma.sellerProfile.findUnique({ where: { userId: sellerId } });
+  const [totalListings, activeListings, totalOrders, pendingOrders, recentOrders, profile] =
+    await Promise.all([
+      prisma.listing.count({ where: { sellerId } }),
+      prisma.listing.count({ where: { sellerId, status: 'ACTIVE' } }),
+      prisma.order.count({ where: { sellerId } }),
+      prisma.order.count({ where: { sellerId, status: 'PENDING' } }),
+      prisma.order.findMany({
+        where: { sellerId },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          listing: { select: { title: true, slug: true } },
+          buyer: { select: { username: true } },
+        },
+      }),
+      prisma.sellerProfile.findUnique({ where: { userId: sellerId } }),
+    ]);
 
-  const activeListings = await prisma.marketListing.count({
-    where: { sellerId, status: 'ACTIVE' },
-  });
+  return {
+    totalListings,
+    activeListings,
+    totalOrders,
+    pendingOrders,
+    totalRevenue: profile?.totalRevenue || 0,
+    avgRating: profile?.avgRating || 0,
+    reviewCount: profile?.reviewCount || 0,
+    recentOrders,
+  };
+}
 
-  const pendingOrders = await prisma.order.count({
-    where: { sellerId, orderStatus: { in: ['PENDING', 'SELLER_CONFIRMED', 'SHIPPED'] } },
-  });
-
-  const recentOrders = await prisma.order.findMany({
-    where: { sellerId },
+// ── ORDERS LIST ──
+async function getUserOrders(userId, tab = 'buying') {
+  const where = tab === 'selling' ? { sellerId: userId } : { buyerId: userId };
+  return prisma.order.findMany({
+    where,
     orderBy: { createdAt: 'desc' },
-    take: 10,
     include: {
-      listing: { select: { id: true, title: true, images: true } },
-      buyer: { select: { id: true, username: true, avatar: true } },
+      listing: { select: { title: true, titleAr: true, slug: true, images: true, price: true } },
+      buyer: { select: { username: true, avatarUrl: true } },
+      seller: { select: { username: true, avatarUrl: true } },
     },
   });
+}
 
-  const recentReviews = await prisma.sellerReview.findMany({
-    where: { sellerId },
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    include: { reviewer: { select: { id: true, username: true, avatar: true } } },
+async function getOrder(orderId) {
+  return prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      listing: {
+        include: { category: true },
+      },
+      buyer: { select: { id: true, username: true, avatarUrl: true, email: true } },
+      seller: { select: { id: true, username: true, avatarUrl: true, email: true } },
+      events: { orderBy: { createdAt: 'asc' }, include: { actor: { select: { username: true } } } },
+      review: true,
+    },
   });
-
-  const myListingsPreview = await prisma.marketListing.findMany({
-    where: { sellerId, status: { not: 'REMOVED' } },
-    orderBy: { createdAt: 'desc' },
-    take: 6,
-    include: { _count: { select: { orders: true } } },
-  });
-
-  return { profile, activeListings, pendingOrders, recentOrders, recentReviews, myListingsPreview };
 }
 
 module.exports = {
-  getListings, getListingFacets, getListing, getListingByIdOrSlug,
-  incrementViews, incrementWaClicks,
-  createListing, updateListing, markSold, deleteListing,
-  createOrder, sellerConfirmOrder, sellerShipOrder, buyerConfirmDelivery, cancelOrder,
-  createReview, toggleSaved, getSavedListings, getSellerDashboard,
+  validateTransition,
+  getCategories,
+  getListings,
+  getListing,
+  createListing,
+  updateListing,
+  deleteListing,
+  createOrder,
+  transitionOrder,
+  postReview,
+  toggleSaved,
+  getSavedListings,
+  getSellerDashboard,
+  getUserOrders,
+  getOrder,
 };

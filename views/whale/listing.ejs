@@ -1,144 +1,193 @@
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>">
-<head><%- include('../partials/head') %></head>
-<body class="<%= bodyClass %>">
+<%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-  <div class="listing-detail">
-    <!-- Gallery -->
-    <div class="listing-gallery">
-      <div class="gallery-main">
-        <img src="<%= listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png' %>" alt="<%= listing.title %>" id="mainImage">
-      </div>
-      <% if (listing.images && listing.images.length > 1) { %>
-      <div class="gallery-thumbs">
-        <% listing.images.forEach((img, i) => { %>
-        <img src="<%= img %>" alt="" class="thumb <%= i === 0 ? 'active' : '' %>" onclick="document.getElementById('mainImage').src=this.src; document.querySelectorAll('.thumb').forEach(t=>t.classList.remove('active')); this.classList.add('active');">
-        <% }) %>
-      </div>
-      <% } %>
-    </div>
+  <div class="container">
+    <%- include('../partials/flash') %>
 
-    <!-- Details -->
-    <div class="listing-info">
-      <h1 dir="auto"><%= lang === 'ar' && listing.titleAr ? listing.titleAr : listing.title %></h1>
-
-      <div class="listing-price-row">
-        <span class="listing-price">₪<%= listing.price %></span>
-        <% if (listing.negotiable) { %><span class="negotiable-badge"><%= t('whale.negotiable') %></span><% } %>
-        <% if (listing.condition) { %>
-        <span class="condition-badge condition-<%= listing.condition.toLowerCase() %>"><%= t('condition.' + listing.condition.toLowerCase()) %></span>
-        <% } %>
-      </div>
-
-      <div class="listing-stats">
-        <span>👁 <%= listing.views %> <%= t('whale.views') %></span>
-        <span>❤️ <%= listing._count ? listing._count.savedBy : 0 %> <%= t('whale.saved') %></span>
-        <% if (listing._count && listing._count.orders > 0) { %>
-        <span>🛒 <%= listing._count.orders %> <%= t('whale.sold') %></span>
-        <% } %>
-      </div>
-
-      <%- include('../partials/trust-box') %>
-
-      <!-- Actions -->
-      <div class="listing-actions">
-        <% if (currentUser && listing.sellerId !== currentUser.id) { %>
-        <a href="/whale/listing/<%= listing.id %>/buy" class="btn btn-primary btn-lg btn-block"><%= t('whale.buy_now') %></a>
-        <form method="post" action="/whale/cart/add" class="inline-form">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="listingId" value="<%= listing.id %>">
-          <button type="submit" class="btn btn-outline btn-lg btn-block"><%= t('whale.add_to_cart') %></button>
-        </form>
-        <% } else if (!currentUser) { %>
-        <a href="/auth/register?returnTo=/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-primary btn-lg btn-block"><%= t('listing.register_contact') %></a>
-        <a href="/auth/login?returnTo=/whale/listing/<%= listing.slug || listing.id %>" class="btn btn-outline btn-lg btn-block"><%= t('listing.buy_now') %></a>
-        <% } %>
-
-        <% if (listing.seller?.sellerProfile?.whatsapp) { %>
-        <a href="https://wa.me/<%= listing.seller.sellerProfile.whatsapp %>?text=<%= encodeURIComponent(listing.title) %>" target="_blank" rel="noopener" class="btn btn-whatsapp btn-block" onclick="fetch('/whale/listing/<%= listing.id %>/wa-click',{method:'POST',headers:{'X-CSRF-Token':'<%= csrfToken %>'}})">
-          <%= t('footer.contact_wa') %> 📱
-        </a>
-        <% } %>
-
-        <% if (currentUser) { %>
-        <button class="btn btn-outline save-action-btn <%= isSaved ? 'saved' : '' %>" id="saveBtn" data-id="<%= listing.id %>">
-          <%= isSaved ? t('whale.unsave') : t('whale.save') %> ❤️
-        </button>
-        <% } %>
-      </div>
-
-      <!-- Seller Card -->
-      <% if (listing.seller) { %>
-      <div class="seller-card">
-        <a href="/whale/seller/<%= listing.seller.username %>" class="seller-header">
-          <% if (listing.seller.avatar) { %><img src="<%= listing.seller.avatar %>" alt="" class="avatar-md"><% } else { %><span class="avatar-md avatar-initials"><%= listing.seller.username.charAt(0).toUpperCase() %></span><% } %>
-          <div>
-            <strong><%= listing.seller.username %> <% if (listing.seller.isVerified) { %><span class="verified-check">✓</span><% } %></strong>
-            <% if (listing.seller.sellerProfile) { var sp = listing.seller.sellerProfile; %>
-            <div class="seller-stats-mini">
-              <span>★ <%= sp.averageRating.toFixed(1) %> (<%= sp.reviewCount %>)</span>
-              <span>🛒 <%= sp.totalSales %> <%= t('whale.sales') %></span>
-            </div>
-            <% } %>
-            <span class="seller-joined"><%= t('whale.member_since') %> <%= new Date(listing.seller.createdAt).getFullYear() %></span>
-          </div>
-        </a>
-      </div>
-      <% } %>
-
-      <!-- Description -->
-      <div class="listing-section">
-        <h3><%= t('whale.description') %></h3>
-        <div class="listing-desc" dir="auto">
-          <p><%= lang === 'ar' && listing.descriptionAr ? listing.descriptionAr : listing.description %></p>
+    <div class="listing-detail">
+      <!-- Gallery -->
+      <div class="gallery">
+        <div class="gallery-main">
+          <img src="<%= listing.images[0] || '' %>" alt="<%= listing.title %>" />
         </div>
-      </div>
-
-      <!-- Specs -->
-      <% if (listing.specs && Object.keys(listing.specs).length) { %>
-      <div class="listing-section">
-        <h3><%= t('whale.specifications') %></h3>
-        <table class="specs-table">
-          <% Object.entries(listing.specs).forEach(([k, v]) => { %>
-          <tr><th><%= k %></th><td><%= v %></td></tr>
+        <% if (listing.images.length > 1) { %>
+        <div class="gallery-thumbs">
+          <% listing.images.forEach((img, i) => { %>
+          <div class="gallery-thumb <%= i === 0 ? 'active' : '' %>">
+            <img src="<%= img %>" alt="" />
+          </div>
           <% }) %>
-        </table>
+        </div>
+        <% } %>
       </div>
-      <% } %>
 
-      <!-- Reviews -->
-      <% if (listing.reviews && listing.reviews.length) { %>
-      <div class="listing-section">
-        <h3><%= t('whale.reviews') %> (<%= listing._count ? listing._count.reviews : listing.reviews.length %>)</h3>
-        <% listing.reviews.forEach(review => { %>
-        <%- include('../partials/review-card', { review }) %>
-        <% }) %>
-      </div>
-      <% } %>
+      <!-- Info -->
+      <div class="listing-detail-info">
+        <h1><%= locale === 'ar' && listing.titleAr ? listing.titleAr : listing.title %></h1>
 
-      <!-- Tags -->
-      <% if (listing.tags && listing.tags.length) { %>
-      <div class="listing-tags">
-        <% listing.tags.forEach(tag => { %>
-        <a href="/whale?q=<%= encodeURIComponent(tag) %>" class="tag">#<%= tag %></a>
-        <% }) %>
+        <div class="flex items-center gap-1 mb-1">
+          <span class="badge badge-info"><%= t('condition.' + listing.condition) %></span>
+          <span class="text-sm text-muted"><%= listing.city %></span>
+          <span class="text-sm text-muted">
+            &middot; <%= listing.views %> <%= t('listing.views') %>
+          </span>
+        </div>
+
+        <div class="listing-detail-price">
+          $<%= parseFloat(listing.price).toLocaleString() %> <% if (listing.negotiable) { %>
+          <span class="text-sm text-muted">(<%= t('listing.negotiable') %>)</span>
+          <% } %>
+        </div>
+
+        <!-- Actions -->
+        <div class="listing-detail-actions">
+          <% if (user && user.id !== listing.sellerId) { %>
+          <a href="/whale/checkout/<%= listing.id %>" class="btn btn-primary btn-lg">
+            <%= t('listing.buy_now') %>
+          </a>
+          <% if (listing.seller && listing.seller.sellerProfile &&
+          listing.seller.sellerProfile.whatsapp) { %>
+          <a
+            href="https://wa.me/<%= listing.seller.sellerProfile.whatsapp.replace(/\+/g,'') %>?text=<%= encodeURIComponent(locale === 'ar' ? 'مرحبا، أنا مهتم بمنتجك: ' + listing.title : 'Hi, I am interested in: ' + listing.title) %>"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-success"
+          >
+            <%= t('listing.whatsapp') %>
+          </a>
+          <% } %>
+          <button
+            type="button"
+            data-save-listing="<%= listing.id %>"
+            class="btn btn-ghost <%= isSaved ? 'saved' : '' %>"
+          >
+            <span class="save-icon"><%= isSaved ? '❤️' : '🤍' %></span>
+            <%= isSaved ? t('listing.saved') : t('listing.save') %>
+          </button>
+          <% } else if (user && user.id === listing.sellerId) { %>
+          <a href="/whale/listing/<%= listing.id %>/edit" class="btn btn-secondary">
+            <%= t('listing.edit') %>
+          </a>
+          <form
+            method="POST"
+            action="/whale/listing/<%= listing.id %>/delete"
+            data-confirm="<%= locale === 'ar' ? 'هل أنت متأكد من الحذف؟' : 'Are you sure you want to delete this listing?' %>"
+            style="display: inline"
+          >
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button type="submit" class="btn btn-danger"><%= t('listing.delete') %></button>
+          </form>
+          <% } else { %>
+          <a
+            href="/auth/login?next=/whale/listing/<%= listing.slug %>"
+            class="btn btn-primary btn-lg"
+          >
+            <%= t('listing.buy_now') %>
+          </a>
+          <% } %>
+        </div>
+
+        <!-- Seller -->
+        <div class="seller-info">
+          <div class="avatar avatar-lg">
+            <% if (listing.seller.avatarUrl) { %>
+            <img src="<%= listing.seller.avatarUrl %>" alt="" />
+            <% } else { %>
+            <%= listing.seller.username.charAt(0).toUpperCase() %>
+            <% } %>
+          </div>
+          <div class="seller-info-details">
+            <div class="seller-info-name">
+              <%= listing.seller.sellerProfile?.displayName || listing.seller.username %>
+            </div>
+            <div class="seller-info-meta">
+              <% if (listing.seller.sellerProfile) { %>
+              <span class="stars">
+                <% for(let i=1;i<=5;i++){%>
+                <span
+                  class="<%= i <= Math.round(listing.seller.sellerProfile.avgRating) ? '' : 'empty' %>"
+                >
+                  ★
+                </span>
+                <%}%>
+              </span>
+              (
+              <%= listing.seller.sellerProfile.reviewCount %>
+              )
+              <% } %>
+              &middot;
+              <%=
+              t('listing.member_since') %>
+              <%= new Date(listing.seller.createdAt).getFullYear() %>
+            </div>
+          </div>
+          <a href="/whale/seller/<%= listing.seller.username %>" class="btn btn-ghost btn-sm">
+            <%= t('listing.view_profile') %>
+          </a>
+        </div>
+
+        <!-- Description -->
+        <div class="card mt-2">
+          <div class="card-header"><%= t('listing.description') %></div>
+          <div class="card-body">
+            <% if (locale === 'ar' && listing.descriptionAr) { %>
+            <p><%= listing.descriptionAr %></p>
+            <% } else { %>
+            <p><%= listing.description %></p>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Specs -->
+        <% if (listing.specs) { %>
+        <div class="card mt-2">
+          <div class="card-header"><%= t('listing.specs') %></div>
+          <div class="card-body">
+            <table>
+              <% Object.entries(listing.specs).forEach(([key, val]) => { %>
+              <tr>
+                <td>
+                  <strong><%= key %></strong>
+                </td>
+                <td><%= val %></td>
+              </tr>
+              <% }) %>
+            </table>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Reviews -->
+        <% if (listing.reviews && listing.reviews.length > 0) { %>
+        <div class="card mt-2">
+          <div class="card-header"><%= t('listing.reviews') %> (<%= listing.reviews.length %>)</div>
+          <div class="card-body" style="padding: 0">
+            <% listing.reviews.forEach(review => { %>
+            <div class="review-card">
+              <div class="review-header">
+                <div class="avatar avatar-sm">
+                  <%= review.reviewer.username.charAt(0).toUpperCase() %>
+                </div>
+                <div>
+                  <strong><%= review.reviewer.username %></strong>
+                  <div class="stars">
+                    <% for(let i=1;i<=5;i++){%>
+                    <span class="<%= i<=review.rating?'':'empty'%>">★</span>
+                    <%}%>
+                  </div>
+                </div>
+              </div>
+              <% if (review.body) { %>
+              <p class="review-body"><%= review.body %></p>
+              <% } %>
+            </div>
+            <% }) %>
+          </div>
+        </div>
+        <% } %>
       </div>
-      <% } %>
     </div>
   </div>
-
-  <!-- Similar -->
-  <% if (similar && similar.length) { %>
-  <section class="similar-section">
-    <h2><%= t('whale.similar') %></h2>
-    <div class="listings-grid listings-grid-sm">
-      <% similar.forEach(listing => { %>
-      <%- include('../partials/listing-card', { listing }) %>
-      <% }) %>
-    </div>
-  </section>
-  <% } %>
 </main>
 <%- include('../partials/footer') %>
 <script>

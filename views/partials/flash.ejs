@@ -1,0 +1,6 @@
+<% if (flash) { %>
+<div class="flash flash-<%= flash.type || 'info' %>">
+  <%= typeof flash.message === 'string' && flash.message.startsWith('flash.') ? t(flash.message) :
+  flash.message %>
+</div>
+<% } %>

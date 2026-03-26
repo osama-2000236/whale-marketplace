@@ -1,38 +1,75 @@
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>">
-<head><%- include('../partials/head') %></head>
-<body class="<%= bodyClass %>">
+<%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-  <div class="page-container">
-    <h1><%= t('whale.orders') %></h1>
-    <div class="tab-bar">
-      <a href="/whale/orders?tab=buying" class="tab <%= tab === 'buying' ? 'active' : '' %>"><%= t('whale.buying') %></a>
-      <a href="/whale/orders?tab=selling" class="tab <%= tab === 'selling' ? 'active' : '' %>"><%= t('whale.selling') %></a>
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('order.title') %></h1>
     </div>
 
-    <% if (orders.length) { %>
-    <div class="orders-list">
-      <% orders.forEach(order => { %>
-      <a href="/whale/orders/<%= order.id %>" class="order-card">
-        <img src="<%= order.listing && order.listing.images && order.listing.images[0] ? order.listing.images[0] : '/images/placeholder.png' %>" alt="" class="order-thumb">
-        <div class="order-info">
-          <h3><%= order.listing ? order.listing.title : t('whale.order') %></h3>
-          <p class="order-number">#<%= order.orderNumber %></p>
-          <p class="order-amount">₪<%= order.amount %></p>
-        </div>
-        <div class="order-status">
-          <% var os = order.orderStatus || 'PENDING'; %>
-          <span class="status-badge status-<%= os %>"><%= t('status.' + os.toLowerCase()) %></span>
-          <span class="order-date"><%= timeAgo(order.createdAt) %></span>
-        </div>
+    <div class="tabs">
+      <a href="/whale/orders?tab=buying" class="tab <%= tab === 'buying' ? 'active' : '' %>">
+        <%= t('order.buying') %>
       </a>
-      <% }) %>
+      <a href="/whale/orders?tab=selling" class="tab <%= tab === 'selling' ? 'active' : '' %>">
+        <%= t('order.selling') %>
+      </a>
+    </div>
+
+    <% if (orders.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-state-icon">📦</div>
+      <h3><%= t('order.no_orders') %></h3>
+      <a href="/whale" class="btn btn-primary"><%= t('whale.browse') %></a>
     </div>
     <% } else { %>
-    <div class="empty-state">
-      <h3><%= t('whale.no_orders') %></h3>
-      <a href="/whale" class="btn btn-primary"><%= t('whale.browse') %></a>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><%= t('order.number') %></th>
+            <th><%= locale === 'ar' ? 'المنتج' : 'Item' %></th>
+            <th><%= locale === 'ar' ? 'المبلغ' : 'Amount' %></th>
+            <th><%= t('order.status') %></th>
+            <th><%= locale === 'ar' ? 'التاريخ' : 'Date' %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% orders.forEach(order => { %>
+          <tr>
+            <td>
+              <code><%= order.orderNumber.slice(-8) %></code>
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 0.5rem">
+                <% if (order.listing.images && order.listing.images.length > 0) { %>
+                <img
+                  src="<%= order.listing.images[0] %>"
+                  alt=""
+                  style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px"
+                />
+                <% } %>
+                <%= order.listing.title %>
+              </div>
+            </td>
+            <td>
+              $
+              <%= parseFloat(order.amount).toLocaleString() %>
+            </td>
+            <td><%- include('../partials/order-status', { status: order.status }) %></td>
+            <td class="text-sm text-muted">
+              <%= new Date(order.createdAt).toLocaleDateString() %>
+            </td>
+            <td>
+              <a href="/whale/orders/<%= order.id %>" class="btn btn-ghost btn-sm">
+                <%= locale === 'ar' ? 'عرض' : 'View' %>
+              </a>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
     </div>
     <% } %>
   </div>

@@ -1,59 +1,37 @@
-<%- include('partials/admin-header') %>
-<div class="admin-page">
-  <h1><%= t('admin.dashboard') %></h1>
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-value"><%= stats.totalUsers || 0 %></div>
-      <div class="stat-label"><%= t('admin.total_users') %></div>
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <div class="page-header">
+      <h1><%= t('admin.dashboard') %></h1>
     </div>
-    <div class="stat-card">
-      <div class="stat-value"><%= stats.totalListings || 0 %></div>
-      <div class="stat-label"><%= t('admin.total_listings') %></div>
+
+    <div class="grid-stats mb-3">
+      <div class="stat-card">
+        <div class="stat-card-value"><%= stats.userCount %></div>
+        <div class="stat-card-label"><%= t('admin.users') %></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value"><%= stats.listingCount %></div>
+        <div class="stat-card-label"><%= t('admin.listings') %></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value"><%= stats.orderCount %></div>
+        <div class="stat-card-label"><%= t('admin.orders') %></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-value">$<%= parseFloat(stats.revenue).toLocaleString() %></div>
+        <div class="stat-card-label">
+          <%= locale === 'ar' ? 'إجمالي الإيرادات' : 'Total Revenue' %>
+        </div>
+      </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-value"><%= stats.totalOrders || 0 %></div>
-      <div class="stat-label"><%= t('admin.total_orders') %></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value"><%= stats.proUsers || 0 %></div>
-      <div class="stat-label"><%= t('admin.pro_users') %></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value"><%= stats.totalProducts || 0 %></div>
-      <div class="stat-label"><%= t('admin.total_products') %></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value"><%= stats.activeDisputes || 0 %></div>
-      <div class="stat-label"><%= t('admin.active_disputes') %></div>
+
+    <div class="flex gap-1">
+      <a href="/admin/users" class="btn btn-ghost"><%= t('admin.users') %></a>
+      <a href="/admin/listings" class="btn btn-ghost"><%= t('admin.listings') %></a>
+      <a href="/admin/orders" class="btn btn-ghost"><%= t('admin.orders') %></a>
     </div>
   </div>
-
-  <% if (typeof recentOrders !== 'undefined' && recentOrders.length) { %>
-  <h2><%= t('admin.recent_orders') %></h2>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th><%= t('whale.buyer') %></th>
-        <th><%= t('whale.seller') %></th>
-        <th><%= t('whale.amount') %></th>
-        <th><%= t('whale.status') %></th>
-        <th><%= t('admin.date') %></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% recentOrders.forEach(order => { %>
-      <tr>
-        <td><%= order.orderNumber %></td>
-        <td><%= order.buyer ? order.buyer.username : '—' %></td>
-        <td><%= order.seller ? order.seller.username : '—' %></td>
-        <td>&#8362;<%= order.amount %></td>
-        <td><span class="status-badge status-<%= {PENDING:'warning',COMPLETED:'success',CANCELLED:'danger',SHIPPED:'info'}[order.orderStatus] || 'neutral' %>"><%= order.orderStatus %></span></td>
-        <td><%= timeAgo(order.createdAt) %></td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-  <% } %>
-</div>
-<%- include('partials/admin-footer') %>
+</main>
+<%- include('../partials/footer') %>

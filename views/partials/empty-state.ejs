@@ -1,8 +1,0 @@
-<div class="empty-state">
-  <% if (typeof emptyIcon !== 'undefined') { %><div class="empty-icon"><%= emptyIcon %></div><% } %>
-  <h3><%= typeof emptyTitle !== 'undefined' ? emptyTitle : t('common.no_results') %></h3>
-  <% if (typeof emptyDesc !== 'undefined') { %><p><%= emptyDesc %></p><% } %>
-  <% if (typeof emptyCta !== 'undefined' && typeof emptyCtaUrl !== 'undefined') { %>
-  <a href="<%= emptyCtaUrl %>" class="btn btn-primary"><%= emptyCta %></a>
-  <% } %>
-</div>

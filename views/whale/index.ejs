@@ -1,195 +1,124 @@
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>">
-<head><%- include('../partials/head') %></head>
-<body class="<%= bodyClass %>">
+<%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-
-  <!-- Hero Section -->
-  <section class="whale-hero">
-    <% if (currentUser && heroStats) { %>
-    <div class="hero-auth">
-      <h1><%= t('whale.welcome_back', { name: currentUser.username }) %></h1>
-      <div class="hero-stats">
-        <div class="stat-card"><span class="stat-num"><%= heroStats.listingCount %></span><span class="stat-label"><%= t('whale.my_listings') %></span></div>
-        <div class="stat-card"><span class="stat-num"><%= heroStats.orderCount %></span><span class="stat-label"><%= t('whale.orders') %></span></div>
-        <div class="stat-card"><span class="stat-num"><%= heroStats.savedCount %></span><span class="stat-label"><%= t('whale.saved') %></span></div>
-      </div>
-      <div class="hero-actions">
-        <% if (isPro) { %><a href="/whale/sell" class="btn btn-primary"><%= t('whale.sell_now') %></a><% } %>
-        <a href="/whale/orders" class="btn btn-outline"><%= t('whale.my_orders') %></a>
-      </div>
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('whale.browse') %></h1>
+      <p class="text-muted"><%= total %> <%= locale === 'ar' ? 'منتج' : 'listings' %></p>
     </div>
-    <% } else { %>
-    <div class="hero-guest">
-      <h1><%= t('whale.hero_title') %></h1>
-      <p class="hero-subtitle"><%= t('app.trust_promise') %></p>
-      <div class="hero-actions">
-        <a href="/auth/register" class="btn btn-primary btn-lg"><%= t('nav.register') %></a>
-        <a href="#listings" class="btn btn-outline btn-lg"><%= t('whale.browse') %></a>
-      </div>
-    </div>
-    <% } %>
-  </section>
 
-  <!-- Categories -->
-  <% if (categories && categories.length) { %>
-  <section class="categories-section">
-    <div class="category-chips">
-      <a href="/whale" class="chip <%= !filters.category ? 'active' : '' %>"><%= t('whale.all') %></a>
-      <% categories.slice(0, 12).forEach(cat => { %>
-      <a href="/whale?category=<%= cat.slug %>" class="chip <%= filters.category === cat.slug ? 'active' : '' %>">
-        <span class="chip-icon"><%= cat.icon %></span>
-        <%= lang === 'ar' ? cat.nameAr : cat.name %>
-        <span class="chip-count"><%= cat._count ? cat._count.listings : 0 %></span>
-      </a>
-      <% }) %>
-    </div>
-  </section>
-  <% } %>
-
-  <!-- Search & Filters -->
-  <section class="market-toolbar" id="listings">
-    <form action="/whale" method="get" class="filter-form" id="filterForm">
-      <div class="toolbar-row">
-        <input type="search" name="q" value="<%= filters.q || '' %>" placeholder="<%= t('search.placeholder') %>" class="search-input">
-        <select name="sort" class="sort-select" onchange="this.form.submit()">
-          <option value="newest" <%= filters.sort === 'newest' || !filters.sort ? 'selected' : '' %>><%= t('whale.newest') %></option>
-          <option value="cheapest" <%= filters.sort === 'cheapest' ? 'selected' : '' %>><%= t('whale.cheapest') %></option>
-          <option value="expensive" <%= filters.sort === 'expensive' ? 'selected' : '' %>><%= t('whale.expensive') %></option>
-          <option value="popular" <%= filters.sort === 'popular' ? 'selected' : '' %>><%= t('whale.popular') %></option>
-        </select>
-        <button type="button" class="btn btn-outline filter-toggle-btn" id="filterToggle"><%= t('whale.filters') %></button>
-      </div>
-
-      <!-- Filter Drawer -->
-      <div class="filter-drawer" id="filterDrawer">
-        <div class="filter-group">
-          <label><%= t('whale.category') %></label>
-          <select name="category">
-            <option value=""><%= t('whale.all') %></option>
-            <% categories.forEach(cat => { %>
-            <option value="<%= cat.slug %>" <%= filters.category === cat.slug ? 'selected' : '' %>><%= lang === 'ar' ? cat.nameAr : cat.name %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label><%= t('whale.condition') %></label>
-          <select name="condition">
-            <option value=""><%= t('whale.all') %></option>
-            <% ['NEW','LIKE_NEW','USED','GOOD','FAIR','FOR_PARTS'].forEach(c => { %>
-            <option value="<%= c %>" <%= filters.condition === c ? 'selected' : '' %>><%= t('condition.' + c.toLowerCase()) %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label><%= t('whale.city') %></label>
-          <select name="city">
-            <option value=""><%= t('whale.all_cities') %></option>
-            <% if (groupedCities) { Object.entries(groupedCities).forEach(([region, cities]) => { %>
-            <optgroup label="<%= region %>">
-              <% cities.forEach(c => { %>
-              <option value="<%= c.value %>" <%= filters.city === c.value ? 'selected' : '' %>><%= c.name %></option>
-              <% }) %>
-            </optgroup>
-            <% }) } %>
-          </select>
-        </div>
-        <div class="filter-group price-range">
-          <label><%= t('whale.price_range') %></label>
-          <div class="price-inputs">
-            <input type="number" name="minPrice" value="<%= filters.minPrice || '' %>" placeholder="<%= t('whale.min') %>" min="0">
-            <span>—</span>
-            <input type="number" name="maxPrice" value="<%= filters.maxPrice || '' %>" placeholder="<%= t('whale.max') %>" min="0">
+    <div class="browse-layout">
+      <!-- Filters -->
+      <aside class="filter-sidebar">
+        <h3><%= t('whale.filter') %></h3>
+        <form class="filter-form" method="GET" action="/whale">
+          <div class="form-group">
+            <label class="form-label"><%= t('general.search') %></label>
+            <input
+              type="text"
+              name="q"
+              class="input"
+              value="<%= filters.q || '' %>"
+              placeholder="<%= t('general.search') %>"
+            >
           </div>
-        </div>
-        <button type="submit" class="btn btn-primary"><%= t('whale.apply_filters') %></button>
-      </div>
-    </form>
-  </section>
+          <div class="form-group">
+            <label class="form-label"><%= t('whale.category') %></label>
+            <select name="category" class="select">
+              <option value=""><%= t('whale.all_categories') %></option>
+              <% categories.forEach((cat) => { %>
+                <option value="<%= cat.slug %>" <%= filters.categorySlug === cat.slug ? 'selected' : '' %>>
+                  <%= locale === 'ar' ? cat.nameAr : cat.name %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><%= t('whale.city') %></label>
+            <select name="city" class="select">
+              <option value=""><%= t('whale.all_cities') %></option>
+              <% cities.forEach((c) => { %>
+                <option value="<%= c %>" <%= filters.city === c ? 'selected' : '' %>><%= c %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><%= t('whale.condition') %></label>
+            <select name="condition" class="select">
+              <option value=""><%= t('whale.all_conditions') %></option>
+              <% ['NEW', 'LIKE_NEW', 'GOOD', 'USED', 'FAIR', 'FOR_PARTS'].forEach((c) => { %>
+                <option value="<%= c %>" <%= filters.condition === c ? 'selected' : '' %>>
+                  <%= t('condition.' + c) %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"><%= t('whale.min_price') %></label>
+              <input
+                type="number"
+                name="minPrice"
+                class="input"
+                value="<%= filters.minPrice || '' %>"
+                min="0"
+              >
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('whale.max_price') %></label>
+              <input
+                type="number"
+                name="maxPrice"
+                class="input"
+                value="<%= filters.maxPrice || '' %>"
+                min="0"
+              >
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><%= t('whale.sort') %></label>
+            <select name="sort" class="select">
+              <% ['newest', 'oldest', 'price_asc', 'price_desc', 'popular'].forEach((s) => { %>
+                <option value="<%= s %>" <%= filters.sort === s ? 'selected' : '' %>>
+                  <%= t('whale.sort.' + s) %>
+                </option>
+              <% }) %>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block"><%= t('whale.filter') %></button>
+        </form>
+      </aside>
 
-  <!-- Results -->
-  <section class="market-layout">
-    <div class="market-main">
-      <div class="results-header">
-        <span><%= totalCount %> <%= t('whale.results') %></span>
+      <!-- Listings Grid -->
+      <div>
+        <% if (listings.length === 0) { %>
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <h3><%= t('whale.no_results') %></h3>
+            <a href="/whale" class="btn btn-ghost">
+              <%= locale === 'ar' ? 'مسح الفلاتر' : 'Clear Filters' %>
+            </a>
+          </div>
+        <% } else { %>
+          <div class="grid-listings">
+            <% listings.forEach((listing) => { %>
+              <%- include('../partials/listing-card', { listing }) %>
+            <% }) %>
+          </div>
+          <% if (nextCursor) { %>
+            <div class="text-center mt-3">
+              <a
+                href="/whale?<%= Object.entries(filters).filter(([k, v]) => v).map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&') %>&cursor=<%= nextCursor %>"
+                class="btn btn-ghost"
+              >
+                <%= t('whale.load_more') %>
+              </a>
+            </div>
+          <% } %>
+        <% } %>
       </div>
-
-      <% if (listings.length) { %>
-      <div class="listings-grid">
-        <% listings.forEach(listing => { %>
-        <%- include('../partials/listing-card', { listing }) %>
-        <% }) %>
-      </div>
-
-      <% if (hasMore) { %>
-      <div class="load-more">
-        <a href="/whale?<%= Object.entries(filters).filter(([k,v]) => v && k !== 'cursor').map(([k,v]) => k+'='+encodeURIComponent(v)).join('&') %><%= Object.keys(filters).filter(k => filters[k] && k !== 'cursor').length ? '&' : '' %>cursor=<%= nextCursor %>" class="btn btn-outline btn-lg">
-          <%= t('whale.load_more') %>
-        </a>
-      </div>
-      <% } %>
-      <% } else { %>
-      <div class="empty-state">
-        <h3>📦 <%= t('whale.no_listings') %></h3>
-        <p><%= t('whale.no_listings_desc') %></p>
-      </div>
-      <% } %>
     </div>
-
-    <!-- Sidebar -->
-    <aside class="market-sidebar">
-      <% if (!currentUser) { %>
-      <div class="sidebar-card cta-card">
-        <h3><%= t('whale.start_selling') %></h3>
-        <p><%= t('whale.start_selling_desc') %></p>
-        <a href="/auth/register" class="btn btn-primary btn-block"><%= t('nav.register') %></a>
-      </div>
-      <% } %>
-
-      <% if (cityStats && cityStats.length) { %>
-      <div class="sidebar-card">
-        <h4><%= t('whale.popular_cities') %></h4>
-        <ul class="city-stats">
-          <% cityStats.forEach(cs => { %>
-          <li><a href="/whale?city=<%= cs.city %>"><%= cs.city %></a> <span class="count"><%= cs._count %></span></li>
-          <% }) %>
-        </ul>
-      </div>
-      <% } %>
-    </aside>
-  </section>
-
-  <!-- Near You -->
-  <% if (nearYouListings && nearYouListings.length) { %>
-  <section class="near-you-section">
-    <h2><%= t('whale.near_you') %></h2>
-    <div class="listings-grid listings-grid-sm">
-      <% nearYouListings.forEach(listing => { %>
-      <%- include('../partials/listing-card', { listing }) %>
-      <% }) %>
-    </div>
-  </section>
-  <% } %>
-
+  </div>
 </main>
 <%- include('../partials/footer') %>
-
-<script>
-document.getElementById('filterToggle')?.addEventListener('click', function() {
-  document.getElementById('filterDrawer')?.classList.toggle('open');
-});
-
-// Save/unsave listing
-document.querySelectorAll('.save-btn').forEach(btn => {
-  btn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const id = btn.dataset.id;
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
-    const res = await fetch('/whale/listing/' + id + '/save', { method: 'POST', headers: { 'Content-Type': 'application/json', 'CSRF-Token': csrf, 'X-CSRF-Token': csrf }, body: '{}' });
-    if (res.ok) { const d = await res.json(); btn.classList.toggle('saved', d.saved); }
-  });
-});
-</script>
-</body>
-</html>

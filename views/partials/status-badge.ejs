@@ -1,2 +1,0 @@
-<% var statusColors = { PENDING: 'warning', SELLER_CONFIRMED: 'info', SHIPPED: 'info', IN_TRANSIT: 'info', DELIVERED: 'success', BUYER_CONFIRMED: 'success', COMPLETED: 'success', CANCELLED: 'danger', DISPUTED: 'danger', REFUNDED: 'warning', ACTIVE: 'success', SOLD: 'neutral', REMOVED: 'danger', SUSPENDED: 'danger', DRAFT: 'neutral' }; %>
-<span class="status-badge status-<%= statusColors[statusValue] || 'neutral' %>"><%= t('status.' + (statusValue || 'unknown').toLowerCase()) %></span>

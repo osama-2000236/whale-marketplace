@@ -1,0 +1,73 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container" style="max-width: 640px">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('profile.title') %></h1>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <form method="POST" action="/profile" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+          <div class="text-center mb-2">
+            <div class="avatar avatar-xl" style="margin: 0 auto 1rem">
+              <% if (profile.avatarUrl) { %>
+              <img src="<%= profile.avatarUrl %>" alt="" />
+              <% } else { %>
+              <%= profile.username.charAt(0).toUpperCase() %>
+              <% } %>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('profile.avatar') %></label>
+              <input type="file" name="avatar" class="input" accept="image/*" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label"><%= t('profile.display_name') %></label>
+            <input
+              type="text"
+              name="displayName"
+              class="input"
+              value="<%= profile.sellerProfile?.displayName || '' %>"
+              maxlength="100"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label"><%= t('profile.bio') %></label>
+            <textarea name="bio" class="textarea" maxlength="500"><%= profile.bio || '' %></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"><%= t('profile.city') %></label>
+              <input
+                type="text"
+                name="city"
+                class="input"
+                value="<%= profile.sellerProfile?.city || '' %>"
+                maxlength="100"
+              />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('profile.whatsapp') %></label>
+              <input
+                type="tel"
+                name="whatsapp"
+                class="input"
+                value="<%= profile.sellerProfile?.whatsapp || '' %>"
+                placeholder="+970..."
+              />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <%= t('profile.save') %>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+<%- include('../partials/footer') %>

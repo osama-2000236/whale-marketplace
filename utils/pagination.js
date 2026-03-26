@@ -1,21 +1,19 @@
-function parseLimit(limit, fallback = 10, max = 50) {
-  const n = parseInt(limit, 10);
-  if (Number.isNaN(n) || n < 1) return fallback;
-  return Math.min(n, max);
+const PAGE_SIZE = 24;
+
+function cursorPagination(cursor) {
+  const pagination = { take: PAGE_SIZE + 1 };
+  if (cursor) {
+    pagination.cursor = { id: cursor };
+    pagination.skip = 1;
+  }
+  return pagination;
 }
 
-function createCursorResponse(items, limit) {
-  const hasMore = items.length > limit;
-  const trimmed = hasMore ? items.slice(0, limit) : items;
-  const nextCursor = hasMore ? trimmed[trimmed.length - 1].id : null;
-  return { items: trimmed, hasMore, nextCursor };
+function processCursorResults(items) {
+  const hasMore = items.length > PAGE_SIZE;
+  const sliced = hasMore ? items.slice(0, PAGE_SIZE) : items;
+  const nextCursor = hasMore ? sliced[sliced.length - 1].id : null;
+  return { items: sliced, nextCursor };
 }
 
-function buildCursorPage(items, take) {
-  const hasMore = items.length > take;
-  const trimmed = hasMore ? items.slice(0, take) : items;
-  const nextCursor = hasMore ? trimmed[trimmed.length - 1].id : null;
-  return { data: trimmed, hasMore, nextCursor };
-}
-
-module.exports = { parseLimit, createCursorResponse, buildCursorPage };
+module.exports = { cursorPagination, processCursorResults, PAGE_SIZE };

@@ -1,73 +1,128 @@
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>">
-<head><%- include('../partials/head') %></head>
-<body class="<%= bodyClass %>">
+<%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-  <div class="form-page">
-    <h1><%= t('whale.create_listing') %></h1>
-    <% if (typeof error !== 'undefined' && error) { %>
-    <div class="alert alert-danger"><%= error %></div>
-    <% } %>
-    <form method="post" action="/whale/sell" enctype="multipart/form-data" class="whale-form">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <div class="form-row">
-        <div class="form-group"><label><%= t('whale.title_en') %> *</label><input type="text" name="title" required minlength="3" maxlength="200"></div>
-        <div class="form-group"><label><%= t('whale.title_ar') %></label><input type="text" name="titleAr" maxlength="200" dir="rtl"></div>
+  <div class="container" style="max-width: 720px">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('sell.title') %></h1>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <form method="POST" action="/whale/sell" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('sell.name') %>
+                <span class="required">*</span>
+              </label>
+              <input type="text" name="title" class="input" required maxlength="100" />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('sell.name_ar') %></label>
+              <input type="text" name="titleAr" class="input" maxlength="100" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <%= t('sell.description') %>
+              <span class="required">*</span>
+            </label>
+            <textarea name="description" class="textarea" required maxlength="5000"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><%= t('sell.description_ar') %></label>
+            <textarea name="descriptionAr" class="textarea" maxlength="5000"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('sell.price') %> ($)
+                <span class="required">*</span>
+              </label>
+              <input type="number" name="price" class="input" required min="1" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('sell.condition') %></label>
+              <select name="condition" class="select">
+                <% ['NEW','LIKE_NEW','GOOD','USED','FAIR','FOR_PARTS'].forEach(c => { %>
+                <option value="<%= c %>"><%= t('condition.' + c) %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" name="negotiable" value="on" />
+              <%= t('sell.negotiable') %>
+            </label>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('sell.category') %>
+                <span class="required">*</span>
+              </label>
+              <select name="categoryId" class="select" required>
+                <option value="">--</option>
+                <% categories.forEach(cat => { %>
+                <option value="<%= cat.id %>">
+                  <%= locale === 'ar' ? cat.nameAr : cat.name %>
+                </option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('sell.city') %>
+                <span class="required">*</span>
+              </label>
+              <select name="city" class="select" required>
+                <option value="">--</option>
+                <% cities.forEach(c => { %>
+                <option value="<%= c %>"><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">
+              <%= t('sell.images') %>
+              <span class="required">*</span>
+            </label>
+            <input
+              type="file"
+              name="images"
+              class="input"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label"><%= t('sell.tags') %></label>
+            <input
+              type="text"
+              name="tags"
+              class="input"
+              placeholder="<%= locale === 'ar' ? 'مفصولة بفاصلة' : 'comma separated' %>"
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg mt-2">
+            <%= t('sell.submit') %>
+          </button>
+        </form>
       </div>
-      <div class="form-row">
-        <div class="form-group"><label><%= t('whale.desc_en') %> *</label><textarea name="description" required minlength="3" rows="4"></textarea></div>
-        <div class="form-group"><label><%= t('whale.desc_ar') %></label><textarea name="descriptionAr" rows="4" dir="rtl"></textarea></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label><%= t('whale.category') %></label>
-          <select name="categoryId" id="categorySelect">
-            <option value=""><%= t('whale.select_category') %></option>
-            <% categories.forEach(cat => { %>
-            <option value="<%= cat.id %>" data-subs='<%= JSON.stringify(cat.subcategories || []) %>'><%= lang === 'ar' ? cat.nameAr : cat.name %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="form-group">
-          <label><%= t('whale.subcategory') %></label>
-          <select name="subcategoryId" id="subcategorySelect"><option value="">—</option></select>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label><%= t('whale.city') %> *</label>
-          <select name="city" required>
-            <option value=""><%= t('whale.select_city') %></option>
-            <% cities.forEach(c => { %>
-            <option value="<%= c.value %>"><%= c.name %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="form-group"><label><%= t('whale.price') %> (₪) *</label><input type="number" name="price" required min="1" max="1000000"></div>
-        <div class="form-group"><label><%= t('whale.quantity') %></label><input type="number" name="quantity" value="1" min="1" max="999"></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label><%= t('whale.condition') %></label>
-          <select name="condition">
-            <% ['NEW','LIKE_NEW','USED','GOOD','FAIR','FOR_PARTS'].forEach(c => { %>
-            <option value="<%= c %>" <%= c === 'GOOD' ? 'selected' : '' %>><%= t('condition.' + c.toLowerCase()) %></option>
-            <% }) %>
-          </select>
-        </div>
-        <div class="form-group"><label><%= t('whale.tags') %></label><input type="text" name="tags" placeholder="tag1, tag2, tag3"></div>
-      </div>
-      <div class="form-group"><label><%= t('whale.specs') %></label><textarea name="specs" rows="3" placeholder='{"CPU": "i7", "RAM": "16GB"}'></textarea></div>
-      <div class="form-group checkbox-group">
-        <label><input type="checkbox" name="negotiable"> <%= t('whale.negotiable') %></label>
-      </div>
-      <div class="form-group">
-        <label><%= t('whale.images') %> * (max 6)</label>
-        <input type="file" name="images" accept="image/*" multiple required>
-      </div>
-      <button type="submit" class="btn btn-primary btn-lg"><%= t('whale.publish') %></button>
-    </form>
+    </div>
   </div>
 </main>
 <%- include('../partials/footer') %>

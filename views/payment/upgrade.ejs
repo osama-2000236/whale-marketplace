@@ -1,63 +1,54 @@
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>">
-<head><%- include('../partials/head') %></head>
-<body class="<%= bodyClass %>">
+<%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-  <div class="page-container">
-    <h1><%= t('payment.upgrade_to_pro') %></h1>
-
-    <div class="pricing-cards">
-      <div class="pricing-card">
-        <h2><%= t('payment.monthly') %></h2>
-        <div class="pricing-amount">&#8362;29<span>/<%= t('payment.month') %></span></div>
-        <ul class="pricing-features">
-          <li><%= t('payment.feature_listings') %></li>
-          <li><%= t('payment.feature_priority') %></li>
-          <li><%= t('payment.feature_badge') %></li>
-          <li><%= t('payment.feature_analytics') %></li>
-        </ul>
-        <form method="post" action="/payment/start" class="whale-form">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="months" value="1">
-          <input type="hidden" name="provider" value="paymob">
-          <button type="submit" class="btn btn-primary btn-lg btn-block"><%= t('payment.pay_paymob') %></button>
-        </form>
-        <form method="post" action="/payment/start" class="whale-form" style="margin-top:8px;">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="months" value="1">
-          <input type="hidden" name="provider" value="paypal">
-          <button type="submit" class="btn btn-outline btn-lg btn-block"><%= t('payment.pay_paypal') %></button>
-        </form>
-      </div>
-
-      <div class="pricing-card featured">
-        <div class="pricing-badge"><%= t('payment.best_value') %></div>
-        <h2><%= t('payment.yearly') %></h2>
-        <div class="pricing-amount">&#8362;249<span>/<%= t('payment.year') %></span></div>
-        <div class="pricing-savings"><%= t('payment.save_30') %></div>
-        <ul class="pricing-features">
-          <li><%= t('payment.feature_listings') %></li>
-          <li><%= t('payment.feature_priority') %></li>
-          <li><%= t('payment.feature_badge') %></li>
-          <li><%= t('payment.feature_analytics') %></li>
-        </ul>
-        <form method="post" action="/payment/start" class="whale-form">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="months" value="12">
-          <input type="hidden" name="provider" value="paymob">
-          <button type="submit" class="btn btn-primary btn-lg btn-block"><%= t('payment.pay_paymob') %></button>
-        </form>
-        <form method="post" action="/payment/start" class="whale-form" style="margin-top:8px;">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="months" value="12">
-          <input type="hidden" name="provider" value="paypal">
-          <button type="submit" class="btn btn-outline btn-lg btn-block"><%= t('payment.pay_paypal') %></button>
-        </form>
-      </div>
+  <div class="container" style="max-width: 800px">
+    <%- include('../partials/flash') %>
+    <div class="text-center mb-3">
+      <h1><%= t('upgrade.title') %></h1>
+      <p class="text-muted"><%= t('upgrade.subtitle') %></p>
+      <% if (user.subscription) { %>
+      <p class="text-sm">
+        <%= t('upgrade.current_plan') %>:
+        <span class="badge badge-info"><%= user.subscription.plan %></span>
+      </p>
+      <% } %>
     </div>
 
-    <%- include('../partials/trust-box') %>
+    <div class="grid-stats" style="grid-template-columns: repeat(3, 1fr)">
+      <% [[1,'$5','upgrade.monthly'],[6,'$25','upgrade.semiannual'],[12,'$45','upgrade.annual']].forEach(([months,price,key]) => { %>
+      <div class="card text-center" style="padding: 2rem">
+        <h3><%= t(key) %></h3>
+        <div style="font-size: 2.5rem; font-weight: 800; color: var(--brand); margin: 1rem 0">
+          <%= price %>
+        </div>
+        <p class="text-muted text-sm mb-2">
+          <%= months %> <%= locale === 'ar' ? 'شهر' : 'months' %>
+        </p>
+
+        <form method="POST" action="/upgrade/paymob" style="margin-bottom: 0.5rem">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="planMonths" value="<%= months %>" />
+          <button type="submit" class="btn btn-primary btn-block">
+            <%= t('upgrade.pay_paymob') %>
+          </button>
+        </form>
+        <form method="POST" action="/upgrade/stripe" style="margin-bottom: 0.5rem">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="planMonths" value="<%= months %>" />
+          <button type="submit" class="btn btn-secondary btn-block">
+            <%= locale === 'ar' ? '💳 فيزا / ماستركارد' : '💳 Visa / Mastercard' %>
+          </button>
+        </form>
+        <form method="POST" action="/upgrade/paypal">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="planMonths" value="<%= months %>" />
+          <button type="submit" class="btn btn-ghost btn-block">
+            <%= t('upgrade.pay_paypal') %>
+          </button>
+        </form>
+      </div>
+      <% }) %>
+    </div>
   </div>
 </main>
 <%- include('../partials/footer') %>

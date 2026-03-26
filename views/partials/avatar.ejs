@@ -1,7 +1,0 @@
-<% if (typeof avatarUser !== 'undefined' && avatarUser) { %>
-  <% if (avatarUser.avatar) { %>
-  <img src="<%= avatarUser.avatar %>" alt="<%= avatarUser.username %>" class="avatar <%= typeof avatarSize !== 'undefined' ? avatarSize : 'avatar-md' %>">
-  <% } else { %>
-  <span class="avatar avatar-initials <%= typeof avatarSize !== 'undefined' ? avatarSize : 'avatar-md' %>"><%= avatarUser.username.charAt(0).toUpperCase() %></span>
-  <% } %>
-<% } %>

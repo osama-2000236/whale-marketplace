@@ -1,65 +1,104 @@
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>">
-<head><%- include('../partials/head') %></head>
-<body class="<%= bodyClass %>">
+<%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-  <div class="form-page checkout-page">
-    <h1><%= t('whale.checkout') %></h1>
+  <div class="container" style="max-width: 720px">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('checkout.title') %></h1>
+    </div>
 
-    <div class="checkout-layout">
-      <div class="checkout-form">
-        <form method="post" action="/whale/listing/<%= listing.id %>/buy" class="whale-form">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start">
+      <!-- Order form -->
+      <div class="card">
+        <div class="card-body">
+          <form method="POST" action="/whale/checkout/<%= listing.id %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
-          <h3><%= t('whale.shipping_method') %></h3>
-          <div class="radio-group">
-            <label><input type="radio" name="shippingMethod" value="hand_to_hand" checked> <%= t('whale.hand_to_hand') %></label>
-            <label><input type="radio" name="shippingMethod" value="self_pickup"> <%= t('whale.self_pickup') %></label>
-            <label><input type="radio" name="shippingMethod" value="company"> <%= t('whale.company_shipping') %></label>
-          </div>
-
-          <div id="addressFields" style="display:none;">
-            <h3><%= t('whale.shipping_address') %></h3>
-            <div class="form-group"><label><%= t('whale.buyer_name') %></label><input type="text" name="buyerName"></div>
-            <div class="form-group"><label><%= t('whale.phone') %></label><input type="tel" name="buyerPhone"></div>
+            <h3 class="mb-2"><%= t('checkout.shipping') %></h3>
             <div class="form-group">
-              <label><%= t('whale.city') %></label>
-              <select name="buyerCity"><% cities.forEach(c => { %><option value="<%= c.value %>"><%= c.name %></option><% }) %></select>
+              <label class="form-label">
+                <%= t('checkout.street') %>
+                <span class="required">*</span>
+              </label>
+              <input type="text" name="street" class="input" required />
             </div>
-            <div class="form-group"><label><%= t('whale.address') %></label><textarea name="buyerAddress" rows="2"></textarea></div>
-            <% if (shippingCos && shippingCos.length) { %>
             <div class="form-group">
-              <label><%= t('whale.shipping_company') %></label>
-              <select name="shippingCompany">
-                <% shippingCos.forEach(sc => { %>
-                <option value="<%= sc.name %>"><%= lang === 'ar' ? sc.nameAr : sc.name %> — ₪<%= sc.basePrice %></option>
+              <label class="form-label">
+                <%= t('checkout.city') %>
+                <span class="required">*</span>
+              </label>
+              <select name="city" class="select" required>
+                <% cities.forEach(c => { %>
+                <option value="<%= c %>"><%= c %></option>
                 <% }) %>
               </select>
             </div>
-            <% } %>
-          </div>
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('checkout.phone') %>
+                <span class="required">*</span>
+              </label>
+              <input type="tel" name="phone" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('checkout.note') %></label>
+              <textarea name="buyerNote" class="textarea" rows="3" maxlength="500"></textarea>
+            </div>
 
-          <h3><%= t('whale.payment_method') %></h3>
-          <div class="radio-group">
-            <label><input type="radio" name="paymentMethod" value="cod" checked> <%= t('whale.cod') %></label>
-            <label><input type="radio" name="paymentMethod" value="card"> <%= t('whale.card') %></label>
-          </div>
+            <h3 class="mb-2 mt-2"><%= t('checkout.payment') %></h3>
+            <div class="form-group">
+              <select name="paymentMethod" class="select">
+                <option value="manual">
+                  <%= locale === 'ar' ? 'دفع يدوي / عند الاستلام' : 'Manual / Cash on Delivery' %>
+                </option>
+                <option value="paymob">Paymob</option>
+                <option value="paypal">PayPal</option>
+              </select>
+            </div>
 
-          <div class="form-group"><label><%= t('whale.buyer_note') %></label><textarea name="buyerNote" rows="2"></textarea></div>
-          <input type="hidden" name="quantity" value="1">
-
-          <button type="submit" class="btn btn-primary btn-lg btn-block"><%= t('whale.place_order') %></button>
-        </form>
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-2">
+              <%= t('checkout.place_order') %>
+            </button>
+          </form>
+        </div>
       </div>
 
-      <div class="checkout-summary">
-        <div class="summary-card">
-          <img src="<%= listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png' %>" alt="">
-          <h3><%= listing.title %></h3>
-          <div class="summary-price">₪<%= listing.price %></div>
+      <!-- Order summary -->
+      <div class="card">
+        <div class="card-body">
+          <h3 class="mb-2"><%= locale === 'ar' ? 'ملخص الطلب' : 'Order Summary' %></h3>
+          <div style="display: flex; gap: 1rem; margin-bottom: 1rem">
+            <% if (listing.images && listing.images.length > 0) { %>
+            <img
+              src="<%= listing.images[0] %>"
+              alt=""
+              style="width: 80px; height: 60px; object-fit: cover; border-radius: var(--radius-md)"
+            />
+            <% } %>
+            <div>
+              <div style="font-weight: 600">
+                <%= locale === 'ar' && listing.titleAr ? listing.titleAr : listing.title %>
+              </div>
+              <div class="text-sm text-muted"><%= listing.city %></div>
+            </div>
+          </div>
+          <div
+            style="
+              border-top: 1px solid var(--border-light);
+              padding-top: 1rem;
+              display: flex;
+              justify-content: space-between;
+              font-size: 1.25rem;
+              font-weight: 700;
+            "
+          >
+            <span><%= t('checkout.total') %></span>
+            <span class="text-brand">$<%= parseFloat(listing.price).toLocaleString() %></span>
+          </div>
+          <p class="text-sm text-muted mt-2">
+            🛡️ <%= locale === 'ar' ? 'أموالك محمية حتى تأكيد الاستلام' : 'Your money is protected until delivery confirmation' %>
+          </p>
         </div>
-        <%- include('../partials/trust-box') %>
       </div>
     </div>
   </div>

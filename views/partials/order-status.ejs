@@ -1,0 +1,4 @@
+<% const statusColors = { PENDING: 'warning', CONFIRMED: 'info', SHIPPED: 'info', DELIVERED:
+'success', COMPLETED: 'success', CANCELLED: 'danger', DISPUTED: 'danger' }; const color =
+statusColors[status] || 'neutral'; %>
+<span class="badge badge-<%= color %>"><%= t('status.' + status) %></span>

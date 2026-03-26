@@ -1,22 +1,18 @@
-<!DOCTYPE html>
-<html lang="<%= typeof lang !== 'undefined' ? lang : 'en' %>" dir="<%= typeof dir !== 'undefined' ? dir : 'ltr' %>">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= typeof t === 'function' ? t('error.title') : 'Error' %></title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/WHALE_UI_SYSTEM_V2.css">
-  <% if (typeof csrfToken !== 'undefined' && csrfToken) { %><meta name="csrf-token" content="<%= csrfToken %>"><% } %>
-</head>
-<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
+<%- include('partials/head') %>
+<%- include('partials/navbar') %>
 <main class="main-content">
-  <div class="page-container">
-    <div class="error-page">
-      <h1><%= typeof status !== 'undefined' ? status : 500 %></h1>
-      <p><%= typeof message !== 'undefined' ? message : (typeof t === 'function' ? t('error.generic') : 'Something went wrong') %></p>
-      <a href="/whale" class="btn btn-primary"><%= typeof t === 'function' ? t('whale.browse') : 'Go Home' %></a>
+  <div class="container">
+    <div class="empty-state">
+      <div class="empty-state-icon">⚠️</div>
+      <h3>
+        <%= t('general.error') %>
+        (
+        <%= status %>
+        )
+      </h3>
+      <p><%= message %></p>
+      <a href="/" class="btn btn-primary"><%= t('general.back') %></a>
     </div>
   </div>
 </main>
-</body>
-</html>
+<%- include('partials/footer') %>

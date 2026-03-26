@@ -1,43 +1,27 @@
-function sanitizeText(input, maxLen = 5000) {
-  if (typeof input !== 'string') return '';
-  return input
-    .replace(/<[^>]*>/g, '')
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-    .trim()
-    .slice(0, maxLen);
+function strip(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/<[^>]*>/g, '').trim();
 }
 
-function sanitizeInt(input, { min = 0, max = Number.MAX_SAFE_INTEGER, defaultVal = 0 } = {}) {
-  const n = parseInt(input, 10);
-  if (Number.isNaN(n)) return defaultVal;
-  return Math.max(min, Math.min(max, n));
+function truncate(str, maxLen) {
+  if (typeof str !== 'string') return '';
+  return str.length > maxLen ? str.slice(0, maxLen) : str;
 }
 
-function sanitizeSlug(input, maxLen = 120) {
-  if (!input) return '';
-  return String(input)
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, '')
-    .slice(0, maxLen);
+function sanitizeBody(body, schema) {
+  const clean = {};
+  for (const [key, maxLen] of Object.entries(schema)) {
+    if (body[key] !== undefined && body[key] !== null) {
+      if (typeof body[key] === 'string') {
+        clean[key] = truncate(strip(body[key]), maxLen);
+      } else if (typeof body[key] === 'number' || typeof body[key] === 'boolean') {
+        clean[key] = body[key];
+      } else {
+        clean[key] = body[key];
+      }
+    }
+  }
+  return clean;
 }
 
-function sanitizePhone(input) {
-  if (!input) return '';
-  return String(input).replace(/[^\d+\-() ]/g, '').trim();
-}
-
-function isValidEmail(input) {
-  if (!input) return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(input).trim());
-}
-
-function sanitizeTags(input, maxTags = 10, maxLen = 40) {
-  if (!input || (typeof input !== 'string' && !Array.isArray(input))) return [];
-  const raw = Array.isArray(input) ? input : input.split(',');
-  return raw
-    .map((t) => sanitizeText(t, maxLen).toLowerCase())
-    .filter((t) => t.length > 0)
-    .slice(0, maxTags);
-}
-
-module.exports = { sanitizeText, sanitizeInt, sanitizeSlug, sanitizePhone, isValidEmail, sanitizeTags };
+module.exports = { strip, truncate, sanitizeBody };

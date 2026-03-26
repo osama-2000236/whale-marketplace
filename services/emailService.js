@@ -1,170 +1,112 @@
-let transport = null;
-
-function getTransport() {
-  if (transport !== null) return transport;
-
-  if (process.env.SENDGRID_API_KEY) {
-    try {
-      const sgMail = require('@sendgrid/mail');
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      transport = { type: 'sendgrid', client: sgMail };
-      return transport;
-    } catch (_e) { /* fall through */ }
-  }
-
-  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-    try {
-      const nodemailer = require('nodemailer');
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587', 10),
-        secure: process.env.SMTP_PORT === '465',
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-      });
-      transport = { type: 'smtp', client: transporter };
-      return transport;
-    } catch (_e) { /* fall through */ }
-  }
-
-  transport = { type: 'none', client: null };
-  return transport;
-}
-
-const FROM = process.env.EMAIL_FROM || 'noreply@whale.ps';
-const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Whale · الحوت';
-
-function wrap(content, preheader = '') {
-  return `<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
-<body style="margin:0;padding:0;background:#f4f7fa;font-family:Tajawal,Arial,sans-serif;">
-${preheader ? `<div style="display:none;max-height:0;overflow:hidden;">${preheader}</div>` : ''}
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f7fa;padding:32px 0;">
-<tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-<tr><td style="background:#1472a3;padding:24px;text-align:center;">
-<span style="font-size:28px;color:#fff;font-weight:bold;">🐳 Whale</span>
-</td></tr>
-<tr><td style="padding:32px 24px;">${content}</td></tr>
-<tr><td style="padding:16px 24px;text-align:center;color:#888;font-size:12px;border-top:1px solid #eee;">
-<p>Whale · الحوت — السوق الكبير</p>
-<a href="${process.env.SITE_URL || 'https://whale.ps'}/unsubscribe" style="color:#888;">إلغاء الاشتراك</a>
-</td></tr>
-</table>
-</td></tr></table>
-</body></html>`;
-}
-
-async function send(to, subject, html) {
-  const t = getTransport();
-  if (t.type === 'none') return;
-
-  try {
-    if (t.type === 'sendgrid') {
-      await t.client.send({ to, from: { email: FROM, name: FROM_NAME }, subject, html });
-    } else if (t.type === 'smtp') {
-      await t.client.sendMail({ from: `"${FROM_NAME}" <${FROM}>`, to, subject, html });
-    }
-  } catch (e) {
-    console.error('[Email] Failed to send:', e.message);
-  }
-}
+const { sendMail, emailTemplate } = require('../lib/mailer');
 
 async function sendWelcome(user) {
-  const html = wrap(`
-    <h2 style="color:#1472a3;">مرحباً ${user.username}! 🎉</h2>
-    <p>أهلاً بك في Whale — السوق الكبير.</p>
-    <p>حسابك جاهز مع <strong>30 يوم Pro مجاناً</strong>!</p>
-    <p>ابدأ الآن بإضافة أول إعلان لك:</p>
-    <p style="text-align:center;margin:24px 0;">
-      <a href="${process.env.SITE_URL || ''}/whale/sell" style="background:#1472a3;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;">أضف إعلان</a>
-    </p>
-  `, 'مرحباً بك في Whale!');
-  await send(user.email, 'مرحباً بك في Whale! 🐳', html);
+  sendMail({
+    to: user.email,
+    subject: 'مرحباً بك في الحوت | Welcome to Whale',
+    html: emailTemplate({
+      titleAr: 'مرحباً بك في الحوت!',
+      titleEn: 'Welcome to Whale!',
+      bodyAr: `مرحباً ${user.username}، تم إنشاء حسابك بنجاح. يمكنك الآن تصفح المنتجات والبدء بالبيع والشراء بأمان.`,
+      bodyEn: `Hi ${user.username}, your account has been created successfully. You can now browse listings and start buying and selling safely.`,
+    }),
+  }).catch(() => {});
 }
 
-async function sendOrderPlaced(order, buyer, listing) {
-  if (buyer?.email) {
-    const html = wrap(`
-      <h2>تم إنشاء الطلب #${order.orderNumber}</h2>
-      <p>المنتج: <strong>${listing.title}</strong></p>
-      <p>المبلغ: <strong>₪${order.amount}</strong></p>
-      <p>أموالك محفوظة حتى تؤكد الاستلام.</p>
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${process.env.SITE_URL || ''}/whale/orders/${order.id}" style="background:#1472a3;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;">تتبع الطلب</a>
-      </p>
-    `);
-    await send(buyer.email, `طلب جديد #${order.orderNumber}`, html);
+async function sendOrderPlaced(order) {
+  if (!order.seller) return;
+  sendMail({
+    to: order.seller.email,
+    subject: `طلب جديد #${order.orderNumber} | New Order`,
+    html: emailTemplate({
+      titleAr: 'لديك طلب جديد!',
+      titleEn: 'You have a new order!',
+      bodyAr: `تم استلام طلب جديد برقم ${order.orderNumber}. يرجى مراجعة الطلب وتأكيده.`,
+      bodyEn: `A new order #${order.orderNumber} has been placed. Please review and confirm it.`,
+    }),
+  }).catch(() => {});
+}
+
+async function sendOrderConfirmed(order) {
+  if (!order.buyer) return;
+  sendMail({
+    to: order.buyer.email,
+    subject: `تم تأكيد طلبك #${order.orderNumber} | Order Confirmed`,
+    html: emailTemplate({
+      titleAr: 'تم تأكيد طلبك',
+      titleEn: 'Your order has been confirmed',
+      bodyAr: `تم تأكيد طلبك رقم ${order.orderNumber} من قبل البائع. سيتم شحنه قريباً.`,
+      bodyEn: `Your order #${order.orderNumber} has been confirmed by the seller. It will be shipped soon.`,
+    }),
+  }).catch(() => {});
+}
+
+async function sendOrderShipped(order) {
+  if (!order.buyer) return;
+  const tracking = order.trackingNumber ? ` (${order.trackingNumber})` : '';
+  sendMail({
+    to: order.buyer.email,
+    subject: `تم شحن طلبك #${order.orderNumber} | Order Shipped`,
+    html: emailTemplate({
+      titleAr: 'تم شحن طلبك',
+      titleEn: 'Your order has been shipped',
+      bodyAr: `تم شحن طلبك رقم ${order.orderNumber}${tracking}. يرجى تأكيد الاستلام عند وصوله.`,
+      bodyEn: `Your order #${order.orderNumber} has been shipped${tracking}. Please confirm delivery when it arrives.`,
+    }),
+  }).catch(() => {});
+}
+
+async function sendOrderCompleted(order) {
+  const emails = [];
+  if (order.buyer) {
+    emails.push(
+      sendMail({
+        to: order.buyer.email,
+        subject: `اكتمل الطلب #${order.orderNumber} | Order Completed`,
+        html: emailTemplate({
+          titleAr: 'اكتمل طلبك',
+          titleEn: 'Your order is complete',
+          bodyAr: `تم إكمال طلبك رقم ${order.orderNumber} بنجاح. شكراً لثقتك بالحوت!`,
+          bodyEn: `Your order #${order.orderNumber} is now complete. Thank you for using Whale!`,
+        }),
+      }).catch(() => {})
+    );
   }
-
-  // Notify seller
-  if (listing.seller?.email) {
-    const sellerHtml = wrap(`
-      <h2>طلب جديد! 🎉</h2>
-      <p>طلب جديد #${order.orderNumber} على "${listing.title}"</p>
-      <p>المبلغ: <strong>₪${order.amount}</strong></p>
-      <p style="text-align:center;margin:24px 0;">
-        <a href="${process.env.SITE_URL || ''}/whale/orders/${order.id}" style="background:#1472a3;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;">عرض الطلب</a>
-      </p>
-    `);
-    await send(listing.seller.email, `طلب جديد #${order.orderNumber}`, sellerHtml);
+  if (order.seller) {
+    emails.push(
+      sendMail({
+        to: order.seller.email,
+        subject: `اكتمل الطلب #${order.orderNumber} | Order Completed`,
+        html: emailTemplate({
+          titleAr: 'اكتمل البيع',
+          titleEn: 'Sale complete',
+          bodyAr: `تم إكمال الطلب رقم ${order.orderNumber}. تهانينا!`,
+          bodyEn: `Order #${order.orderNumber} is now complete. Congratulations!`,
+        }),
+      }).catch(() => {})
+    );
   }
-}
-
-async function sendOrderConfirmed(order, buyer) {
-  if (!buyer?.email) return;
-  const html = wrap(`
-    <h2>تم تأكيد طلبك #${order.orderNumber} ✅</h2>
-    <p>البائع أكد الطلب وسيتم شحنه قريباً.</p>
-  `);
-  await send(buyer.email, `تم تأكيد الطلب #${order.orderNumber}`, html);
-}
-
-async function sendOrderShipped(order, buyer, trackingNumber, shippingCompany) {
-  if (!buyer?.email) return;
-  const html = wrap(`
-    <h2>طلبك في الطريق! 📦</h2>
-    <p>الطلب #${order.orderNumber} تم شحنه.</p>
-    ${trackingNumber ? `<p>رقم التتبع: <strong>${trackingNumber}</strong></p>` : ''}
-    ${shippingCompany ? `<p>شركة الشحن: <strong>${shippingCompany}</strong></p>` : ''}
-  `);
-  await send(buyer.email, `طلبك #${order.orderNumber} تم شحنه`, html);
-}
-
-async function sendOrderCompleted(order, seller) {
-  if (!seller?.email) return;
-  const html = wrap(`
-    <h2>تم إتمام الطلب! 💰</h2>
-    <p>الطلب #${order.orderNumber} مكتمل والمبلغ ₪${order.amount} تم تحريره لحسابك.</p>
-  `);
-  await send(seller.email, `تم إتمام الطلب #${order.orderNumber}`, html);
+  await Promise.allSettled(emails);
 }
 
 async function sendTrialEnding(user, daysLeft) {
-  if (!user?.email) return;
-  const html = wrap(`
-    <h2>اشتراكك Pro ينتهي قريباً ⏰</h2>
-    <p>متبقي <strong>${daysLeft} أيام</strong> على انتهاء الفترة التجريبية.</p>
-    <p style="text-align:center;margin:24px 0;">
-      <a href="${process.env.SITE_URL || ''}/upgrade" style="background:#1472a3;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;">جدد الآن</a>
-    </p>
-  `);
-  await send(user.email, 'اشتراكك Pro ينتهي قريباً', html);
-}
-
-async function sendPasswordReset(user, resetToken) {
-  if (!user?.email) return;
-  const html = wrap(`
-    <h2>إعادة تعيين كلمة المرور</h2>
-    <p style="text-align:center;margin:24px 0;">
-      <a href="${process.env.SITE_URL || ''}/auth/reset-password?token=${resetToken}" style="background:#1472a3;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;">إعادة التعيين</a>
-    </p>
-    <p>إذا لم تطلب هذا، تجاهل هذا البريد.</p>
-  `);
-  await send(user.email, 'إعادة تعيين كلمة المرور — Whale', html);
+  sendMail({
+    to: user.email,
+    subject: `تنتهي فترتك التجريبية قريباً | Trial Ending Soon`,
+    html: emailTemplate({
+      titleAr: 'فترتك التجريبية تنتهي قريباً',
+      titleEn: 'Your trial is ending soon',
+      bodyAr: `تبقى ${daysLeft} أيام على انتهاء فترتك التجريبية. قم بالترقية للاستمرار في البيع.`,
+      bodyEn: `You have ${daysLeft} days left in your trial. Upgrade to continue selling.`,
+    }),
+  }).catch(() => {});
 }
 
 module.exports = {
-  send, sendWelcome, sendOrderPlaced, sendOrderConfirmed,
-  sendOrderShipped, sendOrderCompleted, sendTrialEnding, sendPasswordReset,
+  sendWelcome,
+  sendOrderPlaced,
+  sendOrderConfirmed,
+  sendOrderShipped,
+  sendOrderCompleted,
+  sendTrialEnding,
 };

@@ -1,50 +1,57 @@
-<%- include('partials/admin-header') %>
-<div class="admin-page">
-  <h1><%= t('admin.listings') %></h1>
-
-  <% if (typeof listings !== 'undefined' && listings.length) { %>
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th><%= t('admin.image') %></th>
-        <th><%= t('admin.title') %></th>
-        <th><%= t('admin.seller') %></th>
-        <th><%= t('admin.price') %></th>
-        <th><%= t('admin.status') %></th>
-        <th><%= t('admin.actions') %></th>
-      </tr>
-    </thead>
-    <tbody>
-      <% listings.forEach(listing => { %>
-      <tr>
-        <td><img src="<%= listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png' %>" alt="" class="thumb-sm"></td>
-        <td><a href="/whale/listing/<%= listing.slug || listing.id %>"><%= listing.title %></a></td>
-        <td><%= listing.seller ? listing.seller.username : '—' %></td>
-        <td>&#8362;<%= listing.price %></td>
-        <td><span class="status-badge status-<%= {active:'success',sold:'warning',suspended:'danger',draft:'neutral'}[listing.status] || 'neutral' %>"><%= listing.status %></span></td>
-        <td>
-          <% if (listing.status === 'active') { %>
-          <form method="post" action="/admin/whale/listings/<%= listing.id %>/suspend" class="inline-form">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm btn-outline btn-danger"><%= t('admin.suspend') %></button>
-          </form>
-          <% } else if (listing.status === 'suspended') { %>
-          <form method="post" action="/admin/whale/listings/<%= listing.id %>/unsuspend" class="inline-form">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm btn-outline"><%= t('admin.unsuspend') %></button>
-          </form>
-          <% } %>
-          <form method="post" action="/admin/whale/listings/<%= listing.id %>/delete" class="inline-form">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-sm btn-outline btn-danger" onclick="return confirm('<%= t("ui.confirm_delete") %>')"><%= t('admin.delete') %></button>
-          </form>
-        </td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-  <% } else { %>
-  <div class="empty-state"><h3><%= t('admin.no_listings') %></h3></div>
-  <% } %>
-</div>
-<%- include('partials/admin-footer') %>
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <div class="page-header">
+      <h1><%= t('admin.listings') %></h1>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><%= locale === 'ar' ? 'المنتج' : 'Listing' %></th>
+            <th><%= locale === 'ar' ? 'البائع' : 'Seller' %></th>
+            <th><%= locale === 'ar' ? 'السعر' : 'Price' %></th>
+            <th><%= t('order.status') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% listings.forEach(l => { %>
+          <tr>
+            <td><a href="/whale/listing/<%= l.slug %>"><%= l.title %></a></td>
+            <td><%= l.seller?.username %></td>
+            <td>
+              $
+              <%= parseFloat(l.price).toLocaleString() %>
+            </td>
+            <td>
+              <span
+                class="badge badge-<%= l.status === 'ACTIVE' ? 'success' : l.status === 'REMOVED' ? 'danger' : 'neutral' %>"
+              >
+                <%= l.status %>
+              </span>
+            </td>
+            <td>
+              <% if (l.status !== 'REMOVED') { %>
+              <form
+                method="POST"
+                action="/admin/listings/<%= l.id %>/remove"
+                style="display: inline"
+                data-confirm="Remove this listing?"
+              >
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-danger btn-sm">
+                  <%= t('admin.remove') %>
+                </button>
+              </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<%- include('../partials/footer') %>

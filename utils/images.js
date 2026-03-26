@@ -1,55 +1,59 @@
-const PLACEHOLDER_IMAGE = '/images/placeholder.png';
-const DEFAULT_WIDTHS = [210, 420, 630];
+const multer = require('multer');
+const path = require('path');
+const cloudinary = require('cloudinary').v2;
 
-function isCloudinaryUrl(url) {
-  return typeof url === 'string' && url.includes('res.cloudinary.com');
+if (process.env.CLOUDINARY_CLOUD_NAME) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
 }
 
-function transformCloudinaryUrl(url, { width, height, quality = 'auto', format = 'auto', crop = 'fill', gravity = 'auto' } = {}) {
-  if (!isCloudinaryUrl(url)) return url;
-  const parts = [`c_${crop}`, `g_${gravity}`, `q_${quality}`, `f_${format}`];
-  if (width) parts.push(`w_${width}`);
-  if (height) parts.push(`h_${height}`);
-  return url.replace('/upload/', `/upload/${parts.join(',')}/`);
-}
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, '..', 'public', 'uploads')),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    const name = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + ext;
+    cb(null, name);
+  },
+});
 
-// Backward-compatible alias
-function cloudinaryTransform(url, width, options = {}) {
-  return transformCloudinaryUrl(url, { width, ...options });
-}
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE = 5 * 1024 * 1024;
 
-function buildResponsiveImage(url, options = {}) {
-  if (!url) {
-    return { src: PLACEHOLDER_IMAGE, srcset: '', webpSrcset: '', placeholder: PLACEHOLDER_IMAGE, width: 420, height: 315 };
+const upload = multer({
+  storage,
+  limits: { fileSize: MAX_SIZE },
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are allowed'), false);
+    }
+  },
+});
+
+async function uploadToCloud(file) {
+  if (!process.env.CLOUDINARY_CLOUD_NAME) {
+    return '/uploads/' + file.filename;
   }
-
-  const widths = options.widths || DEFAULT_WIDTHS;
-  const aspectRatio = options.aspectRatio || '4:3';
-  const [aw, ah] = aspectRatio.split(':').map(Number);
-  const baseWidth = widths[1] || widths[0];
-  const height = Math.round((baseWidth * ah) / aw);
-
-  if (!isCloudinaryUrl(url)) {
-    return { src: url, srcset: '', webpSrcset: '', placeholder: url, width: baseWidth, height };
-  }
-
-  const srcset = widths
-    .map((w) => `${transformCloudinaryUrl(url, { width: w, height: Math.round((w * ah) / aw), format: 'jpg' })} ${w}w`)
-    .join(', ');
-  const webpSrcset = widths
-    .map((w) => `${transformCloudinaryUrl(url, { width: w, height: Math.round((w * ah) / aw), format: 'webp' })} ${w}w`)
-    .join(', ');
-  const sizes = options.sizes || `(max-width: 600px) ${widths[0]}px, ${widths[1]}px`;
-
-  return {
-    src: transformCloudinaryUrl(url, { width: baseWidth, height }),
-    srcset,
-    webpSrcset,
-    placeholder: transformCloudinaryUrl(url, { width: widths[0], height: Math.round((widths[0] * ah) / aw), quality: 20 }),
-    width: baseWidth,
-    height,
-    sizes,
-  };
+  const result = await cloudinary.uploader.upload(file.path, {
+    folder: 'whale',
+    transformation: [{ width: 1200, height: 1200, crop: 'limit', quality: 'auto' }],
+  });
+  const fs = require('fs');
+  fs.unlink(file.path, () => {});
+  return result.secure_url;
 }
 
-module.exports = { buildResponsiveImage, cloudinaryTransform, transformCloudinaryUrl, isCloudinaryUrl, PLACEHOLDER: PLACEHOLDER_IMAGE, PLACEHOLDER_IMAGE };
+async function processImages(files) {
+  if (!files || files.length === 0) return [];
+  const urls = [];
+  for (const file of files) {
+    urls.push(await uploadToCloud(file));
+  }
+  return urls;
+}
+
+module.exports = { upload, processImages, uploadToCloud };

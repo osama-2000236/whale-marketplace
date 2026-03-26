@@ -1,44 +1,14 @@
-<footer class="site-footer">
-  <div class="footer-grid">
-    <div class="footer-brand">
-      <h3>🐳 Whale · الحوت</h3>
-      <p><%= t('app.tagline') %></p>
-      <p class="trust-text"><%= t('app.trust_promise') %></p>
-    </div>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-copy">&copy; <%= new Date().getFullYear() %> Whale | الحوت</div>
     <div class="footer-links">
-      <h4><%= t('footer.marketplace') %></h4>
-      <ul>
-        <li><a href="/whale"><%= t('nav.marketplace') %></a></li>
-        <li><a href="/whale/sell"><%= t('whale.sell_now') %></a></li>
-        <li><a href="/pricing"><%= t('nav.pricing') %></a></li>
-      </ul>
-    </div>
-    <div class="footer-links">
-      <h4><%= t('footer.help') %></h4>
-      <ul>
-        <li><a href="/forum"><%= t('nav.forum') %></a></li>
-        <li><a href="/safety"><%= t('nav.safety') %></a></li>
-        <li><a href="/buyer-protection"><%= t('nav.buyer_protection') %></a></li>
-        <li><a href="/contact"><%= t('nav.contact') %></a></li>
-        <li><a href="/about"><%= t('nav.about') %></a></li>
-      </ul>
-    </div>
-    <div class="footer-contact">
-      <h4><%= t('footer.contact') %></h4>
-      <% if (whatsappNumber) { %>
-      <a href="https://wa.me/<%= whatsappNumber %>" target="_blank" rel="noopener"><%= t('footer.contact_wa') %></a>
-      <% } %>
-      <% if (typeof config !== 'undefined' && config.contact) { %>
-      <p><%= config.contact.email || '' %></p>
-      <% } %>
-    </div>
-  </div>
-  <div class="footer-bottom">
-    <p><%= t('app.copyright') %></p>
-    <div class="footer-legal">
-      <a href="/terms"><%= t('nav.terms') %></a>
-      <a href="/privacy"><%= t('nav.privacy') %></a>
+      <a href="/pages/about"><%= locale === 'ar' ? 'عن الحوت' : 'About' %></a>
+      <a href="/pages/terms"><%= locale === 'ar' ? 'الشروط' : 'Terms' %></a>
+      <a href="/pages/privacy"><%= locale === 'ar' ? 'الخصوصية' : 'Privacy' %></a>
+      <a href="/pages/safety"><%= locale === 'ar' ? 'الأمان' : 'Safety' %></a>
     </div>
   </div>
 </footer>
-<%- include('foot') %>
+<script src="/js/app.js"></script>
+</body>
+</html>

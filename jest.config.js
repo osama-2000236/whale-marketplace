@@ -1,23 +1,19 @@
 module.exports = {
   testEnvironment: 'node',
   testMatch: ['**/__tests__/**/*.test.js'],
-  setupFilesAfterEnv: ['./jest.setup.js'],
-  testTimeout: 15000,
-  maxWorkers: 1,
-  verbose: true,
-  collectCoverage: true,
   collectCoverageFrom: [
-    'routes/whale.js',
-    'services/whaleService.js'
+    'lib/i18n.js',
+    'middleware/auth.js',
+    'middleware/locale.js',
+    'middleware/subscription.js',
+    'services/emailService.js',
+    'services/stateMachine.js',
+    'utils/pagination.js',
+    'utils/sanitize.js',
   ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0
-    }
-  }
+      lines: 99,
+    },
+  },
 };

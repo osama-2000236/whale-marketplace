@@ -1,62 +1,74 @@
-<!DOCTYPE html>
-<html lang="<%= lang %>" dir="<%= dir %>">
-<head><%- include('../partials/head') %></head>
-<body class="<%= bodyClass %>">
+<%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-  <div class="page-container">
-    <h1><%= t('whale.seller_dashboard') %></h1>
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('dashboard.title') %></h1>
+    </div>
 
-    <div class="stats-grid">
+    <div class="grid-stats mb-3">
       <div class="stat-card">
-        <div class="stat-value"><%= stats.totalListings || 0 %></div>
-        <div class="stat-label"><%= t('whale.total_listings') %></div>
+        <div class="stat-card-value"><%= stats.totalListings %></div>
+        <div class="stat-card-label"><%= t('dashboard.total_listings') %></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value"><%= stats.activeListings || 0 %></div>
-        <div class="stat-label"><%= t('whale.active_listings') %></div>
+        <div class="stat-card-value"><%= stats.activeListings %></div>
+        <div class="stat-card-label"><%= t('dashboard.active_listings') %></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value"><%= stats.totalOrders || 0 %></div>
-        <div class="stat-label"><%= t('whale.total_orders') %></div>
+        <div class="stat-card-value"><%= stats.totalOrders %></div>
+        <div class="stat-card-label"><%= t('dashboard.total_orders') %></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">&#8362;<%= stats.totalRevenue || 0 %></div>
-        <div class="stat-label"><%= t('whale.revenue') %></div>
+        <div class="stat-card-value"><%= stats.pendingOrders %></div>
+        <div class="stat-card-label"><%= t('dashboard.pending_orders') %></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value"><%= stats.totalViews || 0 %></div>
-        <div class="stat-label"><%= t('whale.total_views') %></div>
+        <div class="stat-card-value">$<%= parseFloat(stats.totalRevenue).toLocaleString() %></div>
+        <div class="stat-card-label"><%= t('dashboard.total_revenue') %></div>
       </div>
       <div class="stat-card">
-        <div class="stat-value"><%= stats.averageRating ? stats.averageRating.toFixed(1) : '—' %></div>
-        <div class="stat-label"><%= t('whale.avg_rating') %></div>
+        <div class="stat-card-value">
+          <%= stats.avgRating > 0 ? stats.avgRating.toFixed(1) : '—' %> ★
+        </div>
+        <div class="stat-card-label">
+          <%= t('dashboard.avg_rating') %> (<%= stats.reviewCount %>)
+        </div>
       </div>
     </div>
 
-    <% if (recentOrders && recentOrders.length) { %>
-    <h2><%= t('whale.recent_orders') %></h2>
-    <div class="orders-list">
-      <% recentOrders.forEach(order => { %>
-      <a href="/whale/orders/<%= order.id %>" class="order-card">
-        <div class="order-info">
-          <h3>#<%= order.orderNumber %></h3>
-          <p class="order-amount">&#8362;<%= order.amount %></p>
-        </div>
-        <div class="order-status">
-          <% var statusColors = { PENDING: 'warning', SELLER_CONFIRMED: 'info', SHIPPED: 'info', COMPLETED: 'success', CANCELLED: 'danger', DISPUTED: 'danger' }; %>
-          <span class="status-badge status-<%= statusColors[order.orderStatus] || 'neutral' %>"><%= t('status.' + order.orderStatus.toLowerCase()) %></span>
-          <span class="order-date"><%= timeAgo(order.createdAt) %></span>
-        </div>
-      </a>
-      <% }) %>
+    <% if (stats.recentOrders.length > 0) { %>
+    <div class="card">
+      <div class="card-header"><%= t('dashboard.recent_orders') %></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th><%= t('order.number') %></th>
+              <th><%= locale === 'ar' ? 'المنتج' : 'Item' %></th>
+              <th><%= locale === 'ar' ? 'المشتري' : 'Buyer' %></th>
+              <th><%= t('order.status') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% stats.recentOrders.forEach(o => { %>
+            <tr>
+              <td>
+                <a href="/whale/orders/<%= o.id %>">
+                  <code><%= o.orderNumber.slice(-8) %></code>
+                </a>
+              </td>
+              <td><%= o.listing.title %></td>
+              <td><%= o.buyer.username %></td>
+              <td><%- include('../partials/order-status', { status: o.status }) %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
     </div>
     <% } %>
-
-    <div class="dashboard-links">
-      <a href="/whale/my-listings" class="btn btn-outline"><%= t('whale.my_listings') %></a>
-      <a href="/whale/orders?tab=selling" class="btn btn-outline"><%= t('whale.selling_orders') %></a>
-    </div>
   </div>
 </main>
 <%- include('../partials/footer') %>

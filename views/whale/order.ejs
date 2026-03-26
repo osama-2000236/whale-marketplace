@@ -1,0 +1,304 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container" style="max-width: 900px">
+    <%- include('../partials/flash') %>
+
+    <!-- Order header -->
+    <div class="flex items-center justify-between flex-wrap gap-1 mb-2">
+      <div>
+        <h1>
+          <%= t('order.number') %>
+          <%= order.orderNumber.slice(-8) %>
+        </h1>
+        <p class="text-muted text-sm"><%= new Date(order.createdAt).toLocaleDateString() %></p>
+      </div>
+      <%- include('../partials/order-status', { status: order.status }) %>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 320px; gap: 2rem; align-items: start">
+      <div>
+        <!-- Item -->
+        <div class="card mb-2">
+          <div class="card-body" style="display: flex; gap: 1rem">
+            <% if (order.listing.images && order.listing.images.length > 0) { %>
+            <img
+              src="<%= order.listing.images[0] %>"
+              alt=""
+              style="width: 100px; height: 75px; object-fit: cover; border-radius: var(--radius-md)"
+            />
+            <% } %>
+            <div>
+              <a
+                href="/whale/listing/<%= order.listing.slug || order.listing.id %>"
+                style="font-weight: 600; font-size: 1.1rem"
+              >
+                <%= order.listing.title %>
+              </a>
+              <div class="text-muted text-sm"><%= order.listing.category?.name %></div>
+              <div
+                class="text-brand"
+                style="font-weight: 700; font-size: 1.25rem; margin-top: 0.5rem"
+              >
+                $
+                <%= parseFloat(order.amount).toLocaleString() %>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div class="card mb-2">
+          <div class="card-header"><%= t('order.timeline') %></div>
+          <div class="card-body">
+            <div class="timeline">
+              <% order.events.forEach(ev => { %>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <strong><%= ev.event %></strong>
+                  <% if (ev.actor) { %>
+                  <span class="text-muted">— <%= ev.actor.username %></span>
+                  <% } %>
+                  <% if (ev.note) { %>
+                  <p class="text-sm text-muted"><%= ev.note %></p>
+                  <% } %>
+                  <div class="timeline-date"><%= new Date(ev.createdAt).toLocaleString() %></div>
+                </div>
+              </div>
+              <% }) %>
+            </div>
+          </div>
+        </div>
+
+        <!-- Review form (if completed and buyer and no review yet) -->
+        <% if (order.status === 'COMPLETED' && user.id === order.buyerId && !order.review) { %>
+        <div class="card">
+          <div class="card-header"><%= t('order.review') %></div>
+          <div class="card-body">
+            <form method="POST" action="/whale/orders/<%= order.id %>/review">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="form-group">
+                <label class="form-label">
+                  <%= locale === 'ar' ? 'التقييم' : 'Rating' %>
+                  <span class="required">*</span>
+                </label>
+                <select name="rating" class="select" required>
+                  <option value="5">★★★★★ (5)</option>
+                  <option value="4">★★★★ (4)</option>
+                  <option value="3">★★★ (3)</option>
+                  <option value="2">★★ (2)</option>
+                  <option value="1">★ (1)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'تعليق' : 'Comment' %></label>
+                <textarea name="body" class="textarea" rows="3" maxlength="1000"></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary"><%= t('order.review') %></button>
+            </form>
+          </div>
+        </div>
+        <% } %>
+        <% if (order.review) { %>
+        <div class="card">
+          <div class="card-header"><%= t('listing.reviews') %></div>
+          <div class="card-body">
+            <div class="stars mb-1">
+              <% for(let i=1;i<=5;i++){%>
+              <span class="<%= i<=order.review.rating?'':'empty'%>">★</span>
+              <%}%>
+            </div>
+            <% if (order.review.body) { %>
+            <p><%= order.review.body %></p>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- Actions sidebar -->
+      <div>
+        <!-- Seller actions -->
+        <% if (user.id === order.sellerId) { %>
+        <div class="card mb-2">
+          <div class="card-header">
+            <%= locale === 'ar' ? 'إجراءات البائع' : 'Seller Actions' %>
+          </div>
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem">
+            <% if (order.status === 'PENDING') { %>
+            <form method="POST" action="/whale/orders/<%= order.id %>/confirm">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-success btn-block">
+                <%= t('order.confirm') %>
+              </button>
+            </form>
+            <% } %>
+            <% if (order.status === 'CONFIRMED') { %>
+            <form method="POST" action="/whale/orders/<%= order.id %>/ship">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="form-group">
+                <input
+                  type="text"
+                  name="trackingNumber"
+                  class="input"
+                  placeholder="<%= t('order.tracking') %>"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <input
+                  type="text"
+                  name="shippingCompany"
+                  class="input"
+                  placeholder="<%= locale === 'ar' ? 'شركة الشحن' : 'Shipping Company' %>"
+                />
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">
+                <%= t('order.ship') %>
+              </button>
+            </form>
+            <% } %>
+            <% if (['PENDING','CONFIRMED'].includes(order.status)) { %>
+            <form
+              method="POST"
+              action="/whale/orders/<%= order.id %>/cancel"
+              data-confirm="<%= locale === 'ar' ? 'هل أنت متأكد؟' : 'Are you sure?' %>"
+            >
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <input
+                type="text"
+                name="reason"
+                class="input mb-1"
+                placeholder="<%= t('order.cancel_reason') %>"
+                required
+              />
+              <button type="submit" class="btn btn-danger btn-block">
+                <%= t('order.cancel') %>
+              </button>
+            </form>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Buyer actions -->
+        <% if (user.id === order.buyerId) { %>
+        <div class="card mb-2">
+          <div class="card-header">
+            <%= locale === 'ar' ? 'إجراءات المشتري' : 'Buyer Actions' %>
+          </div>
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem">
+            <% if (['SHIPPED','DELIVERED'].includes(order.status)) { %>
+            <form method="POST" action="/whale/orders/<%= order.id %>/deliver">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-success btn-block">
+                <%= t('order.deliver') %>
+              </button>
+            </form>
+            <form method="POST" action="/whale/orders/<%= order.id %>/dispute">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-danger btn-block">
+                <%= t('order.dispute') %>
+              </button>
+            </form>
+            <% } %>
+            <% if (['PENDING','CONFIRMED'].includes(order.status)) { %>
+            <form
+              method="POST"
+              action="/whale/orders/<%= order.id %>/cancel"
+              data-confirm="<%= locale === 'ar' ? 'هل أنت متأكد؟' : 'Are you sure?' %>"
+            >
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <input
+                type="text"
+                name="reason"
+                class="input mb-1"
+                placeholder="<%= t('order.cancel_reason') %>"
+                required
+              />
+              <button type="submit" class="btn btn-danger btn-block">
+                <%= t('order.cancel') %>
+              </button>
+            </form>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Admin actions -->
+        <% if (user.role === 'ADMIN' && order.status === 'DISPUTED') { %>
+        <div class="card mb-2">
+          <div class="card-header"><%= t('order.resolve') %></div>
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 0.75rem">
+            <form method="POST" action="/admin/orders/<%= order.id %>/resolve">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <input type="hidden" name="resolution" value="complete" />
+              <button type="submit" class="btn btn-success btn-block">
+                <%= locale === 'ar' ? 'إكمال لصالح المشتري' : 'Complete (buyer wins)' %>
+              </button>
+            </form>
+            <form method="POST" action="/admin/orders/<%= order.id %>/resolve">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <input type="hidden" name="resolution" value="cancel" />
+              <button type="submit" class="btn btn-danger btn-block">
+                <%= locale === 'ar' ? 'إلغاء وإرجاع المبلغ' : 'Cancel (refund buyer)' %>
+              </button>
+            </form>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Shipping info -->
+        <% if (order.trackingNumber) { %>
+        <div class="card mb-2">
+          <div class="card-header"><%= locale === 'ar' ? 'معلومات الشحن' : 'Shipping Info' %></div>
+          <div class="card-body">
+            <p>
+              <strong>
+                <%= t('order.tracking') %>
+                :
+              </strong>
+              <%= order.trackingNumber %>
+            </p>
+            <% if (order.shippingCompany) { %>
+            <p>
+              <strong>
+                <%= locale === 'ar' ? 'شركة الشحن' : 'Carrier' %>
+                :
+              </strong>
+              <%= order.shippingCompany %>
+            </p>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+
+        <!-- Participants -->
+        <div class="card">
+          <div class="card-body">
+            <div class="seller-info" style="margin-bottom: 0.75rem">
+              <div class="avatar avatar-sm">
+                <%= order.seller.username.charAt(0).toUpperCase() %>
+              </div>
+              <div>
+                <div class="text-sm"><%= locale === 'ar' ? 'البائع' : 'Seller' %></div>
+                <div style="font-weight: 600"><%= order.seller.username %></div>
+              </div>
+            </div>
+            <div class="seller-info" style="margin-bottom: 0">
+              <div class="avatar avatar-sm">
+                <%= order.buyer.username.charAt(0).toUpperCase() %>
+              </div>
+              <div>
+                <div class="text-sm"><%= locale === 'ar' ? 'المشتري' : 'Buyer' %></div>
+                <div style="font-weight: 600"><%= order.buyer.username %></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<%- include('../partials/footer') %>
