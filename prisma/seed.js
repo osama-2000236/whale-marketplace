@@ -25,7 +25,7 @@ async function main() {
   const demoHash = await bcrypt.hash('Demo1234!', 12);
 
   // --- Users ---
-  const admin = await prisma.user.create({
+  await prisma.user.create({
     data: {
       username: 'admin',
       slug: 'admin',
@@ -171,9 +171,6 @@ async function main() {
   console.log('[seed] Subcategories created');
 
   // --- Listings ---
-  const cities = ['Gaza', 'Ramallah', 'Nablus', 'Hebron', 'Jenin', 'Jerusalem'];
-  const conditions = ['NEW', 'LIKE_NEW', 'GOOD', 'USED'];
-
   const listingData = [
     {
       title: 'iPhone 15 Pro Max',

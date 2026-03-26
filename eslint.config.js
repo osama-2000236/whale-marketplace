@@ -26,11 +26,12 @@ module.exports = [
         clearTimeout: 'readonly',
         setInterval: 'readonly',
         clearInterval: 'readonly',
+        URL: 'readonly',
       },
     },
     rules: {
       'no-undef': 'error',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', { argsIgnorePattern: '^_|^next$' }],
     },
   },
   {
@@ -44,6 +45,7 @@ module.exports = [
         location: 'readonly',
         fetch: 'readonly',
         URLSearchParams: 'readonly',
+        URL: 'readonly',
       },
     },
   },
@@ -60,6 +62,19 @@ module.exports = [
         afterEach: 'readonly',
         jest: 'readonly',
       },
+    },
+  },
+  {
+    files: ['qa.uiux.spec.js'],
+    languageOptions: {
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        performance: 'readonly',
+      },
+    },
+    rules: {
+      'no-unused-vars': 'off',
     },
   },
 ];
