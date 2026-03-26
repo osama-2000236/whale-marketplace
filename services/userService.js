@@ -1,5 +1,5 @@
 const prisma = require('../lib/prisma');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const slugify = require('slugify');
 const emailService = require('./emailService');
 
