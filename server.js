@@ -125,10 +125,11 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // 13. Global rate limit
+const isTestEnv = process.env.NODE_ENV === 'test';
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: isTestEnv ? 1_000_000 : 300,
     standardHeaders: true,
     legacyHeaders: false,
   })

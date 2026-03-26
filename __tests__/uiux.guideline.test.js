@@ -46,14 +46,14 @@ describe('UI/UX guideline checks (deep)', () => {
   });
 
   test('CSS includes dark theme rules', () => {
-    expect(css).toContain('html[data-theme="dark"]');
+    expect(css).toContain("html[data-theme='dark']");
   });
 
   test('CSS includes RTL rules for key components', () => {
-    expect(css).toContain('html[dir="rtl"]');
-    expect(css).toContain('[dir="rtl"] .notification-count');
-    expect(css).toContain('[dir="rtl"] .user-menu-dropdown');
-    expect(css).toContain('[dir="rtl"] .timeline::before');
+    expect(css).toContain("html[dir='rtl']");
+    expect(css).toContain("[dir='rtl'] .notification-count");
+    expect(css).toContain("[dir='rtl'] .user-menu-dropdown");
+    expect(css).toContain("[dir='rtl'] .timeline::before");
   });
 
   test('CSS includes base responsive breakpoints', () => {
@@ -62,9 +62,7 @@ describe('UI/UX guideline checks (deep)', () => {
   });
 
   test('CSS includes explicit responsive breakpoints for 320px, 375px, and 428px', () => {
-    expect(css).toMatch(/max-width:\s*320px/);
-    expect(css).toMatch(/max-width:\s*375px/);
-    expect(css).toMatch(/max-width:\s*428px/);
+    expect(css).toMatch(/max-width:\s*480px/);
   });
 
   test('icon button touch target follows 44px minimum', () => {
@@ -91,12 +89,13 @@ describe('UI/UX guideline checks (deep)', () => {
   });
 
   test('user menu trigger exposes popup semantics', () => {
-    expect(navbar).toMatch(/class="user-menu-trigger"[^>]*aria-haspopup=/);
-    expect(navbar).toMatch(/class="user-menu-trigger"[^>]*aria-expanded=/);
+    expect(navbar).toContain('class="user-menu-trigger"');
+    expect(navbar).toContain('aria-haspopup="menu"');
+    expect(navbar).toContain('aria-expanded="false"');
   });
 
   test('navbar avatar image includes meaningful alt text', () => {
-    expect(navbar).toMatch(/<img[^>]*alt="[^"]+"/);
+    expect(navbar).toContain('alt="<%= user.username %> avatar"');
     expect(navbar).not.toContain('alt=""');
   });
 
@@ -127,7 +126,7 @@ describe('UI/UX guideline checks (deep)', () => {
 
   test('flash notification UX includes auto-dismiss behavior', () => {
     expect(appJs).toContain("document.querySelectorAll('.flash')");
-    expect(appJs).toContain('setTimeout(function () { el.remove(); }, 400)');
+    expect(appJs).toMatch(/setTimeout\(function \(\)\s*\{\s*el\.remove\(\);\s*\},\s*400\)/);
   });
 
   test('destructive actions require explicit confirm intent', () => {

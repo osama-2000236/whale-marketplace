@@ -1,10 +1,21 @@
+<a href="#main" class="skip-link">
+  <%= locale === 'ar' ? 'انتقل إلى المحتوى الرئيسي' : 'Skip to main content' %>
+</a>
 <nav class="navbar">
   <div class="navbar-inner">
     <a href="/" class="navbar-brand">🐋 <%= locale === 'ar' ? 'الحوت' : 'Whale' %></a>
 
-    <button type="button" class="navbar-toggle" aria-label="Menu">☰</button>
+    <button
+      type="button"
+      class="navbar-toggle"
+      aria-label="Menu"
+      aria-controls="primary-navigation"
+      aria-expanded="false"
+    >
+      ☰
+    </button>
 
-    <div class="navbar-nav">
+    <div class="navbar-nav" id="primary-navigation">
       <a href="/whale" class="nav-link"><%= t('nav.browse') %></a>
       <% if (user && canSell) { %>
       <a href="/whale/sell" class="nav-link"><%= t('nav.sell') %></a>
@@ -12,6 +23,9 @@
       <% if (user) { %>
       <a href="/whale/dashboard" class="nav-link"><%= t('nav.dashboard') %></a>
       <a href="/whale/orders" class="nav-link"><%= t('nav.orders') %></a>
+      <% } else { %>
+      <a href="/auth/login" class="nav-link"><%= t('nav.login') %></a>
+      <a href="/auth/register" class="nav-link"><%= t('nav.register') %></a>
       <% } %>
       <% if (user && user.role === 'ADMIN') { %>
       <a href="/admin" class="nav-link"><%= t('nav.admin') %></a>
@@ -19,14 +33,36 @@
     </div>
 
     <div class="navbar-actions">
-      <button type="button" class="icon-btn" data-theme-toggle title="Toggle theme">
+      <button
+        type="button"
+        class="icon-btn"
+        data-theme-toggle
+        title="Toggle theme"
+        aria-label="<%= locale === 'ar' ? 'تبديل المظهر' : 'Toggle theme' %>"
+      >
         <span class="theme-toggle-icon">🌙</span>
       </button>
 
       <% if (locale === 'ar') { %>
-      <button type="button" class="icon-btn" data-locale="en" title="English">EN</button>
+      <button
+        type="button"
+        class="icon-btn"
+        data-locale="en"
+        title="English"
+        aria-label="Switch to English"
+      >
+        EN
+      </button>
       <% } else { %>
-      <button type="button" class="icon-btn" data-locale="ar" title="عربي">ع</button>
+      <button
+        type="button"
+        class="icon-btn"
+        data-locale="ar"
+        title="عربي"
+        aria-label="التبديل إلى العربية"
+      >
+        ع
+      </button>
       <% } %>
       <% if (user) { %>
       <a href="/whale/saved" class="icon-btn" title="<%= t('nav.saved') %>">
@@ -36,16 +72,22 @@
       </a>
 
       <div class="user-menu">
-        <button type="button" class="user-menu-trigger">
+        <button
+          type="button"
+          class="user-menu-trigger"
+          aria-label="<%= locale === 'ar' ? 'قائمة المستخدم' : 'User menu' %>"
+          aria-haspopup="menu"
+          aria-expanded="false"
+        >
           <div class="avatar avatar-sm">
             <% if (user.avatarUrl) { %>
-            <img src="<%= user.avatarUrl %>" alt="" />
+            <img src="<%= user.avatarUrl %>" alt="<%= user.username %> avatar" />
             <% } else { %>
             <%= user.username.charAt(0).toUpperCase() %>
             <% } %>
           </div>
         </button>
-        <div class="user-menu-dropdown">
+        <div class="user-menu-dropdown" role="menu">
           <a href="/profile"><%= t('nav.profile') %></a>
           <a href="/whale/orders"><%= t('nav.orders') %></a>
           <a href="/whale/saved"><%= t('nav.saved') %></a>
@@ -75,14 +117,7 @@
           </form>
         </div>
       </div>
-      <% } else { %>
-      <a href="/auth/login" class="btn btn-ghost btn-sm"><%= t('nav.login') %></a>
-      <a href="/auth/register" class="btn btn-primary btn-sm"><%= t('nav.register') %></a>
       <% } %>
-    </nav>
-
-    <button class="nav-toggle" id="navToggle" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
+    </div>
   </div>
 </nav>

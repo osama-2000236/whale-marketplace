@@ -12,14 +12,16 @@ const errors = [];
 
 function parseCookies(headers) {
   const setCookies = headers['set-cookie'] || [];
-  for (const sc of (Array.isArray(setCookies) ? setCookies : [setCookies])) {
+  for (const sc of Array.isArray(setCookies) ? setCookies : [setCookies]) {
     const parts = sc.split(';')[0].split('=');
     cookies[parts[0].trim()] = parts.slice(1).join('=').trim();
   }
 }
 
 function cookieHeader() {
-  return Object.entries(cookies).map(([k, v]) => `${k}=${v}`).join('; ');
+  return Object.entries(cookies)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('; ');
 }
 
 function request(method, path, body, followRedirects = false) {
@@ -31,7 +33,7 @@ function request(method, path, body, followRedirects = false) {
       path: url.pathname + url.search,
       method,
       headers: {
-        'Cookie': cookieHeader(),
+        Cookie: cookieHeader(),
       },
     };
     if (body) {
@@ -45,13 +47,25 @@ function request(method, path, body, followRedirects = false) {
       res.on('data', (c) => chunks.push(c));
       res.on('end', async () => {
         const html = Buffer.concat(chunks).toString();
-        if (followRedirects && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        if (
+          followRedirects &&
+          res.statusCode >= 300 &&
+          res.statusCode < 400 &&
+          res.headers.location
+        ) {
           try {
             const result = await request('GET', res.headers.location, null, true);
             resolve(result);
-          } catch (e) { reject(e); }
+          } catch (e) {
+            reject(e);
+          }
         } else {
-          resolve({ status: res.statusCode, html, headers: res.headers, location: res.headers.location });
+          resolve({
+            status: res.statusCode,
+            html,
+            headers: res.headers,
+            location: res.headers.location,
+          });
         }
       });
     });
@@ -86,15 +100,31 @@ async function run() {
   // ─── PUBLIC ROUTES ──────────────────────────────────────
   console.log('1. Public Routes');
   const publicRoutes = [
-    '/whale', '/auth/login', '/auth/register', '/forum',
-    '/about', '/contact', '/safety', '/pricing', '/terms', '/privacy',
-    '/buyer-protection', '/search', '/admin/login', '/upgrade',
+    '/whale',
+    '/auth/login',
+    '/auth/register',
+    '/forum',
+    '/about',
+    '/contact',
+    '/safety',
+    '/pricing',
+    '/terms',
+    '/privacy',
+    '/buyer-protection',
+    '/search',
+    '/admin/login',
+    '/upgrade',
     '/api/health',
   ];
   for (const route of publicRoutes) {
     const res = await request('GET', route);
-    const hasTemplateError = /ReferenceError|TypeError|is not defined|Cannot read|ENOENT/.test(res.html);
-    assert(res.status === 200 && !hasTemplateError, `GET ${route} → ${res.status}${hasTemplateError ? ' [TEMPLATE ERROR]' : ''}`);
+    const hasTemplateError = /ReferenceError|TypeError|is not defined|Cannot read|ENOENT/.test(
+      res.html
+    );
+    assert(
+      res.status === 200 && !hasTemplateError,
+      `GET ${route} → ${res.status}${hasTemplateError ? ' [TEMPLATE ERROR]' : ''}`
+    );
     if (hasTemplateError) {
       const errMatch = res.html.match(/(ReferenceError|TypeError):[^\n<]+/);
       if (errMatch) console.log(`    ERROR: ${errMatch[0]}`);
@@ -109,7 +139,10 @@ async function run() {
 
   const username = 'e2etest' + Date.now();
   res = await request('POST', '/auth/register', {
-    username, email: `${username}@test.com`, password: 'TestPass123', _csrf: csrf,
+    username,
+    email: `${username}@test.com`,
+    password: 'TestPass123',
+    _csrf: csrf,
   });
   assert(res.status === 302, `Register → ${res.status} (should be 302)`);
   assert(res.location === '/whale', `Redirect to ${res.location}`);
@@ -118,16 +151,27 @@ async function run() {
   // ─── AUTHENTICATED ROUTES ──────────────────────────────
   console.log('\n3. Authenticated Routes');
   const authRoutes = [
-    '/whale', '/whale/sell', '/whale/orders', '/whale/my-listings',
-    '/whale/dashboard', '/whale/saved', '/whale/cart',
-    '/forum', '/notifications',
-    '/upgrade', '/payment/history',
+    '/whale',
+    '/whale/sell',
+    '/whale/orders',
+    '/whale/my-listings',
+    '/whale/dashboard',
+    '/whale/saved',
+    '/whale/cart',
+    '/forum',
+    '/notifications',
+    '/upgrade',
+    '/payment/history',
   ];
   for (const route of authRoutes) {
     res = await request('GET', route);
-    const hasTemplateError = /ReferenceError|TypeError|is not defined|Cannot read|ENOENT/.test(res.html);
-    assert((res.status === 200 || res.status === 302) && !hasTemplateError,
-      `GET ${route} → ${res.status}${hasTemplateError ? ' [TEMPLATE ERROR]' : ''}`);
+    const hasTemplateError = /ReferenceError|TypeError|is not defined|Cannot read|ENOENT/.test(
+      res.html
+    );
+    assert(
+      (res.status === 200 || res.status === 302) && !hasTemplateError,
+      `GET ${route} → ${res.status}${hasTemplateError ? ' [TEMPLATE ERROR]' : ''}`
+    );
     if (hasTemplateError) {
       const errMatch = res.html.match(/(ReferenceError|TypeError):[^\n<]+/);
       if (errMatch) console.log(`    ERROR: ${errMatch[0]}`);
@@ -139,7 +183,10 @@ async function run() {
   // Sell page requires Pro subscription and multipart form (images)
   // Just verify the sell page loads for Pro users or redirects for free users
   res = await request('GET', '/whale/sell');
-  assert(res.status === 200 || res.status === 302, `GET /whale/sell → ${res.status} (200 for Pro, 302 for free)`);
+  assert(
+    res.status === 200 || res.status === 302,
+    `GET /whale/sell → ${res.status} (200 for Pro, 302 for free)`
+  );
 
   // ─── CART OPERATIONS ───────────────────────────────────
   console.log('\n5. Cart');
@@ -219,7 +266,9 @@ async function run() {
   res = await request('GET', '/auth/login');
   csrf = extractCsrf(res.html);
   res = await request('POST', '/auth/login', {
-    identifier: username, password: 'TestPass123', _csrf: csrf,
+    identifier: username,
+    password: 'TestPass123',
+    _csrf: csrf,
   });
   assert(res.status === 302, `Login → ${res.status}`);
   assert(!!cookies['whale.sid'], 'Session restored after login');
@@ -234,11 +283,14 @@ async function run() {
   console.log(`RESULTS: ${passed} passed, ${failed} failed out of ${passed + failed} tests`);
   if (errors.length) {
     console.log('\nFailed tests:');
-    errors.forEach(e => console.log(`  - ${e}`));
+    errors.forEach((e) => console.log(`  - ${e}`));
   }
   console.log('='.repeat(50));
 
   process.exit(failed > 0 ? 1 : 0);
 }
 
-run().catch(e => { console.error('Test runner error:', e); process.exit(1); });
+run().catch((e) => {
+  console.error('Test runner error:', e);
+  process.exit(1);
+});

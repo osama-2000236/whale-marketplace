@@ -7,7 +7,7 @@ const { safeRedirect } = require('../utils/safeRedirect');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 20,
+  max: process.env.NODE_ENV === 'test' ? 10_000 : 20,
   message: 'Too many attempts. Please try again later.',
 });
 

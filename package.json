@@ -13,6 +13,7 @@
     "build": "prisma generate",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{js,json,css}\"",
+    "validate:env-example": "node scripts/validate-env-example.js",
     "test": "jest --forceExit",
     "test:coverage": "jest --coverage",
     "test:ui": "playwright test",
