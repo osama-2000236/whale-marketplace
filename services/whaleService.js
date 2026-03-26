@@ -19,7 +19,6 @@ async function getListings(filters = {}) {
   const where = { status: 'ACTIVE' };
 
   if (q) {
-    const search = q.trim();
     where.OR = [
       { title: { contains: q, mode: 'insensitive' } },
       { titleAr: { contains: q, mode: 'insensitive' } },

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "Bash(node -e \"console.log\\(require\\(''./package.json''\\).name, require\\(''./package.json''\\).version\\)\")",
+      "Bash(node scripts/check-secrets.js)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" auth status)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create whale-marketplace --private --source=. --remote=origin --push)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo view osama-2000236/whale-marketplace)",
+      "Bash(npm outdated:*)",
+      "Bash(npm audit:*)",
+      "Bash(node -e \":*)",
+      "Bash(\"/c/Program Files/GitHub:*)",
+      "Bash(grep -n \"style=\"\".*fixed\" \"C:\\\\Users\\\\osama\\\\OneDrive\\\\سطح المكتب\\\\Whale_Store\\\\views\\\\whale\"/*.ejs)"
+    ]
+  }
+}

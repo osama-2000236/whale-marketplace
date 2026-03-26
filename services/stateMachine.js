@@ -4,7 +4,7 @@ const TRANSITIONS = {
   PENDING: { confirm: 'CONFIRMED', cancel: 'CANCELLED' },
   CONFIRMED: { ship: 'SHIPPED', cancel: 'CANCELLED' },
   SHIPPED: { deliver: 'COMPLETED', dispute: 'DISPUTED' },
-  DELIVERED: { deliver: 'COMPLETED', dispute: 'DISPUTED' },
+  DELIVERED: { complete: 'COMPLETED', dispute: 'DISPUTED' },
   DISPUTED: { resolve: null },
 };
 
@@ -12,6 +12,7 @@ const ACTOR_RULES = {
   confirm: ['seller'],
   ship: ['seller'],
   deliver: ['buyer'],
+  complete: ['buyer'],
   cancel: ['buyer', 'seller'],
   dispute: ['buyer'],
   resolve: ['admin'],

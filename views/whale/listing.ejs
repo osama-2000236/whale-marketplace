@@ -191,12 +191,10 @@
 </main>
 <%- include('../partials/footer') %>
 <script>
-document.getElementById('saveBtn')?.addEventListener('click', async function() {
-  const id = this.dataset.id;
+document.querySelector('[data-save-listing]')?.addEventListener('click', async function() {
+  const id = this.dataset.saveListing;
   const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
   const res = await fetch('/whale/listing/' + id + '/save', { method: 'POST', headers: { 'X-CSRF-Token': csrf } });
-  if (res.ok) { const d = await res.json(); this.classList.toggle('saved', d.saved); this.textContent = d.saved ? '<%= t("whale.unsave") %> ❤️' : '<%= t("whale.save") %> ❤️'; }
+  if (res.ok) { const d = await res.json(); this.classList.toggle('saved', d.saved); this.querySelector('.save-icon').textContent = d.saved ? '❤️' : '🤍'; }
 });
 </script>
-</body>
-</html>

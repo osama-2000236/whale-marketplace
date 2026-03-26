@@ -62,7 +62,8 @@
       </div>
     </section>
 
-    <!-- CTA -->
+    <!-- CTA (guests only) -->
+    <% if (!user) { %>
     <section class="cta-banner">
       <h2><%= t('home.cta') %></h2>
       <p><%= t('home.cta.desc') %></p>
@@ -74,6 +75,19 @@
         <%= t('nav.register') %>
       </a>
     </section>
+    <% } else if (!canSell) { %>
+    <section class="cta-banner">
+      <h2><%= locale === 'ar' ? 'ابدأ البيع اليوم' : 'Start Selling Today' %></h2>
+      <p><%= locale === 'ar' ? 'ترقّ لحساب بائع وابدأ عرض منتجاتك' : 'Upgrade to a seller account and start listing your products' %></p>
+      <a
+        href="/upgrade"
+        class="btn btn-primary btn-lg"
+        style="background: white; color: var(--brand); border-color: white"
+      >
+        <%= t('nav.upgrade') %>
+      </a>
+    </section>
+    <% } %>
   </div>
 </main>
 <%- include('../partials/footer') %>

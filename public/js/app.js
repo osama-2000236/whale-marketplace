@@ -1,6 +1,12 @@
 (function () {
   'use strict';
 
+  // Ensure skip-link target exists across views
+  var mainEl = document.querySelector('main');
+  if (mainEl && !mainEl.id) {
+    mainEl.id = 'main';
+  }
+
   // 1. Theme toggle
   var THEME_KEY = 'whale-theme';
   function applyTheme(theme) {
@@ -109,9 +115,13 @@
 
   // Mobile nav toggle
   document.addEventListener('click', function (e) {
-    if (e.target.closest('.navbar-toggle')) {
+    var toggle = e.target.closest('.navbar-toggle');
+    if (toggle) {
       var nav = document.querySelector('.navbar-nav');
-      if (nav) nav.classList.toggle('open');
+      if (nav) {
+        var isOpen = nav.classList.toggle('open');
+        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      }
     }
   });
 
@@ -119,11 +129,15 @@
   document.addEventListener('click', function (e) {
     var trigger = e.target.closest('.user-menu-trigger');
     if (trigger) {
-      trigger.closest('.user-menu')?.classList.toggle('open');
+      var menu = trigger.closest('.user-menu');
+      var isOpen = menu?.classList.toggle('open');
+      trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
       return;
     }
     document.querySelectorAll('.user-menu.open').forEach(function (m) {
       m.classList.remove('open');
+      var t = m.querySelector('.user-menu-trigger');
+      if (t) t.setAttribute('aria-expanded', 'false');
     });
   });
 

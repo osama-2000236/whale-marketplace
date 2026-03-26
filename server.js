@@ -125,10 +125,11 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // 13. Global rate limit
+const isTestEnv = process.env.NODE_ENV === 'test';
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 300,
+    max: isTestEnv ? 1_000_000 : 300,
     standardHeaders: true,
     legacyHeaders: false,
   })
@@ -139,6 +140,7 @@ app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
 app.use('/whale', require('./routes/whale'));
 app.use('/profile', require('./routes/profile'));
+app.use('/notifications', require('./routes/notifications'));
 app.use('/', require('./routes/payment'));
 app.use('/webhooks', require('./routes/webhooks'));
 app.use('/admin', require('./routes/admin'));
@@ -165,6 +167,9 @@ function ensureLocals(res) {
     inTrial: false,
     notifCount: 0,
     flash: { success: [], error: [], info: [] },
+    hasGoogle: !!process.env.GOOGLE_CLIENT_ID,
+    hasFacebook: !!process.env.FACEBOOK_APP_ID,
+    hasApple: !!process.env.APPLE_SERVICE_ID,
   };
   for (const [k, v] of Object.entries(defaults)) {
     if (res.locals[k] === undefined) res.locals[k] = v;

@@ -52,11 +52,9 @@
                     action="/admin/orders/<%= o.id %>/resolve"
                     style="display: inline"
                   >
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                    <input type="hidden" name="resolution" value="complete">
-                    <button type="submit" class="btn btn-success btn-sm">
-                      <%= t('order.resolve') %>
-                    </button>
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" name="resolution" value="complete" class="btn btn-primary btn-sm">Complete for Buyer</button>
+                    <button type="submit" name="resolution" value="cancel" class="btn btn-secondary btn-sm">Cancel &amp; Refund</button>
                   </form>
                 <% } %>
               </td>

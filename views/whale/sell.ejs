@@ -126,16 +126,3 @@
   </div>
 </main>
 <%- include('../partials/footer') %>
-<script>
-document.getElementById('categorySelect').addEventListener('change', function() {
-  var sel = this.options[this.selectedIndex];
-  var subs = JSON.parse(sel.dataset.subs || '[]');
-  var sub = document.getElementById('subcategorySelect');
-  sub.innerHTML = '<option value="">—</option>';
-  subs.forEach(function(s) {
-    sub.innerHTML += '<option value="' + s.id + '">' + ('<%= lang %>' === 'ar' ? s.nameAr : s.name) + '</option>';
-  });
-});
-</script>
-</body>
-</html>

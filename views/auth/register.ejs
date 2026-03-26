@@ -9,12 +9,9 @@
         🐋 <%= locale === 'ar' ? 'انضم إلى مجتمع الحوت' : 'Join the Whale community' %>
       </p>
 
-      <% const hasOAuth = (typeof process !== 'undefined' && process.env &&
-      (process.env.GOOGLE_CLIENT_ID || process.env.FACEBOOK_APP_ID ||
-      process.env.APPLE_SERVICE_ID)); %>
-      <% if (hasOAuth) { %>
+      <% if (hasGoogle || hasFacebook || hasApple) { %>
       <div class="oauth-buttons">
-        <% if (process.env.GOOGLE_CLIENT_ID) { %>
+        <% if (hasGoogle) { %>
         <a href="/auth/google" class="btn btn-secondary btn-block">
           <img
             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
@@ -25,7 +22,7 @@
           <%= t('auth.google') %>
         </a>
         <% } %>
-        <% if (process.env.FACEBOOK_APP_ID) { %>
+        <% if (hasFacebook) { %>
         <a
           href="/auth/facebook"
           class="btn btn-secondary btn-block"
@@ -34,7 +31,7 @@
           &#xf09a; Facebook
         </a>
         <% } %>
-        <% if (process.env.APPLE_SERVICE_ID) { %>
+        <% if (hasApple) { %>
         <a
           href="/auth/apple"
           class="btn btn-secondary btn-block"
