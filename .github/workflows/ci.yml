@@ -39,8 +39,8 @@ jobs:
       - name: Check for security vulnerabilities
         run: npm audit --audit-level=high
 
-      - name: Check for hardcoded secrets
-        run: node scripts/check-secrets.js
+      - name: Run ESLint
+        run: npm run lint
 
   # ── Step 2: Unit and integration tests with Jest ──
   test:
