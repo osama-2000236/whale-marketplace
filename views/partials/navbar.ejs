@@ -121,6 +121,9 @@
           </form>
         </div>
       </div>
+      <% } else { %>
+      <a href="/auth/login" class="btn btn-ghost btn-sm"><%= t('nav.login') %></a>
+      <a href="/auth/register" class="btn btn-primary btn-sm"><%= t('nav.register') %></a>
       <% } %>
     </div>
   </div>
