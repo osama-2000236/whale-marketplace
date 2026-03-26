@@ -214,8 +214,8 @@ app.use(async (req, res, next) => {
 
     if (req.user?.id) {
       const [navNotifications, unreadNotificationsCount] = await Promise.all([
-        notificationService.getNotifications(req.user.id, 10),
-        notificationService.getUnreadCount(req.user.id)
+        notificationService.getNotifications(req.user.id, 10).catch(() => []),
+        notificationService.getUnreadCount(req.user.id).catch(() => 0)
       ]);
 
       res.locals.navNotifications = navNotifications;
