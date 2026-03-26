@@ -1,0 +1,65 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container" style="max-width: 760px">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('nav.notifications') %></h1>
+      <p class="text-muted"><%= t('notif.mark_read') %></p>
+    </div>
+
+    <%
+      const now = Date.now();
+      const relativeTime = (value) => {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        const seconds = Math.floor((now - date.getTime()) / 1000);
+        if (seconds < 60) return locale === 'ar' ? 'الآن' : 'just now';
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return locale === 'ar' ? `منذ ${minutes} دقيقة` : `${minutes} min ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return locale === 'ar' ? `منذ ${hours} ساعة` : `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return locale === 'ar' ? `منذ ${days} يوم` : `${days}d ago`;
+      };
+    %>
+
+    <% if (!notifications || notifications.length === 0) { %>
+    <div class="card">
+      <div class="card-body">
+        <p class="text-muted"><%= t('notif.empty') %></p>
+      </div>
+    </div>
+    <% } else { %>
+    <div class="card">
+      <div class="card-body">
+        <ul class="list-reset">
+          <% notifications.forEach((notification) => { %>
+          <% const text = notification.body || notification.title; %>
+          <li class="stack-sm" style="padding: 0.75rem 0; border-bottom: 1px solid var(--border)">
+            <div style="display: flex; align-items: flex-start; gap: 0.5rem">
+              <% if (!notification.isRead) { %>
+              <span aria-hidden="true" style="margin-top: 0.45rem; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: var(--accent)"></span>
+              <% } else { %>
+              <span aria-hidden="true" style="margin-top: 0.45rem; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: transparent"></span>
+              <% } %>
+              <div style="flex: 1">
+                <% if (notification.link) { %>
+                <a href="<%= notification.link %>" class="text-link"><%= text %></a>
+                <% } else { %>
+                <span><%= text %></span>
+                <% } %>
+                <div class="text-muted" style="font-size: 0.875rem; margin-top: 0.25rem">
+                  <span><%= relativeTime(notification.createdAt) %></span>
+                </div>
+              </div>
+            </div>
+          </li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

@@ -140,6 +140,7 @@ app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
 app.use('/whale', require('./routes/whale'));
 app.use('/profile', require('./routes/profile'));
+app.use('/notifications', require('./routes/notifications'));
 app.use('/', require('./routes/payment'));
 app.use('/webhooks', require('./routes/webhooks'));
 app.use('/admin', require('./routes/admin'));
