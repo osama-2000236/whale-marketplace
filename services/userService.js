@@ -1,379 +1,197 @@
-const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
-const { parseLimit, createCursorResponse } = require('../utils/pagination');
+const bcrypt = require('bcrypt');
+const slugify = require('slugify');
+const emailService = require('./emailService');
 
-async function registerUser(payload) {
-  const username = String(payload.username || '').trim().toLowerCase();
-  const email = String(payload.email || '').trim().toLowerCase();
-  const password = String(payload.password || '');
+const BCRYPT_ROUNDS = 12;
 
-  if (!username || !email || !password) {
-    throw new Error('username, email, and password are required');
+async function register({ username, email, password }) {
+  if (
+    !username ||
+    username.length < 3 ||
+    username.length > 30 ||
+    !/^[a-zA-Z0-9_]+$/.test(username)
+  ) {
+    throw new Error('INVALID_USERNAME');
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error('INVALID_EMAIL');
+  }
+  if (!password || password.length < 8) {
+    throw new Error('WEAK_PASSWORD');
   }
 
-  if (username.length < 3 || username.length > 30) {
-    throw new Error('username must be between 3 and 30 characters');
-  }
-
-  if (!/^[a-z0-9_]+$/.test(username)) {
-    throw new Error('username can only contain lowercase letters, numbers, and underscore');
-  }
-
-  if (password.length < 8) {
-    throw new Error('password must be at least 8 characters');
-  }
-
-  const exists = await prisma.user.findFirst({
-    where: {
-      OR: [{ username }, { email }]
-    }
+  const existingUser = await prisma.user.findFirst({
+    where: { OR: [{ username: username.toLowerCase() }, { email: email.toLowerCase() }] },
   });
-
-  if (exists) {
-    throw new Error('username or email already exists');
+  if (existingUser) {
+    if (existingUser.email === email.toLowerCase()) throw new Error('EMAIL_TAKEN');
+    throw new Error('USERNAME_TAKEN');
   }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  const slug = slugify(username, { lower: true, strict: true });
 
   const user = await prisma.user.create({
     data: {
-      username,
-      email,
+      username: username.toLowerCase(),
+      slug,
+      email: email.toLowerCase(),
       passwordHash,
-      avatar: payload.avatar || null,
-      bio: payload.bio || null,
-      pcSpecs: payload.pcSpecs || null,
-      role: 'MEMBER'
+      subscription: {
+        create: { plan: 'free', trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+      },
+      sellerProfile: {
+        create: { displayName: username },
+      },
     },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      reputationPoints: true,
-      isVerified: true,
-      isBanned: true,
-      createdAt: true,
-      lastSeenAt: true
-    }
+    include: { subscription: true, sellerProfile: true },
   });
+
+  emailService.sendWelcome(user).catch(() => {});
 
   return user;
 }
 
-async function authenticateUser(identifier, password) {
-  const value = String(identifier || '').trim().toLowerCase();
-  if (!value || !password) {
-    throw new Error('invalid credentials');
-  }
-
+async function authenticate(identifier, password) {
   const user = await prisma.user.findFirst({
     where: {
-      OR: [{ email: value }, { username: value }]
-    }
-  });
-
-  if (!user || user.isBanned) {
-    throw new Error('invalid credentials');
-  }
-
-  const matched = await bcrypt.compare(password, user.passwordHash);
-  if (!matched) {
-    throw new Error('invalid credentials');
-  }
-
-  return {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-    avatar: user.avatar,
-    bio: user.bio,
-    pcSpecs: user.pcSpecs,
-    role: user.role,
-    reputation: user.reputation,
-    reputationPoints: user.reputationPoints,
-    isVerified: user.isVerified,
-    isBanned: user.isBanned,
-    createdAt: user.createdAt,
-    lastSeenAt: user.lastSeenAt
-  };
-}
-
-async function getCurrentUser(userId) {
-  if (!userId) return null;
-
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      reputationPoints: true,
-      isVerified: true,
-      isBanned: true,
-      createdAt: true,
-      lastSeenAt: true
-    }
-  });
-}
-
-async function findByUsername(username) {
-  const normalized = String(username || '').trim().toLowerCase();
-  if (!normalized) return null;
-  return prisma.user.findUnique({ where: { username: normalized } });
-}
-
-async function ensureAdminFromEnv() {
-  const adminUsername = (process.env.ADMIN_USERNAME || 'admin').toLowerCase();
-  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@pcgaming.local').toLowerCase();
-  const adminPassword = process.env.ADMIN_PASSWORD || 'PcGaming@2024';
-
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
-
-  return prisma.user.upsert({
-    where: { username: adminUsername },
-    update: {
-      email: adminEmail,
-      passwordHash,
-      role: 'ADMIN',
-      isVerified: true,
-      isBanned: false
+      deletedAt: null,
+      OR: [
+        { email: identifier.toLowerCase().trim() },
+        { username: identifier.toLowerCase().trim() },
+      ],
     },
-    create: {
-      username: adminUsername,
-      email: adminEmail,
-      passwordHash,
-      role: 'ADMIN',
-      isVerified: true,
-      isBanned: false,
-      bio: 'حساب الإدارة | Admin account'
-    }
+    include: { subscription: true, sellerProfile: true },
   });
+
+  if (!user) throw new Error('USER_NOT_FOUND');
+  if (user.isBanned) throw new Error('USER_BANNED');
+  if (!user.passwordHash) throw new Error('OAUTH_ONLY');
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) throw new Error('WRONG_PASSWORD');
+
+  await prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } });
+
+  return user;
 }
 
-async function getUserProfileByUsername(username, viewerId, options = {}) {
-  const limit = parseLimit(options.limit, 10, 20);
+async function findOrCreateOAuth(provider, providerId, profile) {
+  const email = profile.emails?.[0]?.value?.toLowerCase();
 
-  const user = await prisma.user.findUnique({
-    where: { username: String(username).toLowerCase() },
-    select: {
-      id: true,
-      username: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      createdAt: true,
-      _count: {
-        select: {
-          followers: true,
-          following: true,
-          posts: true,
-          listings: true
-        }
-      }
-    }
-  });
-
-  if (!user) {
-    return null;
+  let user = await prisma.user.findUnique({ where: { googleId: providerId } });
+  if (user) {
+    await prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } });
+    return { user, isNew: false };
   }
 
-  const [isFollowing, posts, listings] = await Promise.all([
-    viewerId
-      ? prisma.follow.findUnique({
-          where: {
-            followerId_followingId: {
-              followerId: viewerId,
-              followingId: user.id
-            }
-          }
-        })
-      : null,
-    prisma.post.findMany({
-      where: { authorId: user.id },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            avatar: true,
-            role: true
-          }
-        },
-        room: {
-          select: {
-            id: true,
-            name: true,
-            nameAr: true,
-            slug: true
-          }
-        }
-      }
-    }),
-    prisma.marketplaceListing.findMany({
-      where: {
-        sellerId: user.id,
-        status: 'ACTIVE'
+  if (email) {
+    user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { googleId: providerId, lastSeenAt: new Date() },
+      });
+      return { user, isNew: false };
+    }
+  }
+
+  let username =
+    (profile.displayName || (email && email.split('@')[0]) || 'user')
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 30) || 'user_' + Date.now();
+
+  let finalUsername = username;
+  let counter = 1;
+  while (await prisma.user.findUnique({ where: { username: finalUsername } })) {
+    finalUsername = username.slice(0, 27) + '_' + counter++;
+  }
+
+  user = await prisma.user.create({
+    data: {
+      username: finalUsername,
+      slug: finalUsername,
+      email: email || `${finalUsername}@oauth.whale`,
+      googleId: providerId,
+      avatarUrl: profile.photos?.[0]?.value || null,
+      isVerified: true,
+      subscription: {
+        create: { plan: 'free', trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
       },
-      orderBy: { createdAt: 'desc' },
-      take: 6
-    })
+      sellerProfile: {
+        create: { displayName: profile.displayName || finalUsername },
+      },
+    },
+    include: { subscription: true, sellerProfile: true },
+  });
+
+  emailService.sendWelcome(user).catch(() => {});
+
+  return { user, isNew: true };
+}
+
+async function getProfile(usernameOrSlug, viewerId) {
+  const user = await prisma.user.findFirst({
+    where: {
+      deletedAt: null,
+      OR: [{ username: usernameOrSlug }, { slug: usernameOrSlug }],
+    },
+    include: {
+      sellerProfile: true,
+      listings: {
+        where: { status: 'ACTIVE' },
+        take: 12,
+        orderBy: { createdAt: 'desc' },
+        include: { category: true },
+      },
+    },
+  });
+
+  if (!user) throw new Error('USER_NOT_FOUND');
+
+  const reviews = await prisma.review.findMany({
+    where: { sellerId: user.id },
+    take: 10,
+    orderBy: { createdAt: 'desc' },
+    include: { reviewer: { select: { username: true, avatarUrl: true } } },
+  });
+
+  let savedCount = 0;
+  if (viewerId) {
+    savedCount = await prisma.savedListing.count({ where: { userId: viewerId } });
+  }
+
+  return { ...user, reviews, savedCount };
+}
+
+async function updateProfile(userId, data) {
+  const { bio, displayName, city, whatsapp, avatarUrl } = data;
+
+  const userUpdate = {};
+  if (bio !== undefined) userUpdate.bio = bio;
+  if (avatarUrl) userUpdate.avatarUrl = avatarUrl;
+
+  const profileUpdate = {};
+  if (displayName) profileUpdate.displayName = displayName;
+  if (city !== undefined) profileUpdate.city = city;
+  if (whatsapp !== undefined) profileUpdate.whatsapp = whatsapp;
+  if (bio !== undefined) profileUpdate.bio = bio;
+
+  const [user] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: userId },
+      data: userUpdate,
+      include: { sellerProfile: true, subscription: true },
+    }),
+    prisma.sellerProfile.update({
+      where: { userId },
+      data: profileUpdate,
+    }),
   ]);
 
-  return {
-    ...user,
-    isFollowing: Boolean(isFollowing),
-    posts,
-    listings
-  };
+  return user;
 }
 
-async function updateMyProfile(userId, data) {
-  if (!userId) throw new Error('Authentication required');
-
-  const payload = {
-    bio: data.bio,
-    pcSpecs: data.pcSpecs || undefined
-  };
-
-  if (data.avatar) {
-    payload.avatar = data.avatar;
-  }
-
-  return prisma.user.update({
-    where: { id: userId },
-    data: payload,
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      avatar: true,
-      bio: true,
-      pcSpecs: true,
-      role: true,
-      reputation: true,
-      reputationPoints: true,
-      isVerified: true,
-      createdAt: true
-    }
-  });
-}
-
-async function followUser(followerId, followingUsername) {
-  const following = await prisma.user.findUnique({
-    where: { username: String(followingUsername).toLowerCase() },
-    select: { id: true }
-  });
-
-  if (!following) throw new Error('User not found');
-  if (following.id === followerId) throw new Error('Cannot follow yourself');
-
-  const existing = await prisma.follow.findUnique({
-    where: {
-      followerId_followingId: {
-        followerId,
-        followingId: following.id
-      }
-    }
-  });
-
-  if (existing) {
-    await prisma.follow.delete({
-      where: {
-        followerId_followingId: {
-          followerId,
-          followingId: following.id
-        }
-      }
-    });
-
-    return { following: false };
-  }
-
-  await prisma.follow.create({
-    data: {
-      followerId,
-      followingId: following.id
-    }
-  });
-
-  await prisma.notification.create({
-    data: {
-      userId: following.id,
-      type: 'FOLLOW',
-      referenceId: followerId,
-      referenceType: 'user'
-    }
-  });
-
-  return { following: true };
-}
-
-async function listUsers(query) {
-  const q = String(query || '').trim();
-  if (!q) return [];
-
-  return prisma.user.findMany({
-    where: {
-      OR: [
-        { username: { contains: q, mode: 'insensitive' } },
-        { bio: { contains: q, mode: 'insensitive' } }
-      ]
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 15,
-    select: {
-      id: true,
-      username: true,
-      avatar: true,
-      bio: true,
-      role: true,
-      reputation: true
-    }
-  });
-}
-
-async function getUserRooms(userId, limit = 6) {
-  const memberships = await prisma.roomMembership.findMany({
-    where: { userId },
-    orderBy: { joinedAt: 'desc' },
-    take: limit,
-    include: {
-      room: true
-    }
-  });
-
-  return memberships.map((item) => item.room);
-}
-
-async function getFollowersCount(userId) {
-  return prisma.follow.count({ where: { followingId: userId } });
-}
-
-module.exports = {
-  registerUser,
-  authenticateUser,
-  getCurrentUser,
-  findByUsername,
-  ensureAdminFromEnv,
-  getUserProfileByUsername,
-  updateMyProfile,
-  followUser,
-  listUsers,
-  getUserRooms,
-  getFollowersCount,
-  createCursorResponse
-};
+module.exports = { register, authenticate, findOrCreateOAuth, getProfile, updateProfile };

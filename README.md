@@ -1,58 +1,120 @@
-# Whale · الحوت
+# UI/UX QA Test Suite — Node.js / Playwright
 
-Trust-first marketplace focused on Palestine and Arab cities.
+## Overview
 
-Core guarantee:
+A comprehensive, strict UI/UX quality assurance suite built with **Playwright**.  
+Covers **15 test categories** with **80+ individual assertions**.
 
-> أموالك محفوظة حتى تؤكد الاستلام  
-> Your money is protected until you confirm delivery.
+---
 
-## Quick Start
+## Test Categories
+
+| #   | Category                      | Tests |
+| --- | ----------------------------- | ----- |
+| 1   | Layout & Visual Integrity     | 10    |
+| 2   | Typography                    | 7     |
+| 3   | Responsiveness                | 6     |
+| 4   | Navigation & Routing          | 7     |
+| 5   | Forms & Input Validation      | 10    |
+| 6   | Accessibility (WCAG 2.1)      | 10    |
+| 7   | Performance & Core Web Vitals | 8     |
+| 8   | Interactions & Micro-UX       | 10    |
+| 9   | Dark Mode & Theming           | 4     |
+| 10  | Error States & Empty States   | 5     |
+| 11  | Security & Meta Tags          | 6     |
+| 12  | Cross-Browser Compatibility   | 3     |
+| 13  | Localization (i18n)           | 4     |
+| 14  | Print Styles                  | 2     |
+| 15  | Scroll & Animation            | 4     |
+
+---
+
+## Setup
 
 ```bash
-npm install
-npm run prisma:generate
-npm run seed
-npm run dev
+# 1. Install dependencies
+npm install -D @playwright/test
+
+# 2. Install browsers
+npx playwright install
+
+# 3. Set your app URL
+export BASE_URL=http://localhost:3000
+
+# 4. Start your app (in another terminal)
+npm start
 ```
 
-## Main Runtime
+---
 
-- Home: `/` -> redirects to `/whale`
-- Marketplace: `/whale`
-- Static pages: `/about`, `/contact`, `/safety`, `/pricing`, `/terms`, `/privacy`, `/forum`
-
-## Tests
+## Running Tests
 
 ```bash
-npm run test
-npm run test:ui
+# All tests, all browsers
+npx playwright test
+
+# Specific category only
+npx playwright test --grep "5. Forms"
+
+# Single browser
+npx playwright test --project=chromium
+
+# Mobile only
+npx playwright test --project=mobile-chrome
+
+# With HTML report
+npx playwright test --reporter=html && npx playwright show-report
+
+# Strict CI mode (no retries shown)
+CI=true npx playwright test
 ```
 
-Focused Whale UI:
+---
 
-```bash
-npx playwright test __uitests__/pages/whale-marketplace.spec.js --project="Desktop Chrome"
+## Key Standards Enforced
+
+| Standard         | Threshold              |
+| ---------------- | ---------------------- |
+| WCAG AA Contrast | ≥ 4.5:1                |
+| Touch Targets    | ≥ 44×44px (WCAG 2.5.5) |
+| FCP              | < 1,800ms              |
+| DOM Content Load | < 3,000ms              |
+| TTFB             | < 800ms                |
+| Page Weight      | < 5MB                  |
+| H1 per page      | Exactly 1              |
+| Body font        | ≥ 14px                 |
+| Line height      | ≥ 1.4                  |
+| Heading jumps    | No skipped levels      |
+
+---
+
+## Customization for Your Project
+
+Search for these comments to add project-specific selectors:
+
+- `[data-testid='open-modal']` → your modal trigger
+- `[data-testid='theme-toggle']` → your dark mode button
+- `[data-testid='empty-state']` → your empty list component
+- `/login` → your authentication route
+- `/about` → any secondary route for nav testing
+
+---
+
+## CI Integration (GitHub Actions)
+
+```yaml
+- name: Install Playwright
+  run: npx playwright install --with-deps
+
+- name: Run UI/UX QA Tests
+  run: BASE_URL=http://localhost:3000 npx playwright test
+  env:
+    CI: true
+
+- name: Upload Report
+  uses: actions/upload-artifact@v3
+  if: always()
+  with:
+    name: playwright-report
+    path: playwright-report/
 ```
-
-Whale UI system demo:
-
-- `/WHALE_UI_COMPONENTS.html`
-- `/css/WHALE_UI_SYSTEM_V2.css`
-
-The Whale marketplace now uses:
-
-- Responsive `picture`/`srcset` delivery for hero, listing, detail, and checkout media
-- A mobile bottom-sheet filter drawer with drag-to-dismiss
-- A dual-range price filter with desktop auto-apply behavior
-- Premium light/dark theme tokens wired through `html.dark`
-
-## AI Upgrade Handoff
-
-Use this file for AI agents:
-
-- [README_AI_UPGRADE.md](/c:/Users/osama/OneDrive/سطح المكتب/pc-gaming-website/README_AI_UPGRADE.md)
-
-Detailed operational handoff:
-
-- [AI_HANDOFF.md](/c:/Users/osama/OneDrive/سطح المكتب/pc-gaming-website/AI_HANDOFF.md)

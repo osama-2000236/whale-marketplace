@@ -1,313 +1,106 @@
-<%- include('../partials/header', { title: t('checkout.title') + ' — Whale' }) %>
-
-<%
-  const groupedCityOptions = (cities || []).reduce((acc, city) => {
-    const region = city.region || 'Other';
-    if (!acc[region]) acc[region] = [];
-    acc[region].push(city);
-    return acc;
-  }, {});
-%>
-
-<section class="page-section whale-page">
-  <div class="container">
-    <h1 class="page-title"><%= t('checkout.title') %></h1>
-    <p class="muted whale-escrow-copy" style="margin-bottom:12px;">🐳 <%= t('checkout.escrow_d') %></p>
-
-    <div class="checkout-steps">
-      <div class="checkout-step done">1. <%= t('checkout.s1') %></div>
-      <div class="checkout-step active">2. <%= t('checkout.s2') %></div>
-      <div class="checkout-step">3. <%= t('checkout.s3') %></div>
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container" style="max-width: 720px">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('checkout.title') %></h1>
     </div>
 
-    <div class="whale-checkout-layout">
-      <form method="POST" action="/whale/listing/<%= listing.slug || listing.id %>/buy" class="panel-card whale-checkout-form" novalidate data-checkout-form>
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start">
+      <!-- Order form -->
+      <div class="card">
+        <div class="card-body">
+          <form method="POST" action="/whale/checkout/<%= listing.id %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
-        <h3>1. <%= t('checkout.order_details') %></h3>
-        <div class="whale-checkout-item-row">
-          <% const checkoutImage = imageSet((listing.images && listing.images[0]) || null, {
-            widths: [96, 192, 384],
-            aspectRatio: '4:3',
-            sizes: '96px'
-          }); %>
-          <picture class="whale-picture-shell">
-            <% if (checkoutImage.webpSrcset) { %>
-              <source type="image/webp" srcset="<%= checkoutImage.webpSrcset %>" sizes="<%= checkoutImage.sizes %>">
-            <% } %>
+            <h3 class="mb-2"><%= t('checkout.shipping') %></h3>
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('checkout.street') %>
+                <span class="required">*</span>
+              </label>
+              <input type="text" name="street" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('checkout.city') %>
+                <span class="required">*</span>
+              </label>
+              <select name="city" class="select" required>
+                <% cities.forEach(c => { %>
+                <option value="<%= c %>"><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">
+                <%= t('checkout.phone') %>
+                <span class="required">*</span>
+              </label>
+              <input type="tel" name="phone" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('checkout.note') %></label>
+              <textarea name="buyerNote" class="textarea" rows="3" maxlength="500"></textarea>
+            </div>
+
+            <h3 class="mb-2 mt-2"><%= t('checkout.payment') %></h3>
+            <div class="form-group">
+              <select name="paymentMethod" class="select">
+                <option value="manual">
+                  <%= locale === 'ar' ? 'دفع يدوي / عند الاستلام' : 'Manual / Cash on Delivery' %>
+                </option>
+                <option value="paymob">Paymob</option>
+                <option value="paypal">PayPal</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-2">
+              <%= t('checkout.place_order') %>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Order summary -->
+      <div class="card">
+        <div class="card-body">
+          <h3 class="mb-2"><%= locale === 'ar' ? 'ملخص الطلب' : 'Order Summary' %></h3>
+          <div style="display: flex; gap: 1rem; margin-bottom: 1rem">
+            <% if (listing.images && listing.images.length > 0) { %>
             <img
-              src="<%= checkoutImage.src %>"
-              srcset="<%= checkoutImage.srcset %>"
-              sizes="<%= checkoutImage.sizes %>"
-              width="<%= checkoutImage.width %>"
-              height="<%= checkoutImage.height %>"
-              alt="<%= listing.title %>"
-              class="whale-checkout-item-image"
-            >
-          </picture>
-          <div>
-            <strong dir="auto"><%= listing.title %></strong>
-            <p class="muted"><%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</p>
-          </div>
-        </div>
-
-        <div class="form-row" style="margin-top:10px;">
-          <div class="form-group">
-            <label for="quantity"><%= t('checkout.quantity') %></label>
-            <input id="quantity" type="number" name="quantity" min="1" max="<%= listing.quantity %>" value="1" required data-validate-field>
-            <span class="whale-field-error" data-field-error="quantity" aria-live="polite"></span>
-          </div>
-          <div class="form-group" style="grid-column: span 2;">
-            <label for="buyerNote"><%= t('checkout.note') %></label>
-            <input id="buyerNote" type="text" name="buyerNote" placeholder="<%= t('checkout.note') %>">
-          </div>
-        </div>
-
-        <h3 style="margin-top:14px;">2. <%= t('checkout.shipping') %></h3>
-        <div class="whale-radio-stack" style="margin-top:8px;">
-          <label class="filter-option"><input type="radio" name="shippingMethod" value="company" checked><span><%= t('checkout.ship_company') %></span></label>
-          <label class="filter-option"><input type="radio" name="shippingMethod" value="self_pickup"><span><%= t('checkout.ship_pickup') %></span></label>
-          <label class="filter-option"><input type="radio" name="shippingMethod" value="hand_to_hand"><span><%= t('checkout.ship_hand') %></span></label>
-        </div>
-
-        <div class="form-group" style="margin-top:8px;">
-          <label for="shippingCompanySelect"><%= t('checkout.ship_company') %></label>
-          <select name="shippingCompany" id="shippingCompanySelect">
-            <% shippingCos.forEach((co) => { %>
-              <option value="<%= co.name %>" data-price="<%= co.basePrice %>">
-                <%= lang === 'ar' ? co.nameAr : co.name %> — <%= co.basePrice %> ₪ · <%= co.estimatedDays %> <%= t('ui.days') %>
-              </option>
-            <% }) %>
-          </select>
-        </div>
-
-        <div class="form-row" style="margin-top:10px;">
-          <div class="form-group">
-            <label for="buyerName"><%= t('checkout.full_name') %></label>
-            <input id="buyerName" type="text" name="buyerName" autocomplete="name" required data-validate-field>
-            <span class="whale-field-error" data-field-error="buyerName" aria-live="polite"></span>
-          </div>
-          <div class="form-group">
-            <label for="buyerPhone"><%= t('checkout.phone') %></label>
-            <input
-              id="buyerPhone"
-              type="tel"
-              name="buyerPhone"
-              inputmode="tel"
-              autocomplete="tel"
-              placeholder="0599-123-456"
-              pattern="05\\d{2}-\\d{3}-\\d{3}"
-              required
-              data-validate-field
-            >
-            <span class="whale-field-error" data-field-error="buyerPhone" aria-live="polite"></span>
-          </div>
-          <div class="form-group">
-            <label for="buyerCity"><%= t('checkout.city') %></label>
-            <input id="buyerCitySearch" type="search" class="search-input whale-city-search" placeholder="<%= t('checkout.search_city') %>" aria-label="<%= t('checkout.search_city') %>">
-            <select id="buyerCity" name="buyerCity" required data-validate-field>
-              <option value="" selected><%= t('checkout.search_city') %></option>
-              <% Object.keys(groupedCityOptions).forEach((region) => { %>
-                <optgroup label="<%= region %>">
-                  <% groupedCityOptions[region].forEach((city) => { %>
-                    <option value="<%= city.value %>"><%= city.name %></option>
-                  <% }) %>
-                </optgroup>
-              <% }) %>
-            </select>
-            <span class="whale-field-error" data-field-error="buyerCity" aria-live="polite"></span>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="buyerAddress"><%= t('checkout.address') %></label>
-          <textarea id="buyerAddress" name="buyerAddress" rows="2" required placeholder="<%= t('checkout.address_hint') %>" data-validate-field></textarea>
-          <span class="whale-field-error" data-field-error="buyerAddress" aria-live="polite"></span>
-        </div>
-        <label class="filter-option whale-save-address-check"><input type="checkbox" name="saveAddress" value="1"><span><%= t('checkout.save_address') %></span></label>
-
-        <h3 style="margin-top:14px;">3. <%= t('checkout.payment') %></h3>
-        <label class="filter-option"><input type="radio" name="paymentMethod" value="card"><span>💳 <%= t('checkout.pay_card') %></span></label>
-        <label class="filter-option"><input type="radio" name="paymentMethod" value="cod" checked><span>💵 <%= t('checkout.pay_cod') %></span></label>
-        <div class="whale-card-fields" hidden>
-          <label for="cardNumber"><%= t('checkout.card_number') %></label>
-          <input id="cardNumber" name="cardNumber" type="text" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242" data-validate-field>
-          <span class="whale-field-error" data-field-error="cardNumber" aria-live="polite"></span>
-        </div>
-        <p class="muted whale-cod-note"><%= t('checkout.pay_cod_d') %></p>
-        <div class="whale-payment-trust">
-          <span class="whale-pay-logo">Visa</span>
-          <span class="whale-pay-logo">Mastercard</span>
-          <span class="whale-pay-logo">Paymob</span>
-          <span class="muted">🔒 <%= t('checkout.payment_secure') %></span>
-        </div>
-        <p class="muted whale-refund-note"><%= t('checkout.refund_note') %></p>
-
-        <button type="submit" class="btn btn-primary btn-full"><%= t('checkout.place') %></button>
-      </form>
-
-      <aside class="panel-card product-sidebar whale-checkout-sidebar">
-        <h3><%= t('checkout.summary') %></h3>
-        <div class="whale-checkout-summary-item">
-          <picture class="whale-picture-shell">
-            <% if (checkoutImage.webpSrcset) { %>
-              <source type="image/webp" srcset="<%= checkoutImage.webpSrcset %>" sizes="<%= checkoutImage.sizes %>">
+              src="<%= listing.images[0] %>"
+              alt=""
+              style="width: 80px; height: 60px; object-fit: cover; border-radius: var(--radius-md)"
+            />
             <% } %>
-            <img
-              src="<%= checkoutImage.src %>"
-              srcset="<%= checkoutImage.srcset %>"
-              sizes="<%= checkoutImage.sizes %>"
-              width="<%= checkoutImage.width %>"
-              height="<%= checkoutImage.height %>"
-              alt="<%= listing.title %>"
-              class="whale-checkout-item-image"
-            >
-          </picture>
-          <div>
-            <strong dir="auto"><%= listing.title %></strong>
-            <p class="muted"><%= listing.price.toLocaleString(lang === 'ar' ? 'ar-PS' : 'en-US') %> ₪</p>
+            <div>
+              <div style="font-weight: 600">
+                <%= locale === 'ar' && listing.titleAr ? listing.titleAr : listing.title %>
+              </div>
+              <div class="text-sm text-muted"><%= listing.city %></div>
+            </div>
           </div>
+          <div
+            style="
+              border-top: 1px solid var(--border-light);
+              padding-top: 1rem;
+              display: flex;
+              justify-content: space-between;
+              font-size: 1.25rem;
+              font-weight: 700;
+            "
+          >
+            <span><%= t('checkout.total') %></span>
+            <span class="text-brand">$<%= parseFloat(listing.price).toLocaleString() %></span>
+          </div>
+          <p class="text-sm text-muted mt-2">
+            🛡️ <%= locale === 'ar' ? 'أموالك محمية حتى تأكيد الاستلام' : 'Your money is protected until delivery confirmation' %>
+          </p>
         </div>
-        <div class="whale-summary-line">
-          <span><%= t('checkout.item') %></span>
-          <strong><span id="summaryItemPrice"><%= listing.price %></span> ₪</strong>
-        </div>
-        <div class="whale-summary-line">
-          <span><%= t('checkout.ship_fee') %></span>
-          <strong><span id="summaryShipping">0</span> ₪</strong>
-        </div>
-        <div class="whale-summary-line whale-summary-line-promo">
-          <span><%= t('checkout.whale_fee') %></span>
-          <strong><s>15 ₪</s> <span><%= t('checkout.free_fee') %></span></strong>
-        </div>
-        <div class="whale-protection-badge">🐳 <%= t('checkout.protection_active') %></div>
-        <hr class="whale-divider">
-        <div class="whale-summary-line whale-summary-total">
-          <span><%= t('checkout.total') %></span>
-          <strong><span id="summaryTotal"><%= listing.price %></span> ₪</strong>
-        </div>
-        <p class="muted whale-escrow-copy" style="margin-top:8px;"><%= t('checkout.escrow_d') %></p>
-      </aside>
+      </div>
     </div>
   </div>
-</section>
-
-<script>
-  (function () {
-    const itemPrice = Number('<%= listing.price %>') || 0;
-    const quantityInput = document.getElementById('quantity');
-    const shippingInput = document.getElementById('summaryShipping');
-    const totalInput = document.getElementById('summaryTotal');
-    const itemInput = document.getElementById('summaryItemPrice');
-    const methodRadios = document.querySelectorAll('input[name="shippingMethod"]');
-    const shippingSelect = document.getElementById('shippingCompanySelect');
-    const paymentRadios = document.querySelectorAll('input[name="paymentMethod"]');
-    const cardFields = document.querySelector('.whale-card-fields');
-    const codNote = document.querySelector('.whale-cod-note');
-    const citySearch = document.getElementById('buyerCitySearch');
-    const citySelect = document.getElementById('buyerCity');
-    const phoneInput = document.getElementById('buyerPhone');
-    const cardNumberInput = document.getElementById('cardNumber');
-    const checkoutForm = document.querySelector('[data-checkout-form]');
-    const fieldMessages = {
-      buyerName: '<%= t("checkout.err_name") %>',
-      buyerPhone: '<%= t("checkout.err_phone") %>',
-      buyerCity: '<%= t("checkout.err_city") %>',
-      buyerAddress: '<%= t("checkout.err_address") %>',
-      quantity: '<%= t("checkout.err_quantity") %>',
-      cardNumber: '<%= t("checkout.err_card") %>'
-    };
-
-    function setFieldError(field, message) {
-      const errorNode = document.querySelector(`[data-field-error="${field.id}"]`);
-      if (!errorNode) return;
-      errorNode.textContent = message || '';
-      field.classList.toggle('is-invalid', Boolean(message));
-      field.setAttribute('aria-invalid', message ? 'true' : 'false');
-    }
-
-    function validateField(field) {
-      if (!field) return true;
-      const value = String(field.value || '').trim();
-      let message = '';
-
-      if (field.id === 'buyerPhone') {
-        message = /^05\d{2}-\d{3}-\d{3}$/.test(value) ? '' : fieldMessages.buyerPhone;
-      } else if (field.id === 'cardNumber') {
-        const isCard = document.querySelector('input[name="paymentMethod"]:checked')?.value === 'card';
-        const digits = value.replace(/\D/g, '');
-        message = !isCard || digits.length === 16 ? '' : fieldMessages.cardNumber;
-      } else if (field.required && !value) {
-        message = fieldMessages[field.id] || field.validationMessage;
-      } else if (field.id === 'quantity') {
-        const quantity = Number(value || 0);
-        message = quantity >= 1 && quantity <= <%= listing.quantity %> ? '' : fieldMessages.quantity;
-      }
-
-      setFieldError(field, message);
-      return !message;
-    }
-
-    function recalc() {
-      const quantity = Math.max(1, Number(quantityInput?.value || 1));
-      let shipping = 0;
-      const active = document.querySelector('input[name="shippingMethod"]:checked');
-      if (active && active.value === 'company') {
-        const opt = shippingSelect.options[shippingSelect.selectedIndex];
-        shipping = Number(opt?.dataset.price || 0);
-      }
-      const itemTotal = itemPrice * quantity;
-      if (itemInput) itemInput.textContent = itemTotal.toLocaleString('<%= lang === "ar" ? "ar-PS" : "en-US" %>');
-      shippingInput.textContent = shipping.toLocaleString('<%= lang === "ar" ? "ar-PS" : "en-US" %>');
-      totalInput.textContent = (itemTotal + shipping).toLocaleString('<%= lang === "ar" ? "ar-PS" : "en-US" %>');
-    }
-
-    quantityInput?.addEventListener('input', recalc);
-    quantityInput?.addEventListener('blur', () => validateField(quantityInput));
-    methodRadios.forEach((radio) => radio.addEventListener('change', recalc));
-    shippingSelect?.addEventListener('change', recalc);
-    paymentRadios.forEach((radio) => radio.addEventListener('change', function () {
-      const isCard = document.querySelector('input[name="paymentMethod"]:checked')?.value === 'card';
-      if (cardFields) cardFields.hidden = !isCard;
-      if (codNote) codNote.hidden = isCard;
-      if (!isCard && cardNumberInput) setFieldError(cardNumberInput, '');
-      if (cardNumberInput) validateField(cardNumberInput);
-    }));
-    phoneInput?.addEventListener('input', function () {
-      const digits = (phoneInput.value || '').replace(/\D/g, '').slice(0, 10);
-      if (digits.length >= 4) {
-        phoneInput.value = digits.replace(/(\d{4})(\d{3})(\d{0,3})/, function (_match, a, b, c) {
-          return c ? a + '-' + b + '-' + c : a + '-' + b;
-        });
-      }
-    });
-    phoneInput?.addEventListener('blur', () => validateField(phoneInput));
-    cardNumberInput?.addEventListener('input', function () {
-      const digits = (cardNumberInput.value || '').replace(/\D/g, '').slice(0, 16);
-      cardNumberInput.value = digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
-    });
-    cardNumberInput?.addEventListener('blur', () => validateField(cardNumberInput));
-    citySearch?.addEventListener('input', function () {
-      const q = String(citySearch.value || '').toLowerCase();
-      Array.from(citySelect.options).forEach((option) => {
-        if (!option.value) return;
-        option.hidden = q && !option.text.toLowerCase().includes(q);
-      });
-    });
-    citySelect?.addEventListener('blur', () => validateField(citySelect));
-    citySelect?.addEventListener('change', () => validateField(citySelect));
-    document.querySelectorAll('[data-validate-field]').forEach((field) => {
-      if (field.id === 'buyerPhone' || field.id === 'cardNumber' || field.id === 'quantity') return;
-      field.addEventListener('blur', () => validateField(field));
-    });
-    checkoutForm?.addEventListener('submit', (event) => {
-      const valid = Array.from(checkoutForm.querySelectorAll('[data-validate-field]')).every((field) => validateField(field));
-      if (!valid) {
-        event.preventDefault();
-        checkoutForm.querySelector('.is-invalid')?.focus();
-      }
-    });
-    recalc();
-  })();
-</script>
-
+</main>
 <%- include('../partials/footer') %>

@@ -1,49 +1,57 @@
-<%- include('partials/admin-header') %>
-
-<div class="admin-header-bar">
-  <h1>🛒 Marketplace Moderation</h1>
-</div>
-
-<div class="admin-table-wrapper">
-  <table class="admin-table">
-    <thead>
-      <tr>
-        <th>Image</th>
-        <th>Listing</th>
-        <th>Seller</th>
-        <th>Price</th>
-        <th>Status</th>
-        <th>Created</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% if (listings && listings.length) { %>
-        <% listings.forEach((listing) => { %>
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <div class="page-header">
+      <h1><%= t('admin.listings') %></h1>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
           <tr>
-            <td><img src="<%= listing.images && listing.images[0] ? listing.images[0] : '/images/products/placeholder.svg' %>" width="50" height="50" style="border-radius:6px;object-fit:cover"></td>
-            <td><a href="/marketplace/<%= listing.id %>" target="_blank"><%= listing.titleAr || listing.title %></a><br><small><%= listing.category %> - <%= listing.location %></small></td>
-            <td><%= listing.seller.username %></td>
-            <td>₪ <%= Number(listing.price).toLocaleString() %></td>
-            <td><%= listing.status %></td>
-            <td><%= new Date(listing.createdAt).toLocaleDateString('ar-PS') %></td>
+            <th><%= locale === 'ar' ? 'المنتج' : 'Listing' %></th>
+            <th><%= locale === 'ar' ? 'البائع' : 'Seller' %></th>
+            <th><%= locale === 'ar' ? 'السعر' : 'Price' %></th>
+            <th><%= t('order.status') %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% listings.forEach(l => { %>
+          <tr>
+            <td><a href="/whale/listing/<%= l.slug %>"><%= l.title %></a></td>
+            <td><%= l.seller?.username %></td>
             <td>
-              <% if (listing.status !== 'REMOVED') { %>
-                <form method="POST" action="/admin/listings/<%= listing.id %>/remove" onsubmit="return confirm('Remove this listing?')">
-                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-sm btn-danger">Remove</button>
-                </form>
-              <% } else { %>
-                <span style="color:#888">Removed</span>
+              $
+              <%= parseFloat(l.price).toLocaleString() %>
+            </td>
+            <td>
+              <span
+                class="badge badge-<%= l.status === 'ACTIVE' ? 'success' : l.status === 'REMOVED' ? 'danger' : 'neutral' %>"
+              >
+                <%= l.status %>
+              </span>
+            </td>
+            <td>
+              <% if (l.status !== 'REMOVED') { %>
+              <form
+                method="POST"
+                action="/admin/listings/<%= l.id %>/remove"
+                style="display: inline"
+                data-confirm="Remove this listing?"
+              >
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-danger btn-sm">
+                  <%= t('admin.remove') %>
+                </button>
+              </form>
               <% } %>
             </td>
           </tr>
-        <% }) %>
-      <% } else { %>
-        <tr><td colspan="7">No listings found.</td></tr>
-      <% } %>
-    </tbody>
-  </table>
-</div>
-
-<%- include('partials/admin-footer') %>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<%- include('../partials/footer') %>
