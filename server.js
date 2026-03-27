@@ -45,24 +45,27 @@ app.use(
 // 3. Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 4. Session
-app.use(
-  session({
-    store: new PgSession({
-      conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    },
-  })
-);
+// 4. Session (falls back to in-memory store when DATABASE_URL is not set)
+const sessionConfig = {
+  secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  },
+};
+if (process.env.DATABASE_URL) {
+  sessionConfig.store = new PgSession({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+  });
+} else {
+  console.warn('[session] DATABASE_URL not set — using in-memory session store');
+}
+app.use(session(sessionConfig));
 
 // 5. Passport
 app.use(passport.initialize());
