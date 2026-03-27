@@ -3,10 +3,10 @@
  * Railway entrypoint — runs migrations then starts the server.
  * Single Node process so all stdout/stderr is captured.
  *
- * P3009 recovery: if Prisma finds a failed migration it refuses to apply
- * new ones.  We run `prisma migrate reset --force` to wipe the tracking
- * table (PostgreSQL DDL is transactional so a failed migration leaves the
- * schema unchanged), then retry deploy from a clean state.
+ * Migration recovery: if `prisma migrate deploy` fails for any reason
+ * (P3009 stale failed record, P3018 schema conflict from partial state,
+ * etc.) we run `prisma migrate reset --force` to drop all objects and
+ * re-apply every migration from scratch, then retry deploy.
  *
  * Environment variables:
  *   FAIL_FAST_MIGRATIONS=1  — exit immediately on migration failure (production safety)
@@ -54,19 +54,17 @@ try {
     process.exit(1);
   }
 
-  // P3009: Prisma found failed/rolled-back migrations — reset and re-apply
-  if (combined.includes('P3009') || combined.includes('failed migrations')) {
-    try {
-      resetMigrationTable();
-      console.log('[entrypoint] Retrying prisma migrate deploy after reset...');
-      const retryOutput = runMigrateDeploy();
-      console.log('[entrypoint] Migration retry output:', retryOutput.toString().trim());
-    } catch (retryErr) {
-      const retryStderr = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
-      console.error('[entrypoint] Migration retry after reset failed:', retryStderr);
-    }
+  // Any migration failure (P3009 stale record, P3018 schema conflict, etc.)
+  // — reset the database and re-apply all migrations from scratch.
+  try {
+    resetMigrationTable();
+    console.log('[entrypoint] Retrying prisma migrate deploy after reset...');
+    const retryOutput = runMigrateDeploy();
+    console.log('[entrypoint] Migration retry output:', retryOutput.toString().trim());
+  } catch (retryErr) {
+    const retryStderr = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
+    console.error('[entrypoint] Migration retry after reset failed:', retryStderr);
   }
-  // Any other migration error: log and continue (e.g. already applied)
 }
 
 // Optional boot seeding
