@@ -5,14 +5,18 @@
  *
  * Migration recovery: if `prisma migrate deploy` fails for any reason
  * (P3009 stale failed record, P3018 schema conflict from partial state,
- * etc.) we run `prisma migrate reset --force` to drop all objects and
- * re-apply every migration from scratch, then retry deploy.
+ * etc.) we DROP and re-create the public schema via raw SQL (Railway does
+ * not grant DROP DATABASE, so `prisma migrate reset` cannot be used), then
+ * retry `prisma migrate deploy` against the now-empty schema.
  *
  * Environment variables:
  *   FAIL_FAST_MIGRATIONS=1  — exit immediately on migration failure (production safety)
  *   BOOT_SEED=1             — run prisma db seed after migrations
  */
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 console.log('[entrypoint] Node', process.version, '| PID', process.pid);
 console.log('[entrypoint] PORT=' + process.env.PORT, 'NODE_ENV=' + process.env.NODE_ENV);
@@ -22,22 +26,33 @@ console.log('[entrypoint] SESSION_SECRET=' + (process.env.SESSION_SECRET ? 'SET'
 const failFast = process.env.FAIL_FAST_MIGRATIONS === '1';
 const bootSeed = process.env.BOOT_SEED === '1';
 
-function runMigrateDeploy() {
-  return execSync('node_modules/.bin/prisma migrate deploy', {
+function run(cmd, timeoutMs) {
+  return execSync(cmd, {
     stdio: ['pipe', 'pipe', 'pipe'],
-    timeout: 60000
+    timeout: timeoutMs || 60000,
   });
 }
 
-function resetMigrationTable() {
-  console.log('[entrypoint] Wiping _prisma_migrations table for clean re-apply...');
-  execSync(
-    'node_modules/.bin/prisma migrate reset --force --skip-seed --skip-generate',
-    { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 }
-  );
+function runMigrateDeploy() {
+  return run('node_modules/.bin/prisma migrate deploy');
 }
 
-// Run migrations with P3009 recovery
+/**
+ * Drop everything in the public schema and recreate it.
+ * This works on Railway (unlike `prisma migrate reset` which needs DROP DATABASE).
+ */
+function dropPublicSchema() {
+  console.log('[entrypoint] Dropping public schema to clear partial migration state...');
+  const sqlFile = path.join(os.tmpdir(), '_entrypoint_reset.sql');
+  fs.writeFileSync(sqlFile, 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+  try {
+    run('node_modules/.bin/prisma db execute --file ' + sqlFile, 30000);
+  } finally {
+    try { fs.unlinkSync(sqlFile); } catch (_) { /* ignore */ }
+  }
+}
+
+// Run migrations with recovery
 try {
   console.log('[entrypoint] Running prisma migrate deploy...');
   const output = runMigrateDeploy();
@@ -54,16 +69,16 @@ try {
     process.exit(1);
   }
 
-  // Any migration failure (P3009 stale record, P3018 schema conflict, etc.)
-  // — reset the database and re-apply all migrations from scratch.
+  // Any migration failure — drop schema and re-apply from scratch.
   try {
-    resetMigrationTable();
-    console.log('[entrypoint] Retrying prisma migrate deploy after reset...');
+    dropPublicSchema();
+    console.log('[entrypoint] Schema dropped. Retrying prisma migrate deploy...');
     const retryOutput = runMigrateDeploy();
     console.log('[entrypoint] Migration retry output:', retryOutput.toString().trim());
   } catch (retryErr) {
-    const retryStderr = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
-    console.error('[entrypoint] Migration retry after reset failed:', retryStderr);
+    const retryMsg = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
+    console.error('[entrypoint] Migration retry after schema drop failed:', retryMsg);
+    console.error('[entrypoint] Server will start but database may be incomplete.');
   }
 }
 
@@ -71,10 +86,7 @@ try {
 if (bootSeed) {
   try {
     console.log('[entrypoint] Running prisma db seed...');
-    const seedOutput = execSync('node_modules/.bin/prisma db seed', {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 60000,
-    });
+    const seedOutput = run('node_modules/.bin/prisma db seed');
     console.log('[entrypoint] Seed output:', seedOutput.toString().trim());
   } catch (seedErr) {
     const seedStderr = seedErr.stderr ? seedErr.stderr.toString() : seedErr.message;
