@@ -4,9 +4,9 @@
  * Single Node process so all stdout/stderr is captured.
  *
  * P3009 recovery: if Prisma finds a failed migration it refuses to apply
- * new ones.  We parse the error output to get the migration name, mark it
- * as rolled-back (PostgreSQL DDL is transactional so a failed migration
- * leaves the schema unchanged), then retry deploy.
+ * new ones.  We run `prisma migrate reset --force` to wipe the tracking
+ * table (PostgreSQL DDL is transactional so a failed migration leaves the
+ * schema unchanged), then retry deploy from a clean state.
  *
  * Environment variables:
  *   FAIL_FAST_MIGRATIONS=1  — exit immediately on migration failure (production safety)
@@ -29,12 +29,12 @@ function runMigrateDeploy() {
   });
 }
 
-function resolveFailedMigration(migrationName) {
-  console.log('[entrypoint] Resolving failed migration:', migrationName);
-  execSync(`node_modules/.bin/prisma migrate resolve --rolled-back "${migrationName}"`, {
-    stdio: ['pipe', 'pipe', 'pipe'],
-    timeout: 30000
-  });
+function resetMigrationTable() {
+  console.log('[entrypoint] Wiping _prisma_migrations table for clean re-apply...');
+  execSync(
+    'node_modules/.bin/prisma migrate reset --force --skip-seed --skip-generate',
+    { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 }
+  );
 }
 
 // Run migrations with P3009 recovery
@@ -54,27 +54,16 @@ try {
     process.exit(1);
   }
 
-  // P3009: Prisma found a failed migration — resolve it and retry once
+  // P3009: Prisma found failed/rolled-back migrations — reset and re-apply
   if (combined.includes('P3009') || combined.includes('failed migrations')) {
-    // Extract the migration name from the error message.
-    // Prisma prints: "Migration name: 20260316052851_add_marketplace_v2"
-    const nameMatch = combined.match(/Migration name:\s*(\S+)/i)
-      || combined.match(/migration\s+"([^"]+)"/i)
-      || combined.match(/migrations[/\\](\d{14}_\S+)/i);
-
-    if (nameMatch) {
-      try {
-        resolveFailedMigration(nameMatch[1]);
-        console.log('[entrypoint] Retrying prisma migrate deploy...');
-        const retryOutput = runMigrateDeploy();
-        console.log('[entrypoint] Migration retry output:', retryOutput.toString().trim());
-      } catch (retryErr) {
-        const retryStderr = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
-        console.error('[entrypoint] Migration retry failed:', retryStderr);
-        // Continue — the schema may be close enough for the server to start
-      }
-    } else {
-      console.error('[entrypoint] P3009 detected but could not parse migration name — continuing');
+    try {
+      resetMigrationTable();
+      console.log('[entrypoint] Retrying prisma migrate deploy after reset...');
+      const retryOutput = runMigrateDeploy();
+      console.log('[entrypoint] Migration retry output:', retryOutput.toString().trim());
+    } catch (retryErr) {
+      const retryStderr = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
+      console.error('[entrypoint] Migration retry after reset failed:', retryStderr);
     }
   }
   // Any other migration error: log and continue (e.g. already applied)

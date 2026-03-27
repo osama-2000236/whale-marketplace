@@ -14,10 +14,19 @@ CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED
 CREATE TYPE "NotificationType" AS ENUM ('ORDER', 'REVIEW', 'SYSTEM', 'FOLLOW');
 
 -- CreateEnum
-CREATE TYPE "PaymentProvider" AS ENUM ('PAYMOB', 'PAYPAL', 'MANUAL');
+CREATE TYPE "PaymentProvider" AS ENUM ('PAYMOB', 'PAYPAL', 'STRIPE', 'MANUAL');
 
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "AdminScope" AS ENUM ('SUPER_ADMIN', 'SUPPORT_AGENT', 'WAREHOUSE');
+
+-- CreateEnum
+CREATE TYPE "AuthTokenType" AS ENUM ('EMAIL_VERIFICATION', 'PASSWORD_RESET');
+
+-- CreateEnum
+CREATE TYPE "RefundStatus" AS ENUM ('REQUESTED', 'APPROVED', 'REJECTED', 'PROCESSED');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -25,14 +34,19 @@ CREATE TABLE "User" (
     "username" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "email" TEXT NOT NULL,
+    "emailVerified" BOOLEAN NOT NULL DEFAULT false,
     "passwordHash" TEXT,
     "googleId" TEXT,
+    "facebookId" TEXT,
+    "appleId" TEXT,
     "role" "UserRole" NOT NULL DEFAULT 'MEMBER',
+    "adminScope" "AdminScope",
     "avatar" TEXT,
     "avatarUrl" TEXT,
     "bio" TEXT,
     "isVerified" BOOLEAN NOT NULL DEFAULT false,
     "isBanned" BOOLEAN NOT NULL DEFAULT false,
+    "twoFactorSecret" TEXT,
     "deletedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -111,6 +125,7 @@ CREATE TABLE "Listing" (
     "negotiable" BOOLEAN NOT NULL DEFAULT false,
     "condition" "ListingCondition" NOT NULL DEFAULT 'USED',
     "images" TEXT[],
+    "stock" INTEGER NOT NULL DEFAULT 1,
     "categoryId" TEXT NOT NULL,
     "subcategoryId" TEXT,
     "city" TEXT NOT NULL,
@@ -220,113 +235,193 @@ CREATE TABLE "Payment" (
     CONSTRAINT "Payment_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "session" (
+    "sid" VARCHAR NOT NULL,
+    "sess" JSON NOT NULL,
+    "expire" TIMESTAMP(6) NOT NULL,
+
+    CONSTRAINT "session_pkey" PRIMARY KEY ("sid")
+);
+
+-- CreateTable
+CREATE TABLE "AuthToken" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "type" "AuthTokenType" NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "usedAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AuthToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Address" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "label" TEXT NOT NULL DEFAULT 'home',
+    "street" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
+    "phone" TEXT NOT NULL,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Address_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "SavedPaymentMethod" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "label" TEXT NOT NULL,
+    "tokenRef" TEXT NOT NULL,
+    "last4" TEXT,
+    "isDefault" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SavedPaymentMethod_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Coupon" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "discountType" TEXT NOT NULL DEFAULT 'percent',
+    "discountValue" DECIMAL(12,2) NOT NULL,
+    "minOrderAmount" DECIMAL(12,2),
+    "maxUses" INTEGER,
+    "usedCount" INTEGER NOT NULL DEFAULT 0,
+    "expiresAt" TIMESTAMP(3),
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Coupon_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Cart" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Cart_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CartItem" (
+    "id" TEXT NOT NULL,
+    "cartId" TEXT NOT NULL,
+    "listingId" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL DEFAULT 1,
+    "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CartItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "RefundRequest" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "status" "RefundStatus" NOT NULL DEFAULT 'REQUESTED',
+    "adminNote" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "RefundRequest_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AdminAuditLog" (
+    "id" TEXT NOT NULL,
+    "adminId" TEXT NOT NULL,
+    "action" TEXT NOT NULL,
+    "target" TEXT NOT NULL,
+    "targetId" TEXT,
+    "details" JSONB,
+    "ip" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "AdminAuditLog_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_slug_key" ON "User"("slug");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
-
--- CreateIndex
 CREATE UNIQUE INDEX "User_googleId_key" ON "User"("googleId");
+CREATE UNIQUE INDEX "User_facebookId_key" ON "User"("facebookId");
+CREATE UNIQUE INDEX "User_appleId_key" ON "User"("appleId");
 
--- CreateIndex
 CREATE UNIQUE INDEX "Subscription_userId_key" ON "Subscription"("userId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "SellerProfile_userId_key" ON "SellerProfile"("userId");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Subcategory_slug_key" ON "Subcategory"("slug");
 
--- CreateIndex
 CREATE UNIQUE INDEX "Listing_slug_key" ON "Listing"("slug");
-
--- CreateIndex
 CREATE INDEX "Listing_status_createdAt_idx" ON "Listing"("status", "createdAt" DESC);
-
--- CreateIndex
 CREATE INDEX "Listing_sellerId_idx" ON "Listing"("sellerId");
-
--- CreateIndex
 CREATE INDEX "Listing_categoryId_idx" ON "Listing"("categoryId");
 
--- CreateIndex
 CREATE UNIQUE INDEX "Order_orderNumber_key" ON "Order"("orderNumber");
-
--- CreateIndex
 CREATE INDEX "Order_buyerId_idx" ON "Order"("buyerId");
-
--- CreateIndex
 CREATE INDEX "Order_sellerId_idx" ON "Order"("sellerId");
-
--- CreateIndex
 CREATE INDEX "Order_status_idx" ON "Order"("status");
 
--- CreateIndex
 CREATE UNIQUE INDEX "Review_orderId_key" ON "Review"("orderId");
-
--- CreateIndex
 CREATE INDEX "Notification_userId_isRead_idx" ON "Notification"("userId", "isRead");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Payment_idempotencyKey_key" ON "Payment"("idempotencyKey");
+CREATE INDEX "IDX_session_expire" ON "session"("expire");
+
+CREATE UNIQUE INDEX "AuthToken_token_key" ON "AuthToken"("token");
+CREATE INDEX "AuthToken_token_idx" ON "AuthToken"("token");
+CREATE INDEX "AuthToken_userId_type_idx" ON "AuthToken"("userId", "type");
+
+CREATE INDEX "Address_userId_idx" ON "Address"("userId");
+CREATE INDEX "SavedPaymentMethod_userId_idx" ON "SavedPaymentMethod"("userId");
+
+CREATE UNIQUE INDEX "Coupon_code_key" ON "Coupon"("code");
+CREATE UNIQUE INDEX "Cart_userId_key" ON "Cart"("userId");
+CREATE UNIQUE INDEX "CartItem_cartId_listingId_key" ON "CartItem"("cartId", "listingId");
+
+CREATE INDEX "RefundRequest_orderId_idx" ON "RefundRequest"("orderId");
+CREATE INDEX "RefundRequest_status_idx" ON "RefundRequest"("status");
+
+CREATE INDEX "AdminAuditLog_adminId_idx" ON "AdminAuditLog"("adminId");
+CREATE INDEX "AdminAuditLog_action_idx" ON "AdminAuditLog"("action");
+CREATE INDEX "AdminAuditLog_createdAt_idx" ON "AdminAuditLog"("createdAt");
 
 -- AddForeignKey
 ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "SellerProfile" ADD CONSTRAINT "SellerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Subcategory" ADD CONSTRAINT "Subcategory_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Listing" ADD CONSTRAINT "Listing_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Category"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Listing" ADD CONSTRAINT "Listing_subcategoryId_fkey" FOREIGN KEY ("subcategoryId") REFERENCES "Subcategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Listing" ADD CONSTRAINT "Listing_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Order" ADD CONSTRAINT "Order_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "Listing"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Order" ADD CONSTRAINT "Order_buyerId_fkey" FOREIGN KEY ("buyerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Order" ADD CONSTRAINT "Order_sellerId_fkey" FOREIGN KEY ("sellerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "OrderEvent" ADD CONSTRAINT "OrderEvent_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "OrderEvent" ADD CONSTRAINT "OrderEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Review" ADD CONSTRAINT "Review_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Review" ADD CONSTRAINT "Review_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "Listing"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Review" ADD CONSTRAINT "Review_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "SavedListing" ADD CONSTRAINT "SavedListing_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "SavedListing" ADD CONSTRAINT "SavedListing_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "Listing"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Payment" ADD CONSTRAINT "Payment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "AuthToken" ADD CONSTRAINT "AuthToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Address" ADD CONSTRAINT "Address_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "SavedPaymentMethod" ADD CONSTRAINT "SavedPaymentMethod_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "Cart" ADD CONSTRAINT "Cart_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_cartId_fkey" FOREIGN KEY ("cartId") REFERENCES "Cart"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "CartItem" ADD CONSTRAINT "CartItem_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "Listing"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "RefundRequest" ADD CONSTRAINT "RefundRequest_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "RefundRequest" ADD CONSTRAINT "RefundRequest_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "AdminAuditLog" ADD CONSTRAINT "AdminAuditLog_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
