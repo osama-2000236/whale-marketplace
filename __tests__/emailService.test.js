@@ -78,4 +78,42 @@ describe('emailService', () => {
       emailService.sendOrderShipped({ orderNumber: 'O-7', buyer: { email: 'b@test.com' } })
     ).resolves.toBeUndefined();
   });
+
+  test('sendVerificationEmail sends verification link', async () => {
+    await emailService.sendVerificationEmail(
+      { email: 'user@test.com', username: 'osama' },
+      'abc123token'
+    );
+    expect(mailer.sendMail).toHaveBeenCalledTimes(1);
+    expect(mailer.sendMail.mock.calls[0][0].to).toBe('user@test.com');
+    expect(mailer.sendMail.mock.calls[0][0].subject).toContain('Verify');
+    const templatePayload = mailer.emailTemplate.mock.calls[0][0];
+    expect(templatePayload.bodyEn).toContain('abc123token');
+  });
+
+  test('sendPasswordReset sends reset link', async () => {
+    await emailService.sendPasswordReset(
+      { email: 'user@test.com', username: 'osama' },
+      'resettoken456'
+    );
+    expect(mailer.sendMail).toHaveBeenCalledTimes(1);
+    expect(mailer.sendMail.mock.calls[0][0].to).toBe('user@test.com');
+    expect(mailer.sendMail.mock.calls[0][0].subject).toContain('Reset');
+    const templatePayload = mailer.emailTemplate.mock.calls[0][0];
+    expect(templatePayload.bodyEn).toContain('resettoken456');
+  });
+
+  test('sendVerificationEmail swallows errors', async () => {
+    mailer.sendMail.mockImplementation(() => Promise.reject(new Error('smtp down')));
+    await expect(
+      emailService.sendVerificationEmail({ email: 'x@test.com', username: 'x' }, 'tok')
+    ).resolves.toBeUndefined();
+  });
+
+  test('sendPasswordReset swallows errors', async () => {
+    mailer.sendMail.mockImplementation(() => Promise.reject(new Error('smtp down')));
+    await expect(
+      emailService.sendPasswordReset({ email: 'x@test.com', username: 'x' }, 'tok')
+    ).resolves.toBeUndefined();
+  });
 });
