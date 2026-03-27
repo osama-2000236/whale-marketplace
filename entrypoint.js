@@ -46,7 +46,7 @@ function dropPublicSchema() {
   const sqlFile = path.join(os.tmpdir(), '_entrypoint_reset.sql');
   fs.writeFileSync(sqlFile, 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
   try {
-    run('node_modules/.bin/prisma db execute --file ' + sqlFile, 30000);
+    run('node_modules/.bin/prisma db execute --schema prisma/schema.prisma --file ' + sqlFile, 30000);
   } finally {
     try { fs.unlinkSync(sqlFile); } catch (_) { /* ignore */ }
   }
