@@ -1,0 +1,83 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('admin.refunds') %></h1>
+      <a href="/admin" class="btn btn-ghost">&larr; <%= t('admin.dashboard') %></a>
+    </div>
+
+    <div class="tabs mb-2">
+      <a href="/admin/refunds" class="tab <%= !status ? 'active' : '' %>"><%= locale === 'ar' ? 'الكل' : 'All' %></a>
+      <a href="/admin/refunds?status=REQUESTED" class="tab <%= status === 'REQUESTED' ? 'active' : '' %>"><%= locale === 'ar' ? 'مطلوب' : 'Requested' %></a>
+      <a href="/admin/refunds?status=APPROVED" class="tab <%= status === 'APPROVED' ? 'active' : '' %>"><%= locale === 'ar' ? 'موافق' : 'Approved' %></a>
+      <a href="/admin/refunds?status=REJECTED" class="tab <%= status === 'REJECTED' ? 'active' : '' %>"><%= locale === 'ar' ? 'مرفوض' : 'Rejected' %></a>
+    </div>
+
+    <% if (refunds.length === 0) { %>
+    <div class="empty-state">
+      <h3><%= locale === 'ar' ? 'لا توجد طلبات استرداد' : 'No refund requests' %></h3>
+    </div>
+    <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><%= locale === 'ar' ? 'التاريخ' : 'Date' %></th>
+            <th><%= locale === 'ar' ? 'الطلب' : 'Order' %></th>
+            <th><%= locale === 'ar' ? 'المشتري' : 'Buyer' %></th>
+            <th><%= locale === 'ar' ? 'السبب' : 'Reason' %></th>
+            <th><%= locale === 'ar' ? 'المبلغ' : 'Amount' %></th>
+            <th><%= locale === 'ar' ? 'الحالة' : 'Status' %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% refunds.forEach(r => { %>
+          <tr>
+            <td><%= new Date(r.createdAt).toLocaleDateString() %></td>
+            <td>
+              <% if (r.order) { %>
+              <code><%= r.order.orderNumber ? r.order.orderNumber.slice(-8) : r.orderId.slice(0, 8) %></code>
+              <% } else { %>
+              <code><%= r.orderId.slice(0, 8) %></code>
+              <% } %>
+            </td>
+            <td><%= r.user ? r.user.username : r.userId.slice(0, 8) %></td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"><%= r.reason || '—' %></td>
+            <td><%= r.amount ? '$' + parseFloat(r.amount).toFixed(2) : '—' %></td>
+            <td>
+              <span class="badge badge-<%= r.status === 'REQUESTED' ? 'warning' : r.status === 'APPROVED' ? 'success' : r.status === 'REJECTED' ? 'danger' : 'secondary' %>">
+                <%= r.status %>
+              </span>
+            </td>
+            <td>
+              <% if (r.status === 'REQUESTED') { %>
+              <div style="display: flex; gap: 0.25rem">
+                <form method="POST" action="/admin/refunds/<%= r.id %>" style="display: inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <input type="hidden" name="status" value="APPROVED" />
+                  <input type="hidden" name="adminNote" value="" />
+                  <button type="submit" class="btn btn-primary btn-sm"><%= locale === 'ar' ? 'موافقة' : 'Approve' %></button>
+                </form>
+                <form method="POST" action="/admin/refunds/<%= r.id %>" style="display: inline">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <input type="hidden" name="status" value="REJECTED" />
+                  <input type="hidden" name="adminNote" value="" />
+                  <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--danger)"><%= locale === 'ar' ? 'رفض' : 'Reject' %></button>
+                </form>
+              </div>
+              <% } else { %>
+              <span style="color: var(--text-muted); font-size: 0.85rem"><%= r.adminNote || '' %></span>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>
