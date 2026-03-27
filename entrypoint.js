@@ -3,16 +3,20 @@
  * Railway entrypoint — runs migrations then starts the server.
  * Single Node process so all stdout/stderr is captured.
  *
- * P3009 recovery: if Prisma finds a failed migration it refuses to apply
- * new ones.  We run `prisma migrate reset --force` to wipe the tracking
- * table (PostgreSQL DDL is transactional so a failed migration leaves the
- * schema unchanged), then retry deploy from a clean state.
+ * Migration recovery: if `prisma migrate deploy` fails for any reason
+ * (P3009 stale failed record, P3018 schema conflict from partial state,
+ * etc.) we DROP and re-create the public schema via raw SQL (Railway does
+ * not grant DROP DATABASE, so `prisma migrate reset` cannot be used), then
+ * retry `prisma migrate deploy` against the now-empty schema.
  *
  * Environment variables:
  *   FAIL_FAST_MIGRATIONS=1  — exit immediately on migration failure (production safety)
  *   BOOT_SEED=1             — run prisma db seed after migrations
  */
 const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 console.log('[entrypoint] Node', process.version, '| PID', process.pid);
 console.log('[entrypoint] PORT=' + process.env.PORT, 'NODE_ENV=' + process.env.NODE_ENV);
@@ -22,22 +26,33 @@ console.log('[entrypoint] SESSION_SECRET=' + (process.env.SESSION_SECRET ? 'SET'
 const failFast = process.env.FAIL_FAST_MIGRATIONS === '1';
 const bootSeed = process.env.BOOT_SEED === '1';
 
-function runMigrateDeploy() {
-  return execSync('node_modules/.bin/prisma migrate deploy', {
+function run(cmd, timeoutMs) {
+  return execSync(cmd, {
     stdio: ['pipe', 'pipe', 'pipe'],
-    timeout: 60000
+    timeout: timeoutMs || 60000,
   });
 }
 
-function resetMigrationTable() {
-  console.log('[entrypoint] Wiping _prisma_migrations table for clean re-apply...');
-  execSync(
-    'node_modules/.bin/prisma migrate reset --force --skip-seed --skip-generate',
-    { stdio: ['pipe', 'pipe', 'pipe'], timeout: 60000 }
-  );
+function runMigrateDeploy() {
+  return run('node_modules/.bin/prisma migrate deploy');
 }
 
-// Run migrations with P3009 recovery
+/**
+ * Drop everything in the public schema and recreate it.
+ * This works on Railway (unlike `prisma migrate reset` which needs DROP DATABASE).
+ */
+function dropPublicSchema() {
+  console.log('[entrypoint] Dropping public schema to clear partial migration state...');
+  const sqlFile = path.join(os.tmpdir(), '_entrypoint_reset.sql');
+  fs.writeFileSync(sqlFile, 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+  try {
+    run('node_modules/.bin/prisma db execute --file ' + sqlFile, 30000);
+  } finally {
+    try { fs.unlinkSync(sqlFile); } catch (_) { /* ignore */ }
+  }
+}
+
+// Run migrations with recovery
 try {
   console.log('[entrypoint] Running prisma migrate deploy...');
   const output = runMigrateDeploy();
@@ -54,29 +69,24 @@ try {
     process.exit(1);
   }
 
-  // P3009: Prisma found failed/rolled-back migrations — reset and re-apply
-  if (combined.includes('P3009') || combined.includes('failed migrations')) {
-    try {
-      resetMigrationTable();
-      console.log('[entrypoint] Retrying prisma migrate deploy after reset...');
-      const retryOutput = runMigrateDeploy();
-      console.log('[entrypoint] Migration retry output:', retryOutput.toString().trim());
-    } catch (retryErr) {
-      const retryStderr = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
-      console.error('[entrypoint] Migration retry after reset failed:', retryStderr);
-    }
+  // Any migration failure — drop schema and re-apply from scratch.
+  try {
+    dropPublicSchema();
+    console.log('[entrypoint] Schema dropped. Retrying prisma migrate deploy...');
+    const retryOutput = runMigrateDeploy();
+    console.log('[entrypoint] Migration retry output:', retryOutput.toString().trim());
+  } catch (retryErr) {
+    const retryMsg = retryErr.stderr ? retryErr.stderr.toString() : retryErr.message;
+    console.error('[entrypoint] Migration retry after schema drop failed:', retryMsg);
+    console.error('[entrypoint] Server will start but database may be incomplete.');
   }
-  // Any other migration error: log and continue (e.g. already applied)
 }
 
 // Optional boot seeding
 if (bootSeed) {
   try {
     console.log('[entrypoint] Running prisma db seed...');
-    const seedOutput = execSync('node_modules/.bin/prisma db seed', {
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 60000,
-    });
+    const seedOutput = run('node_modules/.bin/prisma db seed');
     console.log('[entrypoint] Seed output:', seedOutput.toString().trim());
   } catch (seedErr) {
     const seedStderr = seedErr.stderr ? seedErr.stderr.toString() : seedErr.message;
