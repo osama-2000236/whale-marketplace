@@ -1,0 +1,118 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container" style="max-width: 720px">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('checkout.title') %></h1>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start">
+      <!-- Order form -->
+      <div class="card">
+        <div class="card-body">
+          <form method="POST" action="/checkout">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+            <% if (addresses && addresses.length > 0) { %>
+            <h3 class="mb-2"><%= locale === 'ar' ? 'عنوان محفوظ' : 'Saved Address' %></h3>
+            <div class="form-group">
+              <select name="savedAddress" class="select" id="savedAddress" onchange="fillAddress(this)">
+                <option value=""><%= locale === 'ar' ? 'اختر عنوان...' : 'Select address...' %></option>
+                <% addresses.forEach(a => { %>
+                <option value="<%= a.id %>" data-street="<%= a.street %>" data-city="<%= a.city %>" data-phone="<%= a.phone || '' %>">
+                  <%= a.label || a.street + ', ' + a.city %>
+                </option>
+                <% }) %>
+              </select>
+            </div>
+            <% } %>
+
+            <h3 class="mb-2"><%= t('checkout.shipping') %></h3>
+            <div class="form-group">
+              <label class="form-label"><%= t('checkout.street') %> <span class="required">*</span></label>
+              <input type="text" name="street" id="street" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('checkout.city') %> <span class="required">*</span></label>
+              <select name="city" id="city" class="select" required>
+                <% cities.forEach(c => { %>
+                <option value="<%= c %>"><%= c %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('checkout.phone') %> <span class="required">*</span></label>
+              <input type="tel" name="phone" id="phone" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= t('checkout.note') %></label>
+              <textarea name="buyerNote" class="textarea" rows="3" maxlength="500"></textarea>
+            </div>
+
+            <h3 class="mb-2 mt-2"><%= locale === 'ar' ? 'كود خصم' : 'Coupon Code' %></h3>
+            <div class="form-group">
+              <input type="text" name="couponCode" class="input" placeholder="<%= locale === 'ar' ? 'أدخل كود الخصم' : 'Enter coupon code' %>" maxlength="30" />
+            </div>
+
+            <h3 class="mb-2 mt-2"><%= t('checkout.payment') %></h3>
+            <div class="form-group">
+              <select name="paymentMethod" class="select">
+                <option value="manual"><%= locale === 'ar' ? 'دفع يدوي / عند الاستلام' : 'Manual / Cash on Delivery' %></option>
+                <option value="paymob">Paymob</option>
+                <option value="paypal">PayPal</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-lg mt-2">
+              <%= locale === 'ar' ? 'تأكيد الطلب' : 'Place Order' %>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Order summary -->
+      <div class="card">
+        <div class="card-body">
+          <h3 class="mb-2"><%= locale === 'ar' ? 'ملخص الطلب' : 'Order Summary' %></h3>
+          <% if (cart && cart.items) { %>
+          <% cart.items.forEach(item => { %>
+          <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border)">
+            <span>
+              <%= item.listing ? item.listing.title : 'Item' %>
+              <% if (item.quantity > 1) { %> × <%= item.quantity %><% } %>
+            </span>
+            <span><%= currency %> <%= item.listing ? (parseFloat(item.listing.price) * item.quantity).toFixed(2) : '—' %></span>
+          </div>
+          <% }) %>
+          <% } %>
+          <div style="display: flex; justify-content: space-between; padding: 0.75rem 0; font-weight: 600; font-size: 1.1rem">
+            <span><%= locale === 'ar' ? 'الإجمالي' : 'Total' %></span>
+            <span><%= currency %> <%= parseFloat(total).toFixed(2) %></span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted)">
+            <%= itemCount %> <%= locale === 'ar' ? 'منتج' : 'item(s)' %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+function fillAddress(sel) {
+  var opt = sel.options[sel.selectedIndex];
+  if (opt.value) {
+    document.getElementById('street').value = opt.dataset.street || '';
+    document.getElementById('phone').value = opt.dataset.phone || '';
+    var citySelect = document.getElementById('city');
+    for (var i = 0; i < citySelect.options.length; i++) {
+      if (citySelect.options[i].value === opt.dataset.city) {
+        citySelect.selectedIndex = i;
+        break;
+      }
+    }
+  }
+}
+</script>
+<%- include('../partials/footer') %>

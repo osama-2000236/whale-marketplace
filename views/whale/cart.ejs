@@ -1,0 +1,75 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container" style="max-width: 900px">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('cart.title') %></h1>
+    </div>
+
+    <% if (!cart || !cart.items || cart.items.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-state-icon">🛒</div>
+      <h3><%= locale === 'ar' ? 'سلة التسوق فارغة' : 'Your cart is empty' %></h3>
+      <a href="/whale" class="btn btn-primary"><%= t('whale.browse') %></a>
+    </div>
+    <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><%= locale === 'ar' ? 'المنتج' : 'Item' %></th>
+            <th><%= locale === 'ar' ? 'السعر' : 'Price' %></th>
+            <th><%= locale === 'ar' ? 'الكمية' : 'Qty' %></th>
+            <th><%= locale === 'ar' ? 'المجموع' : 'Subtotal' %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% cart.items.forEach(item => { %>
+          <tr>
+            <td>
+              <div style="display: flex; align-items: center; gap: 0.5rem">
+                <% if (item.listing && item.listing.images && item.listing.images.length > 0) { %>
+                <img src="<%= item.listing.images[0] %>" alt="" style="width: 40px; height: 30px; object-fit: cover; border-radius: 4px" />
+                <% } %>
+                <span><%= item.listing ? item.listing.title : 'Removed' %></span>
+              </div>
+            </td>
+            <td><%= currency %> <%= item.listing ? parseFloat(item.listing.price).toFixed(2) : '—' %></td>
+            <td>
+              <form method="POST" action="/cart/update/<%= item.id %>" style="display: flex; align-items: center; gap: 0.25rem">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <input type="number" name="quantity" value="<%= item.quantity %>" min="1" max="99" class="input" style="width: 60px" />
+                <button type="submit" class="btn btn-ghost btn-sm"><%= locale === 'ar' ? 'تحديث' : 'Update' %></button>
+              </form>
+            </td>
+            <td><%= currency %> <%= item.listing ? (parseFloat(item.listing.price) * item.quantity).toFixed(2) : '—' %></td>
+            <td>
+              <form method="POST" action="/cart/remove/<%= item.id %>">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--danger)">✕</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem">
+      <form method="POST" action="/cart/clear">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <button type="submit" class="btn btn-ghost"><%= locale === 'ar' ? 'تفريغ السلة' : 'Clear Cart' %></button>
+      </form>
+      <div style="text-align: right">
+        <div style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem">
+          <%= locale === 'ar' ? 'الإجمالي:' : 'Total:' %> <%= currency %> <%= parseFloat(total).toFixed(2) %>
+        </div>
+        <a href="/checkout" class="btn btn-primary btn-lg"><%= locale === 'ar' ? 'إتمام الشراء' : 'Proceed to Checkout' %></a>
+      </div>
+    </div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

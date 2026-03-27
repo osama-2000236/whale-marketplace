@@ -1,0 +1,99 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= t('admin.coupons') %></h1>
+      <a href="/admin" class="btn btn-ghost">&larr; <%= t('admin.dashboard') %></a>
+    </div>
+
+    <!-- Create coupon form -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h3 class="mb-2"><%= locale === 'ar' ? 'إنشاء كوبون' : 'Create Coupon' %></h3>
+        <form method="POST" action="/admin/coupons">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem">
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'الكود' : 'Code' %> *</label>
+              <input type="text" name="code" class="input" required maxlength="30" placeholder="SAVE20" />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'النوع' : 'Type' %></label>
+              <select name="discountType" class="select">
+                <option value="percent"><%= locale === 'ar' ? 'نسبة مئوية' : 'Percent' %></option>
+                <option value="fixed"><%= locale === 'ar' ? 'مبلغ ثابت' : 'Fixed Amount' %></option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'القيمة' : 'Value' %> *</label>
+              <input type="number" name="discountValue" class="input" required min="0" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'الحد الأدنى' : 'Min Order' %></label>
+              <input type="number" name="minOrderAmount" class="input" min="0" step="0.01" value="0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'الحد الأقصى للاستخدام' : 'Max Uses' %></label>
+              <input type="number" name="maxUses" class="input" min="0" value="0" placeholder="0 = unlimited" />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'تاريخ الانتهاء' : 'Expires At' %></label>
+              <input type="date" name="expiresAt" class="input" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary mt-2"><%= locale === 'ar' ? 'إنشاء' : 'Create Coupon' %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Existing coupons -->
+    <% if (coupons.length === 0) { %>
+    <div class="empty-state">
+      <h3><%= locale === 'ar' ? 'لا توجد كوبونات' : 'No coupons yet' %></h3>
+    </div>
+    <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><%= locale === 'ar' ? 'الكود' : 'Code' %></th>
+            <th><%= locale === 'ar' ? 'الخصم' : 'Discount' %></th>
+            <th><%= locale === 'ar' ? 'الحد الأدنى' : 'Min Order' %></th>
+            <th><%= locale === 'ar' ? 'الاستخدام' : 'Uses' %></th>
+            <th><%= locale === 'ar' ? 'الانتهاء' : 'Expires' %></th>
+            <th><%= locale === 'ar' ? 'الحالة' : 'Status' %></th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% coupons.forEach(c => { %>
+          <tr>
+            <td><code><%= c.code %></code></td>
+            <td><%= c.discountType === 'percent' ? c.discountValue + '%' : '$' + parseFloat(c.discountValue).toFixed(2) %></td>
+            <td><%= c.minOrderAmount ? '$' + parseFloat(c.minOrderAmount).toFixed(2) : '—' %></td>
+            <td><%= c.usedCount %> / <%= c.maxUses || '∞' %></td>
+            <td><%= c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : '—' %></td>
+            <td>
+              <span class="badge badge-<%= c.isActive ? 'success' : 'secondary' %>">
+                <%= c.isActive ? (locale === 'ar' ? 'نشط' : 'Active') : (locale === 'ar' ? 'معطل' : 'Disabled') %>
+              </span>
+            </td>
+            <td>
+              <form method="POST" action="/admin/coupons/<%= c.id %>/toggle" style="display: inline">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn btn-ghost btn-sm">
+                  <%= c.isActive ? (locale === 'ar' ? 'تعطيل' : 'Disable') : (locale === 'ar' ? 'تفعيل' : 'Enable') %>
+                </button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

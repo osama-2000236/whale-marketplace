@@ -1,0 +1,60 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <div class="page-header">
+      <h1><%= t('admin.audit') %></h1>
+      <a href="/admin" class="btn btn-ghost">&larr; <%= t('admin.dashboard') %></a>
+    </div>
+
+    <form method="GET" action="/admin/audit" style="margin-bottom: 1rem; display: flex; gap: 0.5rem">
+      <input type="text" name="action" value="<%= action %>" class="input" placeholder="<%= locale === 'ar' ? 'تصفية حسب الإجراء...' : 'Filter by action...' %>" style="max-width: 250px" />
+      <button type="submit" class="btn btn-primary"><%= locale === 'ar' ? 'تصفية' : 'Filter' %></button>
+      <% if (action) { %>
+      <a href="/admin/audit" class="btn btn-ghost"><%= locale === 'ar' ? 'مسح' : 'Clear' %></a>
+      <% } %>
+    </form>
+
+    <% if (logs.length === 0) { %>
+    <div class="empty-state">
+      <h3><%= locale === 'ar' ? 'لا توجد سجلات' : 'No audit logs found' %></h3>
+    </div>
+    <% } else { %>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><%= locale === 'ar' ? 'التاريخ' : 'Date' %></th>
+            <th><%= locale === 'ar' ? 'المشرف' : 'Admin' %></th>
+            <th><%= locale === 'ar' ? 'الإجراء' : 'Action' %></th>
+            <th><%= locale === 'ar' ? 'الهدف' : 'Target' %></th>
+            <th><%= locale === 'ar' ? 'التفاصيل' : 'Details' %></th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% logs.forEach(log => { %>
+          <tr>
+            <td><%= new Date(log.createdAt).toLocaleString() %></td>
+            <td><%= log.admin ? log.admin.username : log.adminId %></td>
+            <td><code><%= log.action %></code></td>
+            <td><%= log.target %><% if (log.targetId) { %> <code><%= log.targetId.slice(0, 8) %></code><% } %></td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"><%= log.details ? JSON.stringify(log.details) : '—' %></td>
+            <td><code><%= log.ip || '—' %></code></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (nextCursor) { %>
+    <div style="margin-top: 1rem; text-align: center">
+      <a href="/admin/audit?cursor=<%= nextCursor %><%= action ? '&action=' + action : '' %>" class="btn btn-ghost">
+        <%= locale === 'ar' ? 'تحميل المزيد' : 'Load more' %> &rarr;
+      </a>
+    </div>
+    <% } %>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>
