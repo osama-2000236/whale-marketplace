@@ -1,9 +1,10 @@
 const router = require('express').Router();
 const whaleService = require('../services/whaleService');
+const fallback = require('../services/fallbackMarketplace');
 const { marked } = require('marked');
 const { safeRedirect } = require('../utils/safeRedirect');
 
-// Home page
+// Home page (with fallback resilience)
 router.get('/', async (req, res, next) => {
   try {
     const [categories, { listings }] = await Promise.all([
@@ -16,7 +17,16 @@ router.get('/', async (req, res, next) => {
       listings: listings.slice(0, 8),
     });
   } catch (err) {
-    next(err);
+    console.error('[home] Database error, serving fallback:', err.message);
+    try {
+      res.render('pages/home', {
+        title: '',
+        categories: fallback.getFallbackCategories(),
+        listings: [],
+      });
+    } catch (renderErr) {
+      next(renderErr);
+    }
   }
 });
 

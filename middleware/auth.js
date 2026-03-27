@@ -22,6 +22,39 @@ const requireAdmin = (req, res, next) => {
       status: 403,
     });
   }
+  // If admin has 2FA enabled, require verification
+  if (req.user.twoFactorSecret && !req.session.admin2FAVerified) {
+    return res.redirect('/auth/2fa');
+  }
+  next();
+};
+
+/**
+ * Requires a specific admin scope (SUPER_ADMIN, SUPPORT_AGENT, WAREHOUSE)
+ * SUPER_ADMIN has access to everything. Other scopes are checked explicitly.
+ */
+const requireAdminScope = (...scopes) => (req, res, next) => {
+  if (!req.user || req.user.role !== 'ADMIN') {
+    return res.status(403).render('error', {
+      title: 'Forbidden',
+      message: 'You do not have permission to access this page.',
+      status: 403,
+    });
+  }
+  // If admin has 2FA enabled, require verification
+  if (req.user.twoFactorSecret && !req.session.admin2FAVerified) {
+    return res.redirect('/auth/2fa');
+  }
+  // SUPER_ADMIN bypasses scope checks
+  if (req.user.adminScope === 'SUPER_ADMIN') return next();
+  // Check if user's scope is in the allowed list
+  if (!scopes.includes(req.user.adminScope)) {
+    return res.status(403).render('error', {
+      title: 'Forbidden',
+      message: 'You do not have the required admin scope for this action.',
+      status: 403,
+    });
+  }
   next();
 };
 
@@ -146,6 +179,7 @@ module.exports = {
   optionalAuth,
   requireAuth,
   requireAdmin,
+  requireAdminScope,
   requirePro,
   requireOrderParty,
   requireSeller,

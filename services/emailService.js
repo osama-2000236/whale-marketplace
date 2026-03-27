@@ -102,6 +102,36 @@ async function sendTrialEnding(user, daysLeft) {
   }).catch(() => {});
 }
 
+async function sendVerificationEmail(user, token) {
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  const link = `${baseUrl}/auth/verify-email?token=${token}`;
+  sendMail({
+    to: user.email,
+    subject: 'تأكيد البريد الإلكتروني | Verify Your Email',
+    html: emailTemplate({
+      titleAr: 'تأكيد بريدك الإلكتروني',
+      titleEn: 'Verify Your Email',
+      bodyAr: `مرحباً ${user.username}، اضغط على الرابط لتأكيد بريدك الإلكتروني: <a href="${link}">${link}</a>`,
+      bodyEn: `Hi ${user.username}, click the link to verify your email: <a href="${link}">${link}</a>`,
+    }),
+  }).catch(() => {});
+}
+
+async function sendPasswordReset(user, token) {
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  const link = `${baseUrl}/auth/reset-password?token=${token}`;
+  sendMail({
+    to: user.email,
+    subject: 'إعادة تعيين كلمة المرور | Reset Your Password',
+    html: emailTemplate({
+      titleAr: 'إعادة تعيين كلمة المرور',
+      titleEn: 'Reset Your Password',
+      bodyAr: `اضغط على الرابط لإعادة تعيين كلمة المرور: <a href="${link}">${link}</a>. ينتهي هذا الرابط خلال 24 ساعة.`,
+      bodyEn: `Click the link to reset your password: <a href="${link}">${link}</a>. This link expires in 24 hours.`,
+    }),
+  }).catch(() => {});
+}
+
 module.exports = {
   sendWelcome,
   sendOrderPlaced,
@@ -109,4 +139,6 @@ module.exports = {
   sendOrderShipped,
   sendOrderCompleted,
   sendTrialEnding,
+  sendVerificationEmail,
+  sendPasswordReset,
 };
