@@ -13,6 +13,9 @@ const path = require('path');
 
 const app = express();
 
+// Trust Railway's reverse proxy so secure cookies and req.protocol work correctly
+app.set('trust proxy', 1);
+
 // 1. Security headers
 app.use(
   helmet({
