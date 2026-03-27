@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const whaleService = require('../services/whaleService');
+const fallback = require('../services/fallbackMarketplace');
 const {
   requireAuth,
   requirePro,
@@ -13,7 +14,7 @@ const { upload, processImages } = require('../utils/images');
 
 const CITIES = ['Gaza', 'Ramallah', 'Nablus', 'Hebron', 'Jenin', 'Jerusalem'];
 
-// Browse listings
+// Browse listings (with fallback resilience)
 router.get('/', async (req, res, next) => {
   try {
     const filters = {
@@ -40,7 +41,21 @@ router.get('/', async (req, res, next) => {
       cities: CITIES,
     });
   } catch (err) {
-    next(err);
+    console.error('[whale] Database error, serving fallback:', err.message);
+    try {
+      const { listings, nextCursor, total } = fallback.getFallbackListings();
+      res.render('whale/index', {
+        title: res.locals.t('whale.browse'),
+        listings,
+        nextCursor,
+        total,
+        categories: fallback.getFallbackCategories(),
+        filters: {},
+        cities: CITIES,
+      });
+    } catch (renderErr) {
+      next(renderErr);
+    }
   }
 });
 

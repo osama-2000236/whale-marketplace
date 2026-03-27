@@ -140,6 +140,8 @@ app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
 app.use('/whale', require('./routes/whale'));
 app.use('/profile', require('./routes/profile'));
+app.use('/cart', require('./routes/cart'));
+app.use('/checkout', require('./routes/checkout'));
 app.use('/notifications', require('./routes/notifications'));
 app.use('/', require('./routes/payment'));
 app.use('/webhooks', require('./routes/webhooks'));
@@ -178,26 +180,44 @@ function ensureLocals(res) {
 
 // 17. 404
 app.use((req, res) => {
+  if (req.headers['accept']?.includes('json') || req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'NOT_FOUND', message: 'Resource not found' });
+  }
   ensureLocals(res);
   res.status(404).render('404', { title: '404' });
 });
 
-// 18. Error handler
-app.use((err, req, res, next) => {
-  ensureLocals(res);
+// 18. Error handler (standardized JSON for API calls, HTML for browsers)
+app.use((err, req, res, _next) => {
+  const status = err.status || 500;
+  const isJson = req.headers['accept']?.includes('json') || req.path.startsWith('/api/');
 
   if (err.code === 'EBADCSRFTOKEN' || (err.message && err.message.toLowerCase().includes('csrf'))) {
+    if (isJson) {
+      return res.status(403).json({ error: 'CSRF_ERROR', message: 'Invalid CSRF token' });
+    }
+    ensureLocals(res);
     return res.status(403).render('error', {
       title: 'Error',
       message: 'Invalid CSRF token — please refresh and try again.',
       status: 403,
     });
   }
+
   console.error(err.stack || err);
-  res.status(err.status || 500).render('error', {
+
+  if (isJson) {
+    return res.status(status).json({
+      error: err.code || 'SERVER_ERROR',
+      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+    });
+  }
+
+  ensureLocals(res);
+  res.status(status).render('error', {
     title: 'Error',
     message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
-    status: err.status || 500,
+    status,
   });
 });
 

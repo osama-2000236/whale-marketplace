@@ -7,6 +7,10 @@
  * new ones.  We parse the error output to get the migration name, mark it
  * as rolled-back (PostgreSQL DDL is transactional so a failed migration
  * leaves the schema unchanged), then retry deploy.
+ *
+ * Environment variables:
+ *   FAIL_FAST_MIGRATIONS=1  — exit immediately on migration failure (production safety)
+ *   BOOT_SEED=1             — run prisma db seed after migrations
  */
 const { execSync } = require('child_process');
 
@@ -14,6 +18,9 @@ console.log('[entrypoint] Node', process.version, '| PID', process.pid);
 console.log('[entrypoint] PORT=' + process.env.PORT, 'NODE_ENV=' + process.env.NODE_ENV);
 console.log('[entrypoint] DATABASE_URL=' + (process.env.DATABASE_URL ? 'SET' : 'MISSING'));
 console.log('[entrypoint] SESSION_SECRET=' + (process.env.SESSION_SECRET ? 'SET' : 'MISSING'));
+
+const failFast = process.env.FAIL_FAST_MIGRATIONS === '1';
+const bootSeed = process.env.BOOT_SEED === '1';
 
 function runMigrateDeploy() {
   return execSync('npx prisma migrate deploy', {
@@ -42,6 +49,11 @@ try {
 
   console.error('[entrypoint] Migration attempt 1 failed:', combined || err.message);
 
+  if (failFast) {
+    console.error('[entrypoint] FAIL_FAST_MIGRATIONS=1 — aborting');
+    process.exit(1);
+  }
+
   // P3009: Prisma found a failed migration — resolve it and retry once
   if (combined.includes('P3009') || combined.includes('failed migrations')) {
     // Extract the migration name from the error message.
@@ -66,6 +78,21 @@ try {
     }
   }
   // Any other migration error: log and continue (e.g. already applied)
+}
+
+// Optional boot seeding
+if (bootSeed) {
+  try {
+    console.log('[entrypoint] Running prisma db seed...');
+    const seedOutput = execSync('npx prisma db seed', {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 60000,
+    });
+    console.log('[entrypoint] Seed output:', seedOutput.toString().trim());
+  } catch (seedErr) {
+    const seedStderr = seedErr.stderr ? seedErr.stderr.toString() : seedErr.message;
+    console.error('[entrypoint] Seed failed (non-fatal):', seedStderr);
+  }
 }
 
 console.log('[whale] Starting server...');

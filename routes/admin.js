@@ -1,22 +1,32 @@
 const router = require('express').Router();
 const prisma = require('../lib/prisma');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdmin, requireAdminScope } = require('../middleware/auth');
 const whaleService = require('../services/whaleService');
+const auditService = require('../services/adminAuditService');
+const authSecurityService = require('../services/authSecurityService');
+const { sanitizeBody } = require('../utils/sanitize');
 
 router.use(requireAuth, requireAdmin);
 
 // Dashboard
 router.get('/', async (req, res, next) => {
   try {
-    const [userCount, listingCount, orderCount, revenue] = await Promise.all([
+    const [userCount, listingCount, orderCount, revenue, refundCount] = await Promise.all([
       prisma.user.count(),
       prisma.listing.count({ where: { status: 'ACTIVE' } }),
       prisma.order.count(),
       prisma.order.aggregate({ where: { status: 'COMPLETED' }, _sum: { amount: true } }),
+      prisma.refundRequest.count({ where: { status: 'REQUESTED' } }),
     ]);
     res.render('admin/dashboard', {
       title: res.locals.t('admin.dashboard'),
-      stats: { userCount, listingCount, orderCount, revenue: revenue._sum.amount || 0 },
+      stats: {
+        userCount,
+        listingCount,
+        orderCount,
+        revenue: revenue._sum.amount || 0,
+        refundCount,
+      },
     });
   } catch (err) {
     next(err);
@@ -48,7 +58,7 @@ router.get('/users', async (req, res, next) => {
 });
 
 // Ban/unban user
-router.post('/users/:id/ban', async (req, res, next) => {
+router.post('/users/:id/ban', requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT'), async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.id } });
     if (!user) return res.status(404).render('404', { title: '404' });
@@ -57,6 +67,16 @@ router.post('/users/:id/ban', async (req, res, next) => {
       where: { id: req.params.id },
       data: { isBanned: !user.isBanned },
     });
+
+    await auditService.log({
+      adminId: req.user.id,
+      action: user.isBanned ? 'USER_UNBAN' : 'USER_BAN',
+      target: 'User',
+      targetId: req.params.id,
+      details: { username: user.username },
+      ip: req.ip,
+    });
+
     req.session.flash = {
       type: 'success',
       message: user.isBanned ? 'User unbanned' : 'User banned',
@@ -85,9 +105,18 @@ router.get('/listings', async (req, res, next) => {
 });
 
 // Remove listing
-router.post('/listings/:id/remove', async (req, res, next) => {
+router.post('/listings/:id/remove', requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT'), async (req, res, next) => {
   try {
     await whaleService.deleteListing(req.params.id, req.user.id, true);
+
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'LISTING_REMOVE',
+      target: 'Listing',
+      targetId: req.params.id,
+      ip: req.ip,
+    });
+
     req.session.flash = { type: 'success', message: 'Listing removed' };
     res.redirect('/admin/listings');
   } catch (err) {
@@ -121,15 +150,137 @@ router.get('/orders', async (req, res, next) => {
 });
 
 // Resolve dispute
-router.post('/orders/:id/resolve', async (req, res, next) => {
+router.post('/orders/:id/resolve', requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT'), async (req, res, next) => {
   try {
-    const resolution = req.body.resolution; // 'complete' or 'cancel'
+    const resolution = req.body.resolution;
     await whaleService.transitionOrder(req.params.id, req.user.id, 'resolve', { resolution });
+
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'DISPUTE_RESOLVE',
+      target: 'Order',
+      targetId: req.params.id,
+      details: { resolution },
+      ip: req.ip,
+    });
+
     req.session.flash = { type: 'success', message: 'Dispute resolved' };
     res.redirect('/admin/orders');
   } catch (err) {
     req.session.flash = { type: 'danger', message: err.message };
     res.redirect('/admin/orders');
+  }
+});
+
+// Audit logs
+router.get('/audit', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const { logs, nextCursor } = await auditService.getLogs({
+      action: req.query.action,
+      cursor: req.query.cursor,
+    });
+    res.render('admin/audit', {
+      title: res.locals.t('admin.audit'),
+      logs,
+      nextCursor,
+      action: req.query.action || '',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Coupons management
+router.get('/coupons', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const coupons = await auditService.getCoupons();
+    res.render('admin/coupons', { title: res.locals.t('admin.coupons'), coupons });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/coupons', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const data = sanitizeBody(req.body, {
+      code: 30,
+      discountType: 10,
+      discountValue: 10,
+      minOrderAmount: 10,
+      maxUses: 10,
+      expiresAt: 30,
+    });
+    await auditService.createCoupon(data);
+
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'COUPON_CREATE',
+      target: 'Coupon',
+      details: { code: data.code },
+      ip: req.ip,
+    });
+
+    req.session.flash = { type: 'success', message: 'Coupon created' };
+    res.redirect('/admin/coupons');
+  } catch (err) {
+    req.session.flash = { type: 'danger', message: err.message };
+    res.redirect('/admin/coupons');
+  }
+});
+
+router.post('/coupons/:id/toggle', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await auditService.toggleCoupon(req.params.id);
+    res.redirect('/admin/coupons');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Refund requests
+router.get('/refunds', requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT'), async (req, res, next) => {
+  try {
+    const refunds = await auditService.getRefundRequests(req.query.status);
+    res.render('admin/refunds', {
+      title: res.locals.t('admin.refunds'),
+      refunds,
+      status: req.query.status || '',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/refunds/:id', requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT'), async (req, res, next) => {
+  try {
+    const { status, adminNote } = req.body;
+    await auditService.processRefund(req.params.id, req.user.id, { status, adminNote });
+
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'REFUND_' + status.toUpperCase(),
+      target: 'RefundRequest',
+      targetId: req.params.id,
+      details: { adminNote },
+      ip: req.ip,
+    });
+
+    req.session.flash = { type: 'success', message: 'Refund ' + status };
+    res.redirect('/admin/refunds');
+  } catch (err) {
+    req.session.flash = { type: 'danger', message: err.message };
+    res.redirect('/admin/refunds');
+  }
+});
+
+// Admin 2FA setup
+router.post('/setup-2fa', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const { secret } = await authSecurityService.setupAdmin2FA(req.user.id);
+    req.session.flash = { type: 'success', message: '2FA enabled. Secret: ' + secret };
+    res.redirect('/admin');
+  } catch (err) {
+    next(err);
   }
 });
 

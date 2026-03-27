@@ -1,0 +1,32 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="auth-container">
+    <%- include('../partials/flash') %>
+    <div class="auth-card">
+      <h1><%= t('auth.two_factor') %></h1>
+      <p class="subtitle"><%= locale === 'ar' ? 'أدخل رمز التحقق من تطبيق المصادقة' : 'Enter the verification code from your authenticator' %></p>
+
+      <form method="POST" action="/auth/2fa">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="form-group">
+          <label class="form-label"><%= locale === 'ar' ? 'رمز التحقق' : 'Verification Code' %></label>
+          <input type="text" name="code" class="input" required maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code" inputmode="numeric" placeholder="000000" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">
+          <%= locale === 'ar' ? 'تحقق' : 'Verify' %>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <form method="POST" action="/auth/logout">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button type="submit" class="btn btn-secondary btn-block"><%= t('nav.logout') %></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+<%- include('../partials/footer') %>
+</body>
+</html>
