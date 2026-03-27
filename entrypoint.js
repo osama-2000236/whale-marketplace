@@ -23,7 +23,7 @@ const failFast = process.env.FAIL_FAST_MIGRATIONS === '1';
 const bootSeed = process.env.BOOT_SEED === '1';
 
 function runMigrateDeploy() {
-  return execSync('npx prisma migrate deploy', {
+  return execSync('node_modules/.bin/prisma migrate deploy', {
     stdio: ['pipe', 'pipe', 'pipe'],
     timeout: 60000
   });
@@ -31,7 +31,7 @@ function runMigrateDeploy() {
 
 function resolveFailedMigration(migrationName) {
   console.log('[entrypoint] Resolving failed migration:', migrationName);
-  execSync(`npx prisma migrate resolve --rolled-back "${migrationName}"`, {
+  execSync(`node_modules/.bin/prisma migrate resolve --rolled-back "${migrationName}"`, {
     stdio: ['pipe', 'pipe', 'pipe'],
     timeout: 30000
   });
@@ -84,7 +84,7 @@ try {
 if (bootSeed) {
   try {
     console.log('[entrypoint] Running prisma db seed...');
-    const seedOutput = execSync('npx prisma db seed', {
+    const seedOutput = execSync('node_modules/.bin/prisma db seed', {
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 60000,
     });
