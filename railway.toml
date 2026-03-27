@@ -6,7 +6,6 @@
 builder = "dockerfile"
 
 [deploy]
-preDeployCommand = "npx prisma migrate deploy"
 startCommand = "node entrypoint.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
