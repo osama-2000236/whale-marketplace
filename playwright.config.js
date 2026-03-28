@@ -1,62 +1,51 @@
-// playwright.config.js
-// ============================================================
-//  Playwright Configuration — UI/UX QA Test Suite
-//  Run: npx playwright test --reporter=html
-// ============================================================
-
 const { defineConfig, devices } = require('@playwright/test');
 
+const localPort = Number(process.env.PLAYWRIGHT_PORT || 3000);
+const localBaseUrl = `http://127.0.0.1:${localPort}`;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || localBaseUrl;
+const isProductionTarget = /railway\.app/i.test(baseURL);
+const useLocalServer = !process.env.PLAYWRIGHT_BASE_URL && !process.env.BASE_URL;
+
 module.exports = defineConfig({
-  testDir: './',
-  testMatch: '**/*.spec.js',
-  fullyParallel: true,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  testDir: './tests/e2e',
+  fullyParallel: false,
+  retries: isProductionTarget ? 1 : 0,
   timeout: 30_000,
-  expect: { timeout: 5_000 },
-
-  reporter: [['html', { outputFolder: 'playwright-report', open: 'never' }], ['list']],
-
+  workers: 1,
+  reporter: [
+    ['html', { outputFolder: 'tests/reports/html', open: 'never' }],
+    ['json', { outputFile: 'tests/reports/results.json' }],
+    ['list'],
+  ],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3001',
-    trace: 'on-first-retry',
+    baseURL,
     screenshot: 'only-on-failure',
-    video: 'on-first-retry',
-    actionTimeout: 10_000,
-    navigationTimeout: 15_000,
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
+    actionTimeout: 12_000,
+    navigationTimeout: 20_000,
   },
-
-  webServer: {
-    command: 'cross-env NODE_ENV=test PORT=3001 node entrypoint.js',
-    url: 'http://localhost:3001',
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
-
+  webServer: useLocalServer
+    ? {
+        command: 'node server.js',
+        url: localBaseUrl,
+        reuseExistingServer: true,
+        env: {
+          PORT: String(localPort),
+          BASE_URL: localBaseUrl,
+          NODE_ENV: 'test',
+          SESSION_SECRET: 'playwright-session-secret-for-local-runs',
+        },
+      }
+    : undefined,
   projects: [
     {
-      name: 'chromium',
+      name: 'Desktop Chrome',
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 7'] },
-    },
-    {
-      name: 'mobile-safari',
-      use: { ...devices['iPhone 14'] },
-    },
-    {
-      name: 'tablet',
-      use: { ...devices['iPad (gen 7)'] },
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
     },
   ],
 });

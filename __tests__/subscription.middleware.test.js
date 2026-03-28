@@ -13,6 +13,7 @@ describe('subscriptionMiddleware', () => {
     const req = {
       user: {
         role: 'MEMBER',
+        isVerified: true,
         subscription: { plan: 'pro', paidUntil: futureDate(), trialEndsAt: null },
       },
     };
@@ -31,6 +32,7 @@ describe('subscriptionMiddleware', () => {
     const req = {
       user: {
         role: 'MEMBER',
+        isVerified: true,
         subscription: { plan: 'free', paidUntil: null, trialEndsAt: futureDate() },
       },
     };
@@ -48,6 +50,7 @@ describe('subscriptionMiddleware', () => {
     const req = {
       user: {
         role: 'ADMIN',
+        isVerified: true,
         subscription: { plan: 'free', paidUntil: pastDate(), trialEndsAt: pastDate() },
       },
     };
@@ -57,6 +60,23 @@ describe('subscriptionMiddleware', () => {
     await subscriptionMiddleware(req, res, next);
 
     expect(res.locals.canSell).toBe(true);
+  });
+
+  test('unverified users cannot sell even with active plan', async () => {
+    const req = {
+      user: {
+        role: 'MEMBER',
+        isVerified: false,
+        subscription: { plan: 'pro', paidUntil: futureDate(), trialEndsAt: null },
+      },
+    };
+    const res = { locals: {} };
+    const next = jest.fn();
+
+    await subscriptionMiddleware(req, res, next);
+
+    expect(res.locals.isPro).toBe(true);
+    expect(res.locals.canSell).toBe(false);
   });
 
   test('defaults to false flags when user/subscription is missing or expired', async () => {

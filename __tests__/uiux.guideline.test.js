@@ -104,8 +104,9 @@ describe('UI/UX guideline checks (deep)', () => {
     expect(appJs).toContain("document.documentElement.setAttribute('data-theme', theme)");
   });
 
-  test('app script locale switch sends csrf token', () => {
-    expect(appJs).toContain("fetch('/locale'");
+  test('app script normalizes locale via query param and keeps csrf protection for fetch calls', () => {
+    expect(appJs).toContain("u.searchParams.set('lang', locale)");
+    expect(appJs).toContain("location.href = u.toString()");
     expect(appJs).toContain("'x-csrf-token'");
   });
 

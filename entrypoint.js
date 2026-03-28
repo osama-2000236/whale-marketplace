@@ -48,7 +48,7 @@ function dropPublicSchema() {
   try {
     run('node_modules/.bin/prisma db execute --schema prisma/schema.prisma --file ' + sqlFile, 30000);
   } finally {
-    try { fs.unlinkSync(sqlFile); } catch (_) { /* ignore */ }
+    try { fs.unlinkSync(sqlFile); } catch { /* ignore */ }
   }
 }
 

@@ -7,6 +7,12 @@
     mainEl.id = 'main';
   }
 
+  var canonicalLocaleUrl = new URL(window.location.href);
+  if (canonicalLocaleUrl.searchParams.has('lang')) {
+    canonicalLocaleUrl.searchParams.delete('lang');
+    window.history.replaceState({}, '', canonicalLocaleUrl.toString());
+  }
+
   // 1. Theme toggle
   var THEME_KEY = 'whale-theme';
   function applyTheme(theme) {
@@ -29,21 +35,9 @@
     var btn = e.target.closest('[data-locale]');
     if (!btn) return;
     var locale = btn.getAttribute('data-locale');
-    var token = document.querySelector('meta[name="csrf-token"]')?.content;
-    fetch('/locale', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-csrf-token': token || '' },
-      body: JSON.stringify({ locale: locale }),
-    })
-      .then(function (response) {
-        if (!response.ok) throw new Error('Locale switch failed');
-        location.reload();
-      })
-      .catch(function () {
-        var u = new URL(location);
-        u.searchParams.set('lang', locale);
-        location.href = u;
-      });
+    var u = new URL(location.href);
+    u.searchParams.set('lang', locale);
+    location.href = u.toString();
   });
 
   // 3. Image gallery
@@ -93,7 +87,38 @@
     if (form && !window.confirm(form.getAttribute('data-confirm'))) e.preventDefault();
   });
 
-  // 7. Save/unsave toggle
+  // 7. Multipart forms submit through fetch so CSRF headers survive file uploads.
+  document.addEventListener('submit', function (e) {
+    var form = e.target.closest('form[enctype="multipart/form-data"]');
+    if (!form) return;
+    if (!window.fetch || !window.FormData) return;
+
+    e.preventDefault();
+
+    var submitter = e.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
+    if (submitter) submitter.disabled = true;
+
+    fetch(form.action, {
+      method: (form.method || 'POST').toUpperCase(),
+      body: new window.FormData(form),
+      headers: {
+        'x-csrf-token': document.querySelector('meta[name="csrf-token"]')?.content || '',
+      },
+      redirect: 'follow',
+    })
+      .then(function (response) {
+        if (!response.ok && !response.redirected) throw new Error('Multipart submit failed');
+        window.location.href = response.url || window.location.href;
+      })
+      .catch(function () {
+        window.HTMLFormElement.prototype.submit.call(form);
+      })
+      .finally(function () {
+        if (submitter) submitter.disabled = false;
+      });
+  });
+
+  // 8. Save/unsave toggle
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('[data-save-listing]');
     if (!btn) return;
@@ -114,7 +139,7 @@
       .catch(function () {});
   });
 
-  // Mobile nav toggle
+  // 9. Mobile nav toggle
   document.addEventListener('click', function (e) {
     var toggle = e.target.closest('.navbar-toggle');
     if (toggle) {
@@ -126,7 +151,7 @@
     }
   });
 
-  // User menu dropdown
+  // 10. User menu dropdown
   document.addEventListener('click', function (e) {
     var trigger = e.target.closest('.user-menu-trigger');
     if (trigger) {
@@ -142,7 +167,7 @@
     });
   });
 
-  // Filter auto-submit
+  // 11. Filter auto-submit
   var ff = document.querySelector('.filter-form');
   if (ff)
     ff.querySelectorAll('select').forEach(function (s) {

@@ -1,5 +1,37 @@
 const prisma = require('../lib/prisma');
 
+const ADMIN_SCOPE_PERMISSIONS = {
+  SUPER_ADMIN: [
+    'users.read',
+    'users.write',
+    'users.ban',
+    'roles.write',
+    'catalog.read',
+    'catalog.write',
+    'orders.read',
+    'orders.write',
+    'refunds.write',
+    'payments.read',
+    'payments.write',
+  ],
+  SUPPORT_AGENT: [
+    'users.read',
+    'users.ban',
+    'orders.read',
+    'orders.write',
+    'refunds.write',
+    'payments.read',
+  ],
+  WAREHOUSE: ['orders.read', 'orders.write', 'catalog.read', 'catalog.write'],
+};
+
+function hasAdminPermission(user, permission) {
+  if (!user || user.role !== 'ADMIN') return false;
+  const scope = user.adminScope || 'SUPER_ADMIN';
+  const permissions = ADMIN_SCOPE_PERMISSIONS[scope] || ADMIN_SCOPE_PERMISSIONS.SUPER_ADMIN;
+  return permissions.includes(permission);
+}
+
 const optionalAuth = (req, res, next) => {
   res.locals.user = req.user || null;
   next();
@@ -22,38 +54,37 @@ const requireAdmin = (req, res, next) => {
       status: 403,
     });
   }
-  // If admin has 2FA enabled, require verification
-  if (req.user.twoFactorSecret && !req.session.admin2FAVerified) {
-    return res.redirect('/auth/2fa');
-  }
   next();
 };
 
-/**
- * Requires a specific admin scope (SUPER_ADMIN, SUPPORT_AGENT, WAREHOUSE)
- * SUPER_ADMIN has access to everything. Other scopes are checked explicitly.
- */
-const requireAdminScope = (...scopes) => (req, res, next) => {
+const requireAdminScope = (permission) => {
+  return (req, res, next) => {
+    if (!hasAdminPermission(req.user, permission)) {
+      return res.status(403).render('error', {
+        title: 'Forbidden',
+        message: 'Admin scope does not permit this action.',
+        status: 403,
+      });
+    }
+    next();
+  };
+};
+
+const requireAdmin2FA = (req, res, next) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     return res.status(403).render('error', {
       title: 'Forbidden',
-      message: 'You do not have permission to access this page.',
+      message: 'Admin access required.',
       status: 403,
     });
   }
-  // If admin has 2FA enabled, require verification
-  if (req.user.twoFactorSecret && !req.session.admin2FAVerified) {
-    return res.redirect('/auth/2fa');
-  }
-  // SUPER_ADMIN bypasses scope checks
-  if (req.user.adminScope === 'SUPER_ADMIN') return next();
-  // Check if user's scope is in the allowed list
-  if (!scopes.includes(req.user.adminScope)) {
-    return res.status(403).render('error', {
-      title: 'Forbidden',
-      message: 'You do not have the required admin scope for this action.',
-      status: 403,
-    });
+
+  const verifiedAt = req.session.admin2faVerifiedAt ? new Date(req.session.admin2faVerifiedAt) : null;
+  const stale = !verifiedAt || Date.now() - verifiedAt.getTime() > 30 * 60 * 1000;
+
+  if (stale) {
+    req.session.flash = { type: 'warning', message: 'Admin verification required.' };
+    return res.redirect('/admin/2fa');
   }
   next();
 };
@@ -89,6 +120,21 @@ const requirePro = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+const requireVerified = (req, res, next) => {
+  if (!req.user) {
+    req.session.flash = { type: 'warning', message: 'Please log in to continue' };
+    return res.redirect('/auth/login?next=' + encodeURIComponent(req.originalUrl));
+  }
+  if (!req.user.isVerified) {
+    req.session.flash = {
+      type: 'warning',
+      message: 'Please verify your email before using this action.',
+    };
+    return res.redirect('/profile');
+  }
+  next();
 };
 
 /**
@@ -180,9 +226,12 @@ module.exports = {
   requireAuth,
   requireAdmin,
   requireAdminScope,
+  requireAdmin2FA,
+  requireVerified,
   requirePro,
   requireOrderParty,
   requireSeller,
   requireBuyer,
   requireOwner,
+  hasAdminPermission,
 };

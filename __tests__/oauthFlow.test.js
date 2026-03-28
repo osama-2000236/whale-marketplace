@@ -10,6 +10,12 @@ jest.mock('../services/emailService', () => ({
   sendWelcome: jest.fn(() => Promise.resolve()),
 }));
 
+jest.mock('../services/authSecurityService', () => ({
+  sendEmailVerification: jest.fn(() => Promise.resolve()),
+}));
+
+process.env.DATABASE_URL = 'postgresql://test/db';
+
 const prisma = require('../lib/prisma');
 const userService = require('../services/userService');
 

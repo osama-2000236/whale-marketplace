@@ -225,6 +225,7 @@ async function main() {
       titleAr: 'شقة للبيع في رام الله',
       description: '3-bedroom apartment, 150 sqm, central location, newly renovated.',
       descriptionAr: 'شقة 3 غرف نوم، 150 متر مربع، موقع مركزي، مجددة حديثاً.',
+      slug: 'apartment-for-sale-in-ramallah-g900n',
       price: 95000,
       categoryId: categories[2].id,
       subcategoryId: subcats[3].id,
@@ -249,6 +250,7 @@ async function main() {
       titleAr: 'بلايستيشن 5 مع ملحقات',
       description: 'PS5 disc edition with 2 controllers and 5 games.',
       descriptionAr: 'بلايستيشن 5 نسخة القرص مع 2 يد تحكم و5 ألعاب.',
+      slug: 'playstation-5-bundle-vio2x',
       price: 450,
       categoryId: categories[0].id,
       city: 'Gaza',
@@ -271,6 +273,7 @@ async function main() {
       titleAr: 'دراجة جبلية Trek',
       description: 'Trek Marlin 7, 29 inch, Shimano gears, front suspension.',
       descriptionAr: 'تريك مارلن 7، 29 إنش، غيارات شيمانو، تعليق أمامي.',
+      slug: 'mountain-bike-trek-2cb6o',
       price: 350,
       categoryId: categories[5].id,
       city: 'Nablus',
@@ -318,9 +321,10 @@ async function main() {
   const listings = [];
   for (const data of listingData) {
     const slug =
-      slugify(data.title, { lower: true, strict: true }) +
-      '-' +
-      Math.random().toString(36).slice(2, 7);
+      data.slug ||
+      (slugify(data.title, { lower: true, strict: true }) +
+        '-' +
+        Math.random().toString(36).slice(2, 7));
     const listing = await prisma.listing.create({
       data: {
         slug,
