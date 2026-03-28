@@ -48,6 +48,15 @@ test.describe('Marketplace sell', () => {
     await registerTestUser(page);
     await page.goto('/whale/sell');
 
+    const electronicsCategoryValue = await page
+      .locator('select[name="categoryId"] option')
+      .evaluateAll((options) => {
+        const matchingOption = options.find((option) =>
+          /(electronics|إلكترونيات)/i.test(option.textContent || '')
+        );
+        return matchingOption?.getAttribute('value') || null;
+      });
+
     const title = `QA sell listing ${Date.now()}`;
     await page.locator('input[name="title"]').fill(title);
     await page.locator('input[name="titleAr"]').fill('منتج بيع اختباري');
@@ -55,7 +64,7 @@ test.describe('Marketplace sell', () => {
     await page.locator('textarea[name="descriptionAr"]').fill('إعلان اختباري تم إنشاؤه تلقائياً.');
     await page.locator('input[name="price"]').fill('123');
     await page.locator('select[name="condition"]').selectOption('GOOD');
-    await page.locator('select[name="categoryId"]').selectOption('cat-electronics');
+    await page.locator('select[name="categoryId"]').selectOption(electronicsCategoryValue || { index: 1 });
     await page.locator('select[name="city"]').selectOption('Gaza');
     await page.locator('input[name="images"]').setInputFiles(SELL_IMAGE_PATH);
     await page.locator('input[name="tags"]').fill('qa,automation');
