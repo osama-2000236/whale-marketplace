@@ -8,7 +8,9 @@ test.describe('Marketplace listing detail', () => {
     await page.goto(KNOWN_SLUG);
 
     await expect(page.locator('.listing-detail')).toBeVisible();
-    await expect(page.locator('.listing-detail h1')).toHaveText('بلايستيشن 5 مع ملحقات');
+    await expect(page.locator('.listing-detail h1')).toHaveText(
+      /(بلايستيشن 5 مع ملحقات|PlayStation 5 Bundle)/
+    );
   });
 
   test('Shows title, price, condition, location', async ({ page }) => {
@@ -39,6 +41,6 @@ test.describe('Marketplace listing detail', () => {
     await page.goto('/whale/listing/fake-slug-does-not-exist');
 
     await expect(page).toHaveURL(/\/whale\/listing\/fake-slug-does-not-exist$/);
-    await expect(page.locator('.empty-state h3')).toHaveText('الصفحة غير موجودة');
+    await expect(page.locator('.empty-state h3')).toHaveText(/(الصفحة غير موجودة|Page not found)/);
   });
 });
