@@ -1,8 +1,10 @@
 const { defineConfig, devices } = require('@playwright/test');
 
-const defaultBaseURL = 'https://whale-marketplace-production.up.railway.app';
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || defaultBaseURL;
+const localPort = Number(process.env.PLAYWRIGHT_PORT || 3000);
+const localBaseUrl = `http://127.0.0.1:${localPort}`;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || localBaseUrl;
 const isProductionTarget = /railway\.app/i.test(baseURL);
+const useLocalServer = !process.env.PLAYWRIGHT_BASE_URL && !process.env.BASE_URL;
 
 module.exports = defineConfig({
   testDir: './tests/e2e',
@@ -23,6 +25,19 @@ module.exports = defineConfig({
     actionTimeout: 12_000,
     navigationTimeout: 20_000,
   },
+  webServer: useLocalServer
+    ? {
+        command: 'node server.js',
+        url: localBaseUrl,
+        reuseExistingServer: true,
+        env: {
+          PORT: String(localPort),
+          BASE_URL: localBaseUrl,
+          NODE_ENV: 'test',
+          SESSION_SECRET: 'playwright-session-secret-for-local-runs',
+        },
+      }
+    : undefined,
   projects: [
     {
       name: 'Desktop Chrome',

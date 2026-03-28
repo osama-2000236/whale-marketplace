@@ -7,9 +7,6 @@ export type TestUser = {
   password: string;
 };
 
-export const SELLER_EMAIL = process.env.WHALE_SELLER_EMAIL ?? '';
-export const SELLER_PASSWORD = process.env.WHALE_SELLER_PASSWORD ?? '';
-export const RUN_SELL_MUTATION = process.env.WHALE_ENABLE_PRODUCTION_SELL_TEST === '1';
 export const SELL_IMAGE_PATH = path.resolve(
   __dirname,
   '../../../coverage/lcov-report/favicon.png'
@@ -31,6 +28,7 @@ export async function registerTestUser(page: Page, user: Partial<TestUser> = {})
   await page.locator('input[name="username"]').fill(credentials.username);
   await page.locator('input[name="email"]').fill(credentials.email);
   await page.locator('input[name="password"]').fill(credentials.password);
+  await page.locator('input[name="confirmPassword"]').fill(credentials.password);
 
   await Promise.all([
     page.waitForURL((url) => !url.pathname.endsWith('/auth/register')),

@@ -14,7 +14,7 @@ test.describe('Marketplace listing detail', () => {
   });
 
   test('Shows title, price, condition, location', async ({ page }) => {
-    // Intent: verify the live detail view renders the core buyer-facing listing metadata that is currently present in production.
+    // Intent: verify the detail view renders the core buyer-facing listing metadata.
     await page.goto(KNOWN_SLUG);
 
     await expect(page.locator('.listing-detail h1')).toBeVisible();
@@ -23,9 +23,11 @@ test.describe('Marketplace listing detail', () => {
     await expect(page.locator('.listing-detail .text-sm.text-muted').first()).toContainText('Gaza');
   });
 
-  test('Shows category metadata', async () => {
-    // Intent: record that the deployed listing detail page currently does not render category text even though the route has category data available.
-    test.fixme(true, 'The production listing detail page does not currently show category metadata.');
+  test('Shows category metadata', async ({ page }) => {
+    // Intent: verify category metadata is rendered alongside the rest of the listing facts.
+    await page.goto(KNOWN_SLUG);
+
+    await expect(page.locator('.listing-detail-category')).toContainText(/(Electronics|إلكترونيات)/);
   });
 
   test('CTA section visible', async ({ page }) => {

@@ -28,6 +28,11 @@
         <div class="flex items-center gap-1 mb-1">
           <span class="badge badge-info"><%= t('condition.' + listing.condition) %></span>
           <span class="text-sm text-muted"><%= listing.city %></span>
+          <% if (listing.category) { %>
+          <span class="text-sm text-muted listing-detail-category">
+            &middot; <%= locale === 'ar' ? listing.category.nameAr : listing.category.name %>
+          </span>
+          <% } %>
           <span class="text-sm text-muted">
             &middot; <%= listing.views %> <%= t('listing.views') %>
           </span>

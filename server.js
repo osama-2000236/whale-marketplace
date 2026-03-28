@@ -12,9 +12,7 @@ const { optionalAuth } = require('./middleware/auth');
 const path = require('path');
 
 const app = express();
-
-// Trust Railway's reverse proxy so secure cookies and req.protocol work correctly
-app.set('trust proxy', 1);
+const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 // 1. Security headers
 app.use(
@@ -48,27 +46,27 @@ app.use(
 // 3. Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 4. Session (falls back to in-memory store when DATABASE_URL is not set)
-const sessionConfig = {
-  secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  },
-};
-if (process.env.DATABASE_URL) {
-  sessionConfig.store = new PgSession({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-  });
-} else {
-  console.warn('[session] DATABASE_URL not set — using in-memory session store');
-}
-app.use(session(sessionConfig));
+// 4. Session
+app.use(
+  session({
+    store: hasDatabase
+      ? new PgSession({
+          conString: process.env.DATABASE_URL,
+          createTableIfMissing: true,
+        })
+      : new session.MemoryStore(),
+    secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
+    resave: false,
+    saveUninitialized: false,
+    rolling: true,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: parseInt(process.env.SESSION_MAX_AGE_MS || '', 10) || 7 * 24 * 60 * 60 * 1000,
+    },
+  })
+);
 
 // 5. Passport
 app.use(passport.initialize());
@@ -79,7 +77,7 @@ app.use(localeMiddleware);
 
 // 7. CSRF (exclude webhooks)
 const { csrfSynchronisedProtection, generateToken } = csrfSync({
-  getTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'],
+  getTokenFromRequest: (req) => req.body._csrf || req.headers['x-csrf-token'] || req.query._csrf,
 });
 app.use((req, res, next) => {
   if (req.path.startsWith('/webhooks/')) return next();
@@ -146,10 +144,10 @@ app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
 app.use('/whale', require('./routes/whale'));
 app.use('/profile', require('./routes/profile'));
-app.use('/cart', require('./routes/cart'));
-app.use('/checkout', require('./routes/checkout'));
 app.use('/notifications', require('./routes/notifications'));
+app.use('/cart', require('./routes/cart'));
 app.use('/', require('./routes/payment'));
+app.use('/', require('./routes/checkout'));
 app.use('/webhooks', require('./routes/webhooks'));
 app.use('/admin', require('./routes/admin'));
 
@@ -186,44 +184,56 @@ function ensureLocals(res) {
 
 // 17. 404
 app.use((req, res) => {
-  if (req.headers['accept']?.includes('json') || req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: 'NOT_FOUND', message: 'Resource not found' });
-  }
   ensureLocals(res);
   res.status(404).render('404', { title: '404' });
 });
 
-// 18. Error handler (standardized JSON for API calls, HTML for browsers)
-app.use((err, req, res, _next) => {
-  const status = err.status || 500;
-  const isJson = req.headers['accept']?.includes('json') || req.path.startsWith('/api/');
+// 18. Error handler
+app.use((err, req, res, next) => {
+  ensureLocals(res);
+
+  const wantsJson =
+    req.path.startsWith('/cart') ||
+    req.path.startsWith('/checkout') ||
+    req.path.includes('/refund-request') ||
+    req.path.startsWith('/admin/') ||
+    req.headers.accept?.includes('application/json');
 
   if (err.code === 'EBADCSRFTOKEN' || (err.message && err.message.toLowerCase().includes('csrf'))) {
-    if (isJson) {
-      return res.status(403).json({ error: 'CSRF_ERROR', message: 'Invalid CSRF token' });
+    if (wantsJson) {
+      return res.status(403).json({
+        ok: false,
+        error: {
+          code: 'CSRF_INVALID',
+          message: 'Invalid CSRF token. Refresh and try again.',
+        },
+      });
     }
-    ensureLocals(res);
     return res.status(403).render('error', {
       title: 'Error',
       message: 'Invalid CSRF token — please refresh and try again.',
       status: 403,
     });
   }
-
   console.error(err.stack || err);
 
-  if (isJson) {
-    return res.status(status).json({
-      error: err.code || 'SERVER_ERROR',
-      message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+  if (wantsJson) {
+    return res.status(err.status || 500).json({
+      ok: false,
+      error: {
+        code: err.code || err.message || 'INTERNAL_ERROR',
+        message:
+          process.env.NODE_ENV === 'production'
+            ? 'Unexpected server error.'
+            : err.message || 'Unexpected server error.',
+      },
     });
   }
 
-  ensureLocals(res);
-  res.status(status).render('error', {
+  res.status(err.status || 500).render('error', {
     title: 'Error',
     message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
-    status,
+    status: err.status || 500,
   });
 });
 

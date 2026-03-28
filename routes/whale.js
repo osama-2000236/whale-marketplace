@@ -1,8 +1,8 @@
 const router = require('express').Router();
 const whaleService = require('../services/whaleService');
-const fallback = require('../services/fallbackMarketplace');
 const {
   requireAuth,
+  requireVerified,
   requirePro,
   requireOwner,
   requireOrderParty,
@@ -11,67 +11,67 @@ const {
 } = require('../middleware/auth');
 const { sanitizeBody } = require('../utils/sanitize');
 const { upload, processImages } = require('../utils/images');
+const { FALLBACK_CATEGORY, createFallbackListing } = require('../lib/fallbackMarketplace');
 
 const CITIES = ['Gaza', 'Ramallah', 'Nablus', 'Hebron', 'Jenin', 'Jerusalem'];
 
-// Browse listings (with fallback resilience)
-router.get('/', async (req, res, next) => {
+// Browse listings
+router.get('/', async (req, res) => {
+  const filters = {
+    q: req.query.q,
+    categorySlug: req.query.category,
+    city: req.query.city,
+    condition: req.query.condition,
+    minPrice: req.query.minPrice,
+    maxPrice: req.query.maxPrice,
+    sort: req.query.sort,
+    cursor: req.query.cursor,
+  };
+
+  let listings = [];
+  let nextCursor = null;
+  let total = 0;
+  let categories = [];
+  let degraded = false;
+
   try {
-    const filters = {
-      q: req.query.q,
-      categorySlug: req.query.category,
-      city: req.query.city,
-      condition: req.query.condition,
-      minPrice: req.query.minPrice,
-      maxPrice: req.query.maxPrice,
-      sort: req.query.sort,
-      cursor: req.query.cursor,
-    };
-    const [{ listings, nextCursor, total }, categories] = await Promise.all([
-      whaleService.getListings(filters),
-      whaleService.getCategories(),
-    ]);
-    res.render('whale/index', {
-      title: res.locals.t('whale.browse'),
-      listings,
-      nextCursor,
-      total,
-      categories,
-      filters,
-      cities: CITIES,
-    });
+    const result = await Promise.all([whaleService.getListings(filters), whaleService.getCategories()]);
+    listings = result[0]?.listings || [];
+    nextCursor = result[0]?.nextCursor || null;
+    total = result[0]?.total || 0;
+    categories = result[1] || [];
   } catch (err) {
-    console.error('[whale] Database error, serving fallback:', err.message);
-    try {
-      const { listings, nextCursor, total } = fallback.getFallbackListings();
-      res.render('whale/index', {
-        title: res.locals.t('whale.browse'),
-        listings,
-        nextCursor,
-        total,
-        categories: fallback.getFallbackCategories(),
-        filters: {},
-        cities: CITIES,
-      });
-    } catch (renderErr) {
-      next(renderErr);
-    }
+    degraded = true;
+    console.error('[whale/browse] data bootstrap failed:', err.message);
   }
+
+  if (!categories.length) categories = [FALLBACK_CATEGORY];
+  if (!listings.length) listings = [createFallbackListing()];
+
+  res.render('whale/index', {
+    title: res.locals.t('whale.browse'),
+    listings,
+    nextCursor,
+    total,
+    categories,
+    filters,
+    cities: CITIES,
+    degraded,
+  });
 });
 
 // Listing detail
 router.get('/listing/:slug', async (req, res, next) => {
   try {
-    const listing = await whaleService.getListing(req.params.slug);
+    let listing = await whaleService.getListing(req.params.slug);
+    if (!listing && req.params.slug === '__fallback-market-item') {
+      listing = createFallbackListing();
+    }
     if (!listing) return res.status(404).render('404', { title: '404' });
 
     let isSaved = false;
     if (req.user) {
-      const prisma = require('../lib/prisma');
-      const saved = await prisma.savedListing.findUnique({
-        where: { userId_listingId: { userId: req.user.id, listingId: listing.id } },
-      });
-      isSaved = !!saved;
+      isSaved = await whaleService.isSaved(req.user.id, listing.id);
     }
 
     res.render('whale/listing', { title: listing.title, listing, isSaved });
@@ -113,7 +113,7 @@ router.post('/listing/:id/save', requireAuth, async (req, res, next) => {
 });
 
 // Sell form
-router.get('/sell', requireAuth, requirePro, async (req, res, next) => {
+router.get('/sell', requireAuth, requireVerified, requirePro, async (req, res, next) => {
   try {
     const categories = await whaleService.getCategories();
     res.render('whale/sell', { title: res.locals.t('sell.title'), categories, cities: CITIES });
@@ -123,32 +123,39 @@ router.get('/sell', requireAuth, requirePro, async (req, res, next) => {
 });
 
 // Create listing
-router.post('/sell', requireAuth, requirePro, upload.array('images', 6), async (req, res, next) => {
-  try {
-    const images = await processImages(req.files);
-    const data = sanitizeBody(req.body, {
-      title: 100,
-      titleAr: 100,
-      description: 5000,
-      descriptionAr: 5000,
-      price: 20,
-      condition: 20,
-      categoryId: 50,
-      subcategoryId: 50,
-      city: 100,
-      tags: 500,
-    });
-    data.images = images;
-    data.negotiable = req.body.negotiable;
+router.post(
+  '/sell',
+  requireAuth,
+  requireVerified,
+  requirePro,
+  upload.array('images', 6),
+  async (req, res, next) => {
+    try {
+      const images = await processImages(req.files);
+      const data = sanitizeBody(req.body, {
+        title: 100,
+        titleAr: 100,
+        description: 5000,
+        descriptionAr: 5000,
+        price: 20,
+        condition: 20,
+        categoryId: 50,
+        subcategoryId: 50,
+        city: 100,
+        tags: 500,
+      });
+      data.images = images;
+      data.negotiable = req.body.negotiable;
 
-    const listing = await whaleService.createListing(req.user.id, data);
-    req.session.flash = { type: 'success', message: res.locals.t('flash.listing_created') };
-    res.redirect('/whale/listing/' + listing.slug);
-  } catch (err) {
-    req.session.flash = { type: 'danger', message: err.message };
-    res.redirect('/whale/sell');
+      const listing = await whaleService.createListing(req.user.id, data);
+      req.session.flash = { type: 'success', message: res.locals.t('flash.listing_created') };
+      res.redirect('/whale/listing/' + listing.slug);
+    } catch (err) {
+      req.session.flash = { type: 'danger', message: err.message };
+      res.redirect('/whale/sell');
+    }
   }
-});
+);
 
 // Edit form
 router.get('/listing/:id/edit', requireAuth, requireOwner, async (req, res, next) => {
@@ -214,7 +221,7 @@ router.post('/listing/:id/delete', requireAuth, async (req, res, next) => {
 });
 
 // Checkout
-router.get('/checkout/:id', requireAuth, async (req, res, next) => {
+router.get('/checkout/:id', requireAuth, requireVerified, async (req, res, next) => {
   try {
     const listing = await whaleService.getListing(req.params.id);
     if (!listing) return res.status(404).render('404', { title: '404' });
@@ -228,7 +235,7 @@ router.get('/checkout/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-router.post('/checkout/:id', requireAuth, async (req, res, next) => {
+router.post('/checkout/:id', requireAuth, requireVerified, async (req, res, next) => {
   try {
     const data = sanitizeBody(req.body, {
       paymentMethod: 20,
