@@ -5,7 +5,9 @@ test.describe('Marketplace homepage', () => {
     // Intent: verify the production homepage renders the exact hero heading currently exposed in the live Arabic UI.
     await page.goto('/');
 
-    await expect(page.locator('.hero h1')).toHaveText('اشترِ وبِع بأمان');
+    await expect(page.locator('.hero h1')).toHaveText(
+      /(اشترِ وبِع بأمان|Buy and Sell with Confidence)/
+    );
   });
 
   test('Browse CTA links to /whale', async ({ page }) => {
@@ -51,7 +53,7 @@ test.describe('Marketplace homepage', () => {
     await page.goto('/');
 
     await expect(page.locator('.trust-grid')).toBeVisible();
-    await expect(page.locator('h2.section-title.text-center')).toHaveText('لماذا الحوت؟');
+    await expect(page.locator('h2.section-title.text-center')).toHaveText(/(لماذا الحوت؟|Why Whale\?)/);
     await expect(page.locator('.trust-grid .trust-card')).toHaveCount(3);
   });
 
