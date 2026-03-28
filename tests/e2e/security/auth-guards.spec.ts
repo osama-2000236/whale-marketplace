@@ -40,7 +40,7 @@ test.describe('Security auth guards', () => {
       page.locator('form[action="/auth/login"] button').click(),
     ]);
 
-    await expect(page.locator('body')).toContainText('تسجيل الدخول');
+    await expect(page.locator('form[action="/auth/login"]')).toBeVisible();
     await expect(page.locator('.flash.flash-danger')).toBeVisible();
   });
 });
