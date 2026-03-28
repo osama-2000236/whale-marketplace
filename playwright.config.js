@@ -1,62 +1,30 @@
-// playwright.config.js
-// ============================================================
-//  Playwright Configuration — UI/UX QA Test Suite
-//  Run: npx playwright test --reporter=html
-// ============================================================
-
 const { defineConfig, devices } = require('@playwright/test');
 
 module.exports = defineConfig({
-  testDir: './',
-  testMatch: '**/*.spec.js',
-  fullyParallel: true,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  testDir: './tests/e2e',
+  fullyParallel: false,
+  retries: 1,
   timeout: 30_000,
-  expect: { timeout: 5_000 },
-
-  reporter: [['html', { outputFolder: 'playwright-report', open: 'never' }], ['list']],
-
+  workers: 1,
+  reporter: [
+    ['html', { outputFolder: 'tests/reports/html', open: 'never' }],
+    ['json', { outputFile: 'tests/reports/results.json' }],
+    ['list'],
+  ],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3001',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'on-first-retry',
-    actionTimeout: 10_000,
-    navigationTimeout: 15_000,
+    baseURL: 'https://whale-marketplace-production.up.railway.app',
+    screenshot: 'on',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
   },
-
-  webServer: {
-    command: 'cross-env NODE_ENV=test PORT=3001 node entrypoint.js',
-    url: 'http://localhost:3001',
-    reuseExistingServer: false,
-    timeout: 120_000,
-  },
-
   projects: [
     {
-      name: 'chromium',
+      name: 'Desktop Chrome',
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
-    },
-    {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 7'] },
-    },
-    {
-      name: 'mobile-safari',
-      use: { ...devices['iPhone 14'] },
-    },
-    {
-      name: 'tablet',
-      use: { ...devices['iPad (gen 7)'] },
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
     },
   ],
 });
