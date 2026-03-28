@@ -1,8 +1,8 @@
 # QA Test Report — Whale Marketplace
-**Date:** 2026-03-28
+**Date:** 2026-03-29
 **Tester:** Codex (GPT-5.4) + GitHub MCP
 **Target:** https://whale-marketplace-production.up.railway.app/
-**Branch:** qa/automated-test-suite
+**Branch:** codex/qa-playwright-suite
 
 ## Results Summary
 | Total | Passed | Failed | Skipped |
@@ -66,6 +66,6 @@ Skipped coverage was intentional:
 npm install
 npx prisma generate
 npx playwright install --with-deps chromium
-npx playwright test
+PLAYWRIGHT_BASE_URL=http://localhost:3001 npx playwright test
 npx playwright show-report
 ```
