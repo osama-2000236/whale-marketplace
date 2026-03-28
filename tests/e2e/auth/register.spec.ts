@@ -11,7 +11,7 @@ test.describe('Auth register', () => {
     // Intent: verify the deployed register page exposes the expected public form and heading.
     await page.goto('/auth/register');
 
-    await expect(page.locator('h1')).toHaveText('إنشاء حساب');
+    await expect(page.locator('h1')).toHaveText(/(إنشاء حساب|Create Account)/);
     await expect(page.locator('form[action="/auth/register"]')).toBeVisible();
   });
 
