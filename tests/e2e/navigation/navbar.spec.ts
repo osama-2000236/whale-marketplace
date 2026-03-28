@@ -13,6 +13,10 @@ test.describe('Navigation navbar', () => {
     // Intent: verify the primary browse navigation link targets the live browse route.
     await page.goto('/');
 
+    if (await page.locator('.navbar-toggle').isVisible()) {
+      await page.locator('.navbar-toggle').click();
+    }
+
     await expect(page.locator('.navbar-nav a[href="/whale"]')).toBeVisible();
   });
 
