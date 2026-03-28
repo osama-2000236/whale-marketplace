@@ -66,6 +66,12 @@ The suite now runs end to end on localhost through Playwright's `webServer` supp
 npm install
 npx prisma generate
 npx playwright install --with-deps chromium
-PLAYWRIGHT_BASE_URL=http://localhost:3001 npx playwright test
+npx playwright test
+npx playwright show-report
+```
+
+## How to Run Against Hosted
+```bash
+PLAYWRIGHT_BASE_URL=https://whale-marketplace-production.up.railway.app npx playwright test
 npx playwright show-report
 ```
