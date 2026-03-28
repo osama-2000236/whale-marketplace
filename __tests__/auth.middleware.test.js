@@ -16,11 +16,14 @@ const {
   requireAuth,
   requireAdmin,
   requireAdminScope,
+  requireAdmin2FA,
+  requireVerified,
   requirePro,
   requireOrderParty,
   requireSeller,
   requireBuyer,
   requireOwner,
+  hasAdminPermission,
 } = require('../middleware/auth');
 
 function makeRes() {
@@ -79,7 +82,7 @@ describe('auth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  test('requireAdmin allows admin without 2FA', () => {
+  test('requireAdmin allows admin', () => {
     const req = { user: { role: 'ADMIN' }, session: {} };
     const res = makeRes();
     const next = jest.fn();
@@ -87,25 +90,20 @@ describe('auth middleware', () => {
     expect(next).toHaveBeenCalledTimes(1);
   });
 
-  test('requireAdmin redirects to 2FA when twoFactorSecret set and not verified', () => {
-    const req = { user: { role: 'ADMIN', twoFactorSecret: 'secret123' }, session: {} };
-    const res = makeRes();
-    const next = jest.fn();
-    requireAdmin(req, res, next);
-    expect(res.redirect).toHaveBeenCalledWith('/auth/2fa');
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  test('requireAdmin allows admin with verified 2FA', () => {
-    const req = { user: { role: 'ADMIN', twoFactorSecret: 'secret123' }, session: { admin2FAVerified: true } };
-    const res = makeRes();
-    const next = jest.fn();
-    requireAdmin(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+  test('hasAdminPermission grants super admin and matching scoped permissions', () => {
+    expect(hasAdminPermission({ role: 'ADMIN', adminScope: 'SUPER_ADMIN' }, 'payments.write')).toBe(
+      true
+    );
+    expect(hasAdminPermission({ role: 'ADMIN', adminScope: 'SUPPORT_AGENT' }, 'payments.read')).toBe(
+      true
+    );
+    expect(hasAdminPermission({ role: 'ADMIN', adminScope: 'WAREHOUSE' }, 'payments.write')).toBe(
+      false
+    );
   });
 
   test('requireAdminScope blocks non-admin', () => {
-    const middleware = requireAdminScope('SUPER_ADMIN');
+    const middleware = requireAdminScope('payments.write');
     const req = { user: { role: 'MEMBER' } };
     const res = makeRes();
     const next = jest.fn();
@@ -114,36 +112,24 @@ describe('auth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  test('requireAdminScope blocks null user', () => {
-    const middleware = requireAdminScope('SUPER_ADMIN');
-    const req = { user: null };
-    const res = makeRes();
-    const next = jest.fn();
-    middleware(req, res, next);
-    expect(res.statusCode).toBe(403);
+  test('requireAdminScope allows super admin and matching scoped permission', () => {
+    const superAdmin = requireAdminScope('payments.write');
+    const supportAgent = requireAdminScope('payments.read');
+
+    const res1 = makeRes();
+    const next1 = jest.fn();
+    superAdmin({ user: { role: 'ADMIN', adminScope: 'SUPER_ADMIN' } }, res1, next1);
+    expect(next1).toHaveBeenCalledTimes(1);
+
+    const res2 = makeRes();
+    const next2 = jest.fn();
+    supportAgent({ user: { role: 'ADMIN', adminScope: 'SUPPORT_AGENT' } }, res2, next2);
+    expect(next2).toHaveBeenCalledTimes(1);
   });
 
-  test('requireAdminScope allows SUPER_ADMIN for any scope', () => {
-    const middleware = requireAdminScope('SUPPORT_AGENT');
-    const req = { user: { role: 'ADMIN', adminScope: 'SUPER_ADMIN' }, session: {} };
-    const res = makeRes();
-    const next = jest.fn();
-    middleware(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
-  });
-
-  test('requireAdminScope allows matching scope', () => {
-    const middleware = requireAdminScope('SUPPORT_AGENT', 'WAREHOUSE');
-    const req = { user: { role: 'ADMIN', adminScope: 'SUPPORT_AGENT' }, session: {} };
-    const res = makeRes();
-    const next = jest.fn();
-    middleware(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
-  });
-
-  test('requireAdminScope blocks non-matching scope', () => {
-    const middleware = requireAdminScope('SUPER_ADMIN');
-    const req = { user: { role: 'ADMIN', adminScope: 'WAREHOUSE' }, session: {} };
+  test('requireAdminScope blocks non-matching scoped permission', () => {
+    const middleware = requireAdminScope('payments.write');
+    const req = { user: { role: 'ADMIN', adminScope: 'WAREHOUSE' } };
     const res = makeRes();
     const next = jest.fn();
     middleware(req, res, next);
@@ -151,14 +137,55 @@ describe('auth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  test('requireAdminScope redirects to 2FA when needed', () => {
-    const middleware = requireAdminScope('SUPER_ADMIN');
-    const req = { user: { role: 'ADMIN', adminScope: 'SUPER_ADMIN', twoFactorSecret: 'sec' }, session: {} };
+  test('requireAdmin2FA redirects admins without fresh verification', () => {
+    const req = { user: { role: 'ADMIN' }, session: {} };
     const res = makeRes();
     const next = jest.fn();
-    middleware(req, res, next);
-    expect(res.redirect).toHaveBeenCalledWith('/auth/2fa');
+    requireAdmin2FA(req, res, next);
+    expect(req.session.flash).toEqual({
+      type: 'warning',
+      message: 'Admin verification required.',
+    });
+    expect(res.redirect).toHaveBeenCalledWith('/admin/2fa');
     expect(next).not.toHaveBeenCalled();
+  });
+
+  test('requireAdmin2FA allows recently verified admins', () => {
+    const req = {
+      user: { role: 'ADMIN' },
+      session: { admin2faVerifiedAt: new Date().toISOString() },
+    };
+    const res = makeRes();
+    const next = jest.fn();
+    requireAdmin2FA(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  test('requireVerified redirects unauthenticated and unverified users', () => {
+    const unauthReq = { user: null, session: {}, originalUrl: '/whale/sell' };
+    const unauthRes = makeRes();
+    const unauthNext = jest.fn();
+    requireVerified(unauthReq, unauthRes, unauthNext);
+    expect(unauthRes.redirect).toHaveBeenCalledWith('/auth/login?next=%2Fwhale%2Fsell');
+
+    const unverifiedReq = { user: { id: 'u1', isVerified: false }, session: {}, originalUrl: '/x' };
+    const unverifiedRes = makeRes();
+    const unverifiedNext = jest.fn();
+    requireVerified(unverifiedReq, unverifiedRes, unverifiedNext);
+    expect(unverifiedReq.session.flash).toEqual({
+      type: 'warning',
+      message: 'Please verify your email before using this action.',
+    });
+    expect(unverifiedRes.redirect).toHaveBeenCalledWith('/profile');
+    expect(unverifiedNext).not.toHaveBeenCalled();
+  });
+
+  test('requireVerified allows verified users', () => {
+    const req = { user: { id: 'u1', isVerified: true }, session: {}, originalUrl: '/x' };
+    const res = makeRes();
+    const next = jest.fn();
+    requireVerified(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
   });
 
   test('requirePro redirects when no user', async () => {
