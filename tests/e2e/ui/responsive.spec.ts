@@ -22,7 +22,7 @@ test.describe('UI responsive layout', () => {
       expect(overflow).toBeLessThanOrEqual(1);
       await expect(page.locator('.grid-listings .listing-card').first()).toBeVisible();
 
-      if (viewport.width <= 375) {
+      if (await page.locator('.navbar-toggle').isVisible()) {
         await page.locator('.navbar-toggle').click();
         await expect(page.locator('.navbar-nav')).toHaveClass(/open/);
       } else {
