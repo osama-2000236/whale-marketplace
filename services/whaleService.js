@@ -3,9 +3,16 @@ const slugify = require('slugify');
 const { cursorPagination, processCursorResults } = require('../utils/pagination');
 const emailService = require('./emailService');
 const { validateTransition } = require('./stateMachine');
+const fallbackStore = require('../lib/fallbackStore');
+
+const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 // ── CATEGORIES ──
 async function getCategories() {
+  if (!hasDatabase) {
+    return fallbackStore.getCategories();
+  }
+
   return prisma.category.findMany({
     orderBy: { order: 'asc' },
     include: { subcategories: { orderBy: { order: 'asc' } } },
@@ -15,6 +22,41 @@ async function getCategories() {
 // ── LISTINGS ──
 async function getListings(filters = {}) {
   const { q, categorySlug, city, condition, minPrice, maxPrice, sort, cursor } = filters;
+
+  if (!hasDatabase) {
+    let listings = fallbackStore
+      .listListings()
+      .filter((listing) => listing.status === 'ACTIVE');
+
+    if (q) {
+      const query = q.toLowerCase();
+      listings = listings.filter(
+        (listing) =>
+          listing.title.toLowerCase().includes(query) ||
+          String(listing.titleAr || '').includes(query) ||
+          String(listing.description || '').toLowerCase().includes(query)
+      );
+    }
+    if (categorySlug) {
+      const category = fallbackStore.findCategoryBySlug(categorySlug);
+      listings = category ? listings.filter((listing) => listing.categoryId === category.id) : listings;
+    }
+    if (city) listings = listings.filter((listing) => listing.city === city);
+    if (condition) listings = listings.filter((listing) => listing.condition === condition);
+    if (minPrice) listings = listings.filter((listing) => Number(listing.price) >= Number(minPrice));
+    if (maxPrice) listings = listings.filter((listing) => Number(listing.price) <= Number(maxPrice));
+
+    const sorters = {
+      newest: (a, b) => b.createdAt - a.createdAt,
+      oldest: (a, b) => a.createdAt - b.createdAt,
+      price_asc: (a, b) => Number(a.price) - Number(b.price),
+      price_desc: (a, b) => Number(b.price) - Number(a.price),
+      popular: (a, b) => Number(b.views) - Number(a.views),
+    };
+    listings.sort(sorters[sort] || sorters.newest);
+
+    return { listings, nextCursor: null, total: listings.length, cursor };
+  }
 
   const where = { status: 'ACTIVE' };
 
@@ -64,6 +106,13 @@ async function getListings(filters = {}) {
 }
 
 async function getListing(slugOrId) {
+  if (!hasDatabase) {
+    const listing = fallbackStore.findListingBySlugOrId(slugOrId);
+    if (!listing || listing.status !== 'ACTIVE') return null;
+    listing.views += 1;
+    return listing;
+  }
+
   let listing = await prisma.listing.findUnique({
     where: { slug: slugOrId },
     include: {
@@ -126,6 +175,12 @@ async function createListing(sellerId, data) {
   if (!images || images.length === 0) throw new Error('IMAGE_REQUIRED');
   if (!categoryId) throw new Error('CATEGORY_REQUIRED');
 
+  if (!hasDatabase) {
+    const category = fallbackStore.findCategoryById(categoryId);
+    if (!category) throw new Error('CATEGORY_NOT_FOUND');
+    return fallbackStore.createListingForSeller(sellerId, data);
+  }
+
   const cat = await prisma.category.findUnique({ where: { id: categoryId } });
   if (!cat) throw new Error('CATEGORY_NOT_FOUND');
 
@@ -164,6 +219,45 @@ async function createListing(sellerId, data) {
 }
 
 async function updateListing(id, sellerId, data) {
+  if (!hasDatabase) {
+    const listing = fallbackStore.findListingBySlugOrId(id);
+    if (!listing) throw new Error('NOT_FOUND');
+    if (listing.sellerId !== sellerId) throw new Error('UNAUTHORIZED');
+
+    if (data.title !== undefined) {
+      listing.title = data.title;
+      listing.slug = slugify(data.title, { lower: true, strict: true }) || listing.slug;
+    }
+    if (data.titleAr !== undefined) listing.titleAr = data.titleAr;
+    if (data.description !== undefined) listing.description = data.description;
+    if (data.descriptionAr !== undefined) listing.descriptionAr = data.descriptionAr;
+    if (data.price !== undefined) listing.price = parseFloat(data.price);
+    if (data.negotiable !== undefined) {
+      listing.negotiable =
+        data.negotiable === true || data.negotiable === 'true' || data.negotiable === 'on';
+    }
+    if (data.condition !== undefined) listing.condition = data.condition;
+    if (data.images !== undefined) listing.images = Array.isArray(data.images) ? data.images : [data.images];
+    if (data.categoryId !== undefined) {
+      const category = fallbackStore.findCategoryById(data.categoryId);
+      if (category) {
+        listing.categoryId = category.id;
+        listing.category = category;
+      }
+    }
+    if (data.city !== undefined) listing.city = data.city;
+    if (data.tags !== undefined) {
+      listing.tags = Array.isArray(data.tags)
+        ? data.tags
+        : String(data.tags)
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter(Boolean);
+    }
+    listing.updatedAt = new Date();
+    return listing;
+  }
+
   const listing = await prisma.listing.findUnique({ where: { id } });
   if (!listing) throw new Error('NOT_FOUND');
   if (listing.sellerId !== sellerId) throw new Error('UNAUTHORIZED');
@@ -204,6 +298,13 @@ async function updateListing(id, sellerId, data) {
 }
 
 async function deleteListing(id, actorId, isAdmin = false) {
+  if (!hasDatabase) {
+    const listing = fallbackStore.findListingBySlugOrId(id);
+    if (!listing) throw new Error('NOT_FOUND');
+    if (!isAdmin && listing.sellerId !== actorId) throw new Error('UNAUTHORIZED');
+    return fallbackStore.markListingRemoved(listing.id);
+  }
+
   const listing = await prisma.listing.findUnique({ where: { id } });
   if (!listing) throw new Error('NOT_FOUND');
   if (!isAdmin && listing.sellerId !== actorId) throw new Error('UNAUTHORIZED');
@@ -413,6 +514,10 @@ async function postReview(orderId, reviewerId, data) {
 
 // ── SAVED ──
 async function toggleSaved(userId, listingId) {
+  if (!hasDatabase) {
+    return fallbackStore.toggleSavedListing(userId, listingId);
+  }
+
   const existing = await prisma.savedListing.findUnique({
     where: { userId_listingId: { userId, listingId } },
   });
@@ -425,6 +530,10 @@ async function toggleSaved(userId, listingId) {
 }
 
 async function getSavedListings(userId) {
+  if (!hasDatabase) {
+    return fallbackStore.getSavedListings(userId);
+  }
+
   const saved = await prisma.savedListing.findMany({
     where: { userId },
     orderBy: { savedAt: 'desc' },
@@ -438,6 +547,17 @@ async function getSavedListings(userId) {
     },
   });
   return saved.map((s) => s.listing);
+}
+
+async function isSaved(userId, listingId) {
+  if (!hasDatabase) {
+    return fallbackStore.isListingSaved(userId, listingId);
+  }
+
+  const saved = await prisma.savedListing.findUnique({
+    where: { userId_listingId: { userId, listingId } },
+  });
+  return Boolean(saved);
 }
 
 // ── DASHBOARD ──
@@ -513,6 +633,7 @@ module.exports = {
   transitionOrder,
   postReview,
   toggleSaved,
+  isSaved,
   getSavedListings,
   getSellerDashboard,
   getUserOrders,

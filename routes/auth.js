@@ -63,7 +63,12 @@ router.get('/register', (req, res) => {
 // Register handler
 router.post('/register', authLimiter, async (req, res, next) => {
   try {
-    const data = sanitizeBody(req.body, { username: 30, email: 255, password: 128 });
+    const data = sanitizeBody(req.body, {
+      username: 30,
+      email: 255,
+      password: 128,
+      confirmPassword: 128,
+    });
 
     const user = await userService.register(data);
 
@@ -77,11 +82,95 @@ router.post('/register', authLimiter, async (req, res, next) => {
       INVALID_USERNAME: 'Username must be 3-30 alphanumeric characters',
       INVALID_EMAIL: 'Invalid email address',
       WEAK_PASSWORD: 'Password must be at least 8 characters',
+      PASSWORD_MISMATCH: 'Passwords do not match',
       EMAIL_TAKEN: 'Email already registered',
       USERNAME_TAKEN: 'Username already taken',
     };
     req.session.flash = { type: 'danger', message: messages[err.message] || err.message };
     res.redirect('/auth/register');
+  }
+});
+
+router.get('/verify-email', async (req, res) => {
+  const token = req.query.token;
+  if (!token) {
+    req.session.flash = { type: 'danger', message: 'Missing verification token.' };
+    return res.redirect('/auth/login');
+  }
+
+  try {
+    await authSecurityService.verifyEmail(token);
+    req.session.flash = {
+      type: 'success',
+      message: 'Your email has been verified. You can continue safely.',
+    };
+    return res.redirect('/auth/login');
+  } catch {
+    req.session.flash = {
+      type: 'danger',
+      message: 'Verification link is invalid or expired. Please request a new one.',
+    };
+    return res.redirect('/auth/login');
+  }
+});
+
+router.post('/resend-verification', async (req, res) => {
+  if (!req.user) {
+    req.session.flash = { type: 'warning', message: 'Please log in first.' };
+    return res.redirect('/auth/login');
+  }
+
+  try {
+    await authSecurityService.sendEmailVerification(req.user);
+    req.session.flash = {
+      type: 'success',
+      message: 'Verification email sent. Please check your inbox.',
+    };
+  } catch {
+    req.session.flash = {
+      type: 'danger',
+      message: 'Unable to send verification email right now.',
+    };
+  }
+  return res.redirect('/profile');
+});
+
+router.get('/forgot-password', (req, res) => {
+  res.render('auth/forgot-password', { title: 'Forgot Password' });
+});
+
+router.post('/forgot-password', authLimiter, async (req, res) => {
+  const email = sanitizeBody(req.body, { email: 255 }).email;
+  await authSecurityService.requestPasswordReset(email).catch(() => {});
+  req.session.flash = {
+    type: 'info',
+    message: 'If your account exists, a reset link was sent to your email.',
+  };
+  res.redirect('/auth/login');
+});
+
+router.get('/reset-password', (req, res) => {
+  res.render('auth/reset-password', { title: 'Reset Password', token: req.query.token || '' });
+});
+
+router.post('/reset-password', authLimiter, async (req, res) => {
+  const data = sanitizeBody(req.body, { token: 512, password: 128, confirmPassword: 128 });
+  if (!data.password || data.password !== data.confirmPassword) {
+    req.session.flash = { type: 'danger', message: 'Passwords do not match.' };
+    return res.redirect('/auth/reset-password?token=' + encodeURIComponent(data.token || ''));
+  }
+
+  try {
+    await authSecurityService.resetPassword(data.token, data.password);
+    req.session.flash = { type: 'success', message: 'Password updated. Please log in.' };
+    return res.redirect('/auth/login');
+  } catch (err) {
+    const map = {
+      TOKEN_INVALID_OR_EXPIRED: 'Reset link is invalid or expired.',
+      WEAK_PASSWORD: 'Password must be at least 8 characters.',
+    };
+    req.session.flash = { type: 'danger', message: map[err.message] || 'Unable to reset password.' };
+    return res.redirect('/auth/reset-password?token=' + encodeURIComponent(data.token || ''));
   }
 });
 
@@ -120,118 +209,6 @@ router.post(
     res.redirect('/whale');
   }
 );
-
-// Email verification
-router.get('/verify-email', async (req, res, next) => {
-  try {
-    const { token } = req.query;
-    if (!token) {
-      req.session.flash = { type: 'danger', message: res.locals.t('auth.invalid_token') };
-      return res.redirect('/auth/login');
-    }
-    await authSecurityService.verifyEmail(token);
-    req.session.flash = { type: 'success', message: res.locals.t('flash.email_verified') };
-    res.redirect('/auth/login');
-  } catch (err) {
-    const msg = {
-      INVALID_TOKEN: 'auth.invalid_token',
-      TOKEN_USED: 'auth.token_used',
-      TOKEN_EXPIRED: 'auth.token_expired',
-    }[err.message];
-    req.session.flash = { type: 'danger', message: res.locals.t(msg || 'general.error') };
-    res.redirect('/auth/login');
-  }
-});
-
-// Resend verification email
-router.post('/resend-verification', authLimiter, async (req, res, next) => {
-  try {
-    if (!req.user) {
-      return res.redirect('/auth/login');
-    }
-    await authSecurityService.sendVerificationEmail(req.user.id);
-    req.session.flash = { type: 'success', message: res.locals.t('flash.verification_sent') };
-    res.redirect('back');
-  } catch (err) {
-    req.session.flash = {
-      type: 'info',
-      message: err.message === 'ALREADY_VERIFIED'
-        ? res.locals.t('auth.already_verified')
-        : res.locals.t('general.error'),
-    };
-    res.redirect('back');
-  }
-});
-
-// Forgot password page
-router.get('/forgot-password', (req, res) => {
-  if (req.user) return res.redirect('/whale');
-  res.render('auth/forgot-password', { title: res.locals.t('auth.forgot_password') });
-});
-
-// Forgot password handler
-router.post('/forgot-password', authLimiter, async (req, res) => {
-  try {
-    const { email } = sanitizeBody(req.body, { email: 255 });
-    await authSecurityService.sendPasswordReset(email);
-    req.session.flash = { type: 'success', message: res.locals.t('flash.reset_email_sent') };
-    res.redirect('/auth/forgot-password');
-  } catch {
-    req.session.flash = { type: 'danger', message: res.locals.t('general.error') };
-    res.redirect('/auth/forgot-password');
-  }
-});
-
-// Reset password page
-router.get('/reset-password', (req, res) => {
-  const { token } = req.query;
-  if (!token) return res.redirect('/auth/forgot-password');
-  res.render('auth/reset-password', {
-    title: res.locals.t('auth.reset_password'),
-    token,
-  });
-});
-
-// Reset password handler
-router.post('/reset-password', authLimiter, async (req, res, next) => {
-  try {
-    const { token, password } = req.body;
-    await authSecurityService.resetPassword(token, password);
-    req.session.flash = { type: 'success', message: res.locals.t('flash.password_reset') };
-    res.redirect('/auth/login');
-  } catch (err) {
-    const msg = {
-      INVALID_TOKEN: 'auth.invalid_token',
-      TOKEN_USED: 'auth.token_used',
-      TOKEN_EXPIRED: 'auth.token_expired',
-      WEAK_PASSWORD: 'auth.weak_password',
-    }[err.message];
-    req.session.flash = { type: 'danger', message: res.locals.t(msg || 'general.error') };
-    res.redirect('back');
-  }
-});
-
-// Admin 2FA verification page
-router.get('/2fa', (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') return res.redirect('/');
-  res.render('auth/2fa', { title: res.locals.t('auth.two_factor') });
-});
-
-// Admin 2FA verification handler
-router.post('/2fa', authLimiter, (req, res) => {
-  if (!req.user || req.user.role !== 'ADMIN') return res.redirect('/');
-  const { code } = req.body;
-  const secret = req.user.twoFactorSecret;
-
-  if (!secret || !authSecurityService.verifyAdmin2FA(secret, code)) {
-    req.session.flash = { type: 'danger', message: res.locals.t('auth.invalid_2fa') };
-    return res.redirect('/auth/2fa');
-  }
-
-  req.session.admin2FAVerified = true;
-  req.session.flash = { type: 'success', message: res.locals.t('flash.2fa_verified') };
-  res.redirect('/admin');
-});
 
 // Logout
 router.post('/logout', (req, res) => {

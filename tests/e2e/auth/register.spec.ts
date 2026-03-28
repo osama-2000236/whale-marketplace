@@ -25,9 +25,22 @@ test.describe('Auth register', () => {
     await expect.poll(() => validationMessage(page, 'input[name="password"]')).not.toBe('');
   });
 
-  test('Mismatched passwords shows error', async () => {
-    // Intent: record that this scenario is not applicable to the deployed app because the live register form has no confirm-password field.
-    test.skip(true, 'The production register form exposes username, email, and password only.');
+  test('Mismatched passwords shows error', async ({ page }) => {
+    // Intent: verify the register form rejects mismatched passwords with a visible flash error.
+    const user = buildTestUser('mismatch');
+
+    await page.goto('/auth/register');
+    await page.locator('input[name="username"]').fill(user.username);
+    await page.locator('input[name="email"]').fill(user.email);
+    await page.locator('input[name="password"]').fill(user.password);
+    await page.locator('input[name="confirmPassword"]').fill('DifferentPass2026!');
+
+    await Promise.all([
+      page.waitForURL(/\/auth\/register$/),
+      page.locator('form[action="/auth/register"] button').click(),
+    ]);
+
+    await expect(page.locator('.flash.flash-danger')).toContainText(/Passwords do not match/);
   });
 
   test('Short password is rejected', async ({ page }) => {
@@ -36,6 +49,7 @@ test.describe('Auth register', () => {
     await page.locator('input[name="username"]').fill(buildTestUser().username);
     await page.locator('input[name="email"]').fill(buildTestUser().email);
     await page.locator('input[name="password"]').fill('short');
+    await page.locator('input[name="confirmPassword"]').fill('short');
     await page.locator('form[action="/auth/register"] button').click();
 
     await expect.poll(() => validationMessage(page, 'input[name="password"]')).not.toBe('');
@@ -62,6 +76,7 @@ test.describe('Auth register', () => {
       await page.locator('input[name="username"]').fill(buildTestUser('dup').username);
       await page.locator('input[name="email"]').fill(existing.email);
       await page.locator('input[name="password"]').fill(existing.password);
+      await page.locator('input[name="confirmPassword"]').fill(existing.password);
 
       await Promise.all([
         page.waitForURL(/\/auth\/register$/),

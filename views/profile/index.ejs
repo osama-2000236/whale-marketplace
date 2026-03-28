@@ -7,9 +7,29 @@
       <h1><%= t('profile.title') %></h1>
     </div>
 
+    <% if (!profile.isVerified) { %>
+    <div class="card mb-2" style="border-color: #f59e0b">
+      <div class="card-body">
+        <p style="margin-bottom: 0.75rem">
+          <%= locale === 'ar' ? 'يرجى تأكيد بريدك الإلكتروني لتفعيل كل الميزات.' : 'Please verify your email to unlock all account features.' %>
+        </p>
+        <form method="POST" action="/auth/resend-verification">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <button type="submit" class="btn btn-secondary">
+            <%= locale === 'ar' ? 'إعادة إرسال رابط التفعيل' : 'Resend verification link' %>
+          </button>
+        </form>
+      </div>
+    </div>
+    <% } %>
+
     <div class="card">
       <div class="card-body">
-        <form method="POST" action="/profile" enctype="multipart/form-data">
+        <form
+          method="POST"
+          action="/profile?_csrf=<%= encodeURIComponent(csrfToken) %>"
+          enctype="multipart/form-data"
+        >
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
           <div class="text-center mb-2">
