@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-pr\\playwright.config.js",
-    "rootDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-pr/tests/e2e",
+    "configFile": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\playwright.config.js",
+    "rootDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-sync/tests/e2e",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -16,15 +16,15 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-pr/test-results",
+        "outputDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-sync/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "Desktop Chrome",
         "name": "Desktop Chrome",
-        "testDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-pr/tests/e2e",
+        "testDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-sync/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -32,15 +32,15 @@
         "timeout": 30000
       },
       {
-        "outputDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-pr/test-results",
+        "outputDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-sync/test-results",
         "repeatEach": 1,
-        "retries": 0,
+        "retries": 1,
         "metadata": {
           "actualWorkers": 1
         },
         "id": "Mobile Chrome",
         "name": "Mobile Chrome",
-        "testDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-pr/tests/e2e",
+        "testDir": "C:/Users/osama/OneDrive/Documents/Playground/whale-marketplace-sync/tests/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -121,14 +121,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2116,
+                      "duration": 1236,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:22.408Z",
+                      "startTime": "2026-03-28T18:55:41.871Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Page-ebc41-h-email-and-password-fields-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -155,14 +161,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1365,
+                      "duration": 1013,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:24.859Z",
+                      "startTime": "2026-03-28T18:55:43.450Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Empt-30c4b-ion-shows-validation-errors-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -189,14 +201,25 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3458,
+                      "duration": 2577,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:26.251Z",
+                      "startTime": "2026-03-28T18:55:44.475Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Wrong-password-shows-error-Desktop-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Wrong-password-shows-error-Desktop-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -223,14 +246,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1101,
+                      "duration": 861,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:29.726Z",
+                      "startTime": "2026-03-28T18:55:47.065Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Non-existent-email-shows-error-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -257,14 +286,25 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2990,
+                      "duration": 2401,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:30.842Z",
+                      "startTime": "2026-03-28T18:55:47.936Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Valid-credentials-log-in-and-redirect-Desktop-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Valid-credentials-log-in-and-redirect-Desktop-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -291,14 +331,25 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3466,
+                      "duration": 2331,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:33.849Z",
+                      "startTime": "2026-03-28T18:55:50.351Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Nav--c7e3f-logged-in-state-after-login-Desktop-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Nav--c7e3f-logged-in-state-after-login-Desktop-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -325,14 +376,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1195,
+                      "duration": 1082,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:48.501Z",
+                      "startTime": "2026-03-28T18:56:56.048Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Page-ebc41-h-email-and-password-fields-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -359,14 +416,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1235,
+                      "duration": 1140,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:49.877Z",
+                      "startTime": "2026-03-28T18:56:57.341Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Empt-30c4b-ion-shows-validation-errors-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -393,14 +456,25 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3040,
+                      "duration": 2835,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:51.126Z",
+                      "startTime": "2026-03-28T18:56:58.509Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Wrong-password-shows-error-Mobile-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Wrong-password-shows-error-Mobile-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -427,14 +501,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1141,
+                      "duration": 1041,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:54.179Z",
+                      "startTime": "2026-03-28T18:57:01.362Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Non-existent-email-shows-error-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -461,14 +541,25 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3492,
+                      "duration": 3327,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:55.334Z",
+                      "startTime": "2026-03-28T18:57:02.417Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Valid-credentials-log-in-and-redirect-Mobile-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Valid-credentials-log-in-and-redirect-Mobile-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -495,14 +586,25 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2854,
+                      "duration": 3481,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:58.842Z",
+                      "startTime": "2026-03-28T18:57:05.765Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Nav--c7e3f-logged-in-state-after-login-Mobile-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-login-Auth-login-Nav--c7e3f-logged-in-state-after-login-Mobile-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -546,14 +648,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1167,
+                      "duration": 780,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:37.343Z",
+                      "startTime": "2026-03-28T18:55:52.701Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Page-loads-with-correct-heading-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -580,14 +688,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1357,
+                      "duration": 832,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:38.531Z",
+                      "startTime": "2026-03-28T18:55:53.492Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-registe-759b7-orm-shows-validation-errors-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -614,14 +728,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1664,
+                      "duration": 824,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:39.902Z",
+                      "startTime": "2026-03-28T18:55:54.334Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Mismatched-passwords-shows-error-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -648,14 +768,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1551,
+                      "duration": 789,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:41.594Z",
+                      "startTime": "2026-03-28T18:55:55.169Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Short-password-is-rejected-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -682,14 +808,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2042,
+                      "duration": 1188,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:43.161Z",
+                      "startTime": "2026-03-28T18:55:55.966Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-registe-4234a-cts-away-from-auth-register-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -716,14 +848,25 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3385,
+                      "duration": 1879,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:45.219Z",
+                      "startTime": "2026-03-28T18:55:57.166Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Duplicate-email-shows-error-Desktop-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Duplicate-email-shows-error-Desktop-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -750,14 +893,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 981,
+                      "duration": 908,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:01.725Z",
+                      "startTime": "2026-03-28T18:57:09.265Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Page-loads-with-correct-heading-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -784,14 +933,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1146,
+                      "duration": 1001,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:02.719Z",
+                      "startTime": "2026-03-28T18:57:10.184Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-registe-759b7-orm-shows-validation-errors-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -818,14 +973,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1260,
+                      "duration": 1044,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:03.878Z",
+                      "startTime": "2026-03-28T18:57:11.197Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Mismatched-passwords-shows-error-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -852,14 +1013,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1147,
+                      "duration": 1090,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:05.150Z",
+                      "startTime": "2026-03-28T18:57:12.254Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Short-password-is-rejected-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -886,14 +1053,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1387,
+                      "duration": 1310,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:06.316Z",
+                      "startTime": "2026-03-28T18:57:13.356Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-registe-4234a-cts-away-from-auth-register-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -920,14 +1093,25 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2272,
+                      "duration": 2285,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:07.716Z",
+                      "startTime": "2026-03-28T18:57:14.677Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Duplicate-email-shows-error-Mobile-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\auth-register-Auth-register-Duplicate-email-shows-error-Mobile-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -971,14 +1155,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1220,
+                      "duration": 716,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:48.622Z",
+                      "startTime": "2026-03-28T18:55:59.061Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-browse-Marketp-55598-hale-renders-a-listing-grid-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1005,14 +1195,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1077,
+                      "duration": 900,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:49.859Z",
+                      "startTime": "2026-03-28T18:55:59.788Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-browse-Marketp-953d0-kable---whale-listing-slug--Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1039,14 +1235,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1117,
+                      "duration": 1050,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:50.954Z",
+                      "startTime": "2026-03-28T18:56:00.704Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-browse-Marketp-62dba--Cards-show-required-fields-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1073,14 +1275,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1122,
+                      "duration": 960,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:10.003Z",
+                      "startTime": "2026-03-28T18:57:16.978Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-browse-Marketp-55598-hale-renders-a-listing-grid-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1107,14 +1315,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1478,
+                      "duration": 1095,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:11.141Z",
+                      "startTime": "2026-03-28T18:57:17.951Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-browse-Marketp-953d0-kable---whale-listing-slug--Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1141,14 +1355,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1170,
+                      "duration": 930,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:12.632Z",
+                      "startTime": "2026-03-28T18:57:19.060Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-browse-Marketp-62dba--Cards-show-required-fields-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1192,14 +1412,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 914,
+                      "duration": 1126,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:52.090Z",
+                      "startTime": "2026-03-28T18:56:01.783Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-e74fc--category-electronics-loads-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1226,14 +1452,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1015,
+                      "duration": 1077,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:53.016Z",
+                      "startTime": "2026-03-28T18:56:02.927Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-3a5be-ale-category-vehicles-loads-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1260,14 +1492,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 905,
+                      "duration": 1011,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:54.043Z",
+                      "startTime": "2026-03-28T18:56:04.034Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-44220--category-real-estate-loads-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1294,14 +1532,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 923,
+                      "duration": 904,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:54.962Z",
+                      "startTime": "2026-03-28T18:56:05.065Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-a2c7d-hale-category-fashion-loads-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1328,14 +1572,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 961,
+                      "duration": 865,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:55.898Z",
+                      "startTime": "2026-03-28T18:56:05.986Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-eb7c8--category-home-garden-loads-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1362,14 +1612,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1005,
+                      "duration": 912,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:56.875Z",
+                      "startTime": "2026-03-28T18:56:06.869Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-7e5dc-whale-category-sports-loads-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1396,14 +1652,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 931,
+                      "duration": 922,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:57.895Z",
+                      "startTime": "2026-03-28T18:56:07.795Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-d1b41-own-category-does-not-crash-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1430,14 +1692,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1156,
+                      "duration": 961,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:13.820Z",
+                      "startTime": "2026-03-28T18:57:20.007Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-e74fc--category-electronics-loads-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1464,14 +1732,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1897,
+                      "duration": 871,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:14.992Z",
+                      "startTime": "2026-03-28T18:57:20.978Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-3a5be-ale-category-vehicles-loads-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1498,14 +1772,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2469,
+                      "duration": 932,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:16.902Z",
+                      "startTime": "2026-03-28T18:57:21.859Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-44220--category-real-estate-loads-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1532,14 +1812,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1932,
+                      "duration": 830,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:19.390Z",
+                      "startTime": "2026-03-28T18:57:22.802Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-a2c7d-hale-category-fashion-loads-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1566,14 +1852,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1220,
+                      "duration": 876,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:21.341Z",
+                      "startTime": "2026-03-28T18:57:23.644Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-eb7c8--category-home-garden-loads-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1600,14 +1892,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1247,
+                      "duration": 879,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:22.588Z",
+                      "startTime": "2026-03-28T18:57:24.531Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-7e5dc-whale-category-sports-loads-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1634,14 +1932,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1171,
+                      "duration": 859,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:23.855Z",
+                      "startTime": "2026-03-28T18:57:25.423Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-category-filte-d1b41-own-category-does-not-crash-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1685,14 +1989,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1046,
+                      "duration": 989,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:58.842Z",
+                      "startTime": "2026-03-28T18:56:08.743Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-323b0-mepage-Hero-heading-renders-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1719,14 +2029,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 940,
+                      "duration": 953,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:54:59.901Z",
+                      "startTime": "2026-03-28T18:56:09.759Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-c3f63-e-Browse-CTA-links-to-whale-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1753,14 +2069,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1044,
+                      "duration": 1114,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:00.853Z",
+                      "startTime": "2026-03-28T18:56:10.727Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-ffcb6-ell-CTA-links-to-whale-sell-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1787,14 +2109,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1460,
+                      "duration": 1078,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:01.909Z",
+                      "startTime": "2026-03-28T18:56:11.857Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-2aabe-s-render-with-correct-hrefs-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1821,14 +2149,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1242,
+                      "duration": 1048,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:03.383Z",
+                      "startTime": "2026-03-28T18:56:12.952Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-eda31-e-Why-Whale-section-renders-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1855,14 +2189,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1059,
+                      "duration": 970,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:04.641Z",
+                      "startTime": "2026-03-28T18:56:14.014Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-35e15-ows-at-least-1-listing-card-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1894,9 +2234,15 @@
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:05.712Z",
+                      "startTime": "2026-03-28T18:56:15.004Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-70c96-location-category-condition-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1923,14 +2269,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1221,
+                      "duration": 1020,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:25.047Z",
+                      "startTime": "2026-03-28T18:57:26.298Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-323b0-mepage-Hero-heading-renders-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1957,14 +2309,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1123,
+                      "duration": 996,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:26.283Z",
+                      "startTime": "2026-03-28T18:57:27.332Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-c3f63-e-Browse-CTA-links-to-whale-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -1991,14 +2349,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1218,
+                      "duration": 1062,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:27.422Z",
+                      "startTime": "2026-03-28T18:57:28.344Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-ffcb6-ell-CTA-links-to-whale-sell-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2025,14 +2389,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1354,
+                      "duration": 1083,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:28.655Z",
+                      "startTime": "2026-03-28T18:57:29.416Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-2aabe-s-render-with-correct-hrefs-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2059,14 +2429,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1417,
+                      "duration": 1072,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:30.022Z",
+                      "startTime": "2026-03-28T18:57:30.509Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-eda31-e-Why-Whale-section-renders-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2093,14 +2469,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1288,
+                      "duration": 1041,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:31.454Z",
+                      "startTime": "2026-03-28T18:57:31.594Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-35e15-ows-at-least-1-listing-card-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2127,14 +2509,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1299,
+                      "duration": 1098,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:32.763Z",
+                      "startTime": "2026-03-28T18:57:32.649Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-homepage-Marke-70c96-location-category-condition-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2178,14 +2566,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1048,
+                      "duration": 960,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:06.793Z",
+                      "startTime": "2026-03-28T18:56:16.094Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-ef176--Known-slug-loads-correctly-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2212,14 +2606,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1115,
+                      "duration": 962,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:07.854Z",
+                      "startTime": "2026-03-28T18:56:17.073Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-349ec-le-price-condition-location-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2246,14 +2646,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 880,
+                      "duration": 932,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:08.983Z",
+                      "startTime": "2026-03-28T18:56:18.055Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-f8ccd-ail-Shows-category-metadata-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2280,14 +2686,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 881,
+                      "duration": 873,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:09.877Z",
+                      "startTime": "2026-03-28T18:56:19.005Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-1c000--detail-CTA-section-visible-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2314,14 +2726,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 843,
+                      "duration": 901,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:10.769Z",
+                      "startTime": "2026-03-28T18:56:19.892Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-06a54-404-or-error-page-not-crash-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2348,14 +2766,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1032,
+                      "duration": 938,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:34.083Z",
+                      "startTime": "2026-03-28T18:57:33.762Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-ef176--Known-slug-loads-correctly-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2382,14 +2806,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1039,
+                      "duration": 912,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:35.130Z",
+                      "startTime": "2026-03-28T18:57:34.711Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-349ec-le-price-condition-location-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2416,14 +2846,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1047,
+                      "duration": 902,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:36.183Z",
+                      "startTime": "2026-03-28T18:57:35.638Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-f8ccd-ail-Shows-category-metadata-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2450,14 +2886,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1034,
+                      "duration": 1081,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:37.243Z",
+                      "startTime": "2026-03-28T18:57:36.550Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-1c000--detail-CTA-section-visible-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2484,14 +2926,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 969,
+                      "duration": 1089,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:38.296Z",
+                      "startTime": "2026-03-28T18:57:37.646Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-listing-detail-06a54-404-or-error-page-not-crash-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2535,14 +2983,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 800,
+                      "duration": 1024,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:11.629Z",
+                      "startTime": "2026-03-28T18:56:20.816Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-5cba3-d---redirects-to-auth-login-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2569,14 +3023,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1492,
+                      "duration": 1810,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:12.440Z",
+                      "startTime": "2026-03-28T18:56:21.855Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-403cc-Logged-in---form-accessible-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2603,14 +3063,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1663,
+                      "duration": 1707,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:13.948Z",
+                      "startTime": "2026-03-28T18:56:23.683Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-b3451-orm-has-all-required-fields-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2637,14 +3103,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1812,
+                      "duration": 1656,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:15.626Z",
+                      "startTime": "2026-03-28T18:56:25.402Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-477ea-orm-shows-validation-errors-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2671,14 +3143,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2339,
+                      "duration": 2234,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:17.455Z",
+                      "startTime": "2026-03-28T18:56:27.075Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketplace-sell-Valid-submission-succeeds-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2705,14 +3183,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1154,
+                      "duration": 926,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:39.280Z",
+                      "startTime": "2026-03-28T18:57:38.753Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-5cba3-d---redirects-to-auth-login-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2739,14 +3223,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1976,
+                      "duration": 1464,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:40.451Z",
+                      "startTime": "2026-03-28T18:57:39.690Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-403cc-Logged-in---form-accessible-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2773,14 +3263,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1635,
+                      "duration": 1421,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:42.440Z",
+                      "startTime": "2026-03-28T18:57:41.166Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-b3451-orm-has-all-required-fields-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2807,14 +3303,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1580,
+                      "duration": 1484,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:44.087Z",
+                      "startTime": "2026-03-28T18:57:42.601Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketpla-477ea-orm-shows-validation-errors-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2841,14 +3343,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2427,
+                      "duration": 1895,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:45.678Z",
+                      "startTime": "2026-03-28T18:57:44.097Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\marketplace-sell-Marketplace-sell-Valid-submission-succeeds-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2892,14 +3400,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1017,
+                      "duration": 1012,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:19.811Z",
+                      "startTime": "2026-03-28T18:56:29.326Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-d3ac4--Footer-visible-on-homepage-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2926,14 +3440,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 928,
+                      "duration": 874,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:20.839Z",
+                      "startTime": "2026-03-28T18:56:30.353Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-052e5-es-about-loads-with-content-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2960,14 +3480,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 924,
+                      "duration": 890,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:21.782Z",
+                      "startTime": "2026-03-28T18:56:31.248Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-1ea02-es-terms-loads-with-content-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -2994,14 +3520,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 945,
+                      "duration": 912,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:22.720Z",
+                      "startTime": "2026-03-28T18:56:32.154Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-0bae3--privacy-loads-with-content-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3028,14 +3560,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 954,
+                      "duration": 920,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:23.677Z",
+                      "startTime": "2026-03-28T18:56:33.085Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-666a8-s-safety-loads-with-content-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3062,14 +3600,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1346,
+                      "duration": 1016,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:48.121Z",
+                      "startTime": "2026-03-28T18:57:46.008Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-d3ac4--Footer-visible-on-homepage-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3096,14 +3640,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1095,
+                      "duration": 848,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:49.479Z",
+                      "startTime": "2026-03-28T18:57:47.036Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-052e5-es-about-loads-with-content-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3130,14 +3680,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1068,
+                      "duration": 829,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:50.590Z",
+                      "startTime": "2026-03-28T18:57:47.893Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-1ea02-es-terms-loads-with-content-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3164,14 +3720,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1056,
+                      "duration": 851,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:51.670Z",
+                      "startTime": "2026-03-28T18:57:48.733Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-0bae3--privacy-loads-with-content-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3198,14 +3760,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1111,
+                      "duration": 839,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:52.739Z",
+                      "startTime": "2026-03-28T18:57:49.595Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-footer-Navigati-666a8-s-safety-loads-with-content-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3249,14 +3817,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 998,
+                      "duration": 965,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:24.648Z",
+                      "startTime": "2026-03-28T18:56:34.037Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigation-navbar-Logo-links-to--Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3283,14 +3857,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1188,
+                      "duration": 1110,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:25.658Z",
+                      "startTime": "2026-03-28T18:56:35.016Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-0c83e-r-Browse-link-goes-to-whale-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3317,14 +3897,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1118,
+                      "duration": 930,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:26.859Z",
+                      "startTime": "2026-03-28T18:56:36.143Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-0f809-ter-visible-when-logged-out-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3351,14 +3937,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 913,
+                      "duration": 775,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:27.989Z",
+                      "startTime": "2026-03-28T18:56:37.087Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-e67d0-r-appears-at-375px-viewport-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3385,14 +3977,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1074,
+                      "duration": 850,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:28.917Z",
+                      "startTime": "2026-03-28T18:56:37.873Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-05e7c-r-Hamburger-opens-nav-links-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3419,14 +4017,25 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2833,
+                      "duration": 2676,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:30.004Z",
+                      "startTime": "2026-03-28T18:56:38.738Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-ed012-n-nav-shows-logged-in-state-Desktop-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-ed012-n-nav-shows-logged-in-state-Desktop-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3453,14 +4062,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1229,
+                      "duration": 1107,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:53.869Z",
+                      "startTime": "2026-03-28T18:57:50.453Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigation-navbar-Logo-links-to--Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3487,14 +4102,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1274,
+                      "duration": 996,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:55.113Z",
+                      "startTime": "2026-03-28T18:57:51.570Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-0c83e-r-Browse-link-goes-to-whale-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3521,14 +4142,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1317,
+                      "duration": 1012,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:56.399Z",
+                      "startTime": "2026-03-28T18:57:52.578Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-0f809-ter-visible-when-logged-out-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3555,14 +4182,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1425,
+                      "duration": 1106,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:57.730Z",
+                      "startTime": "2026-03-28T18:57:53.602Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-e67d0-r-appears-at-375px-viewport-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3589,14 +4222,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1545,
+                      "duration": 990,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:56:59.171Z",
+                      "startTime": "2026-03-28T18:57:54.719Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-05e7c-r-Hamburger-opens-nav-links-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3623,14 +4262,25 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3284,
+                      "duration": 2298,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:00.728Z",
+                      "startTime": "2026-03-28T18:57:55.719Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-ed012-n-nav-shows-logged-in-state-Mobile-Chrome\\test-finished-1.png"
+                        },
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\navigation-navbar-Navigati-ed012-n-nav-shows-logged-in-state-Mobile-Chrome\\test-finished-2.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3674,14 +4324,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 896,
+                      "duration": 834,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:32.852Z",
+                      "startTime": "2026-03-28T18:56:41.435Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\security-auth-guards-Secur-910c6-ticated-users-to-auth-login-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3708,14 +4364,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 969,
+                      "duration": 919,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:33.761Z",
+                      "startTime": "2026-03-28T18:56:42.284Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\security-auth-guards-Secur-ff752-n-input-does-not-execute-JS-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3742,14 +4404,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 961,
+                      "duration": 1023,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:34.741Z",
+                      "startTime": "2026-03-28T18:56:43.221Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\security-auth-guards-Secur-42951-in-field-does-not-crash-app-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3776,14 +4444,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 917,
+                      "duration": 890,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:04.032Z",
+                      "startTime": "2026-03-28T18:57:58.029Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\security-auth-guards-Secur-910c6-ticated-users-to-auth-login-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3810,14 +4484,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1051,
+                      "duration": 954,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:04.961Z",
+                      "startTime": "2026-03-28T18:57:58.928Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\security-auth-guards-Secur-ff752-n-input-does-not-execute-JS-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3844,14 +4524,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1112,
+                      "duration": 971,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:06.025Z",
+                      "startTime": "2026-03-28T18:57:59.891Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\security-auth-guards-Secur-42951-in-field-does-not-crash-app-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3895,14 +4581,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1036,
+                      "duration": 987,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:35.719Z",
+                      "startTime": "2026-03-28T18:56:44.264Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-dark-mode-UI-dark-mode-Toggle-button-exists-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3929,14 +4621,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1071,
+                      "duration": 1096,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:36.767Z",
+                      "startTime": "2026-03-28T18:56:45.264Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-dark-mode-UI-dark-mode--5e0a6-ges-theme-attribute-on-html-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3963,14 +4661,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1263,
+                      "duration": 1032,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:37.852Z",
+                      "startTime": "2026-03-28T18:56:46.373Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-dark-mode-UI-dark-mode-Theme-persists-after-page-reload-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -3997,14 +4701,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1039,
+                      "duration": 1044,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:07.153Z",
+                      "startTime": "2026-03-28T18:58:00.876Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-dark-mode-UI-dark-mode-Toggle-button-exists-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4031,14 +4741,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1097,
+                      "duration": 1199,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:08.205Z",
+                      "startTime": "2026-03-28T18:58:01.930Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-dark-mode-UI-dark-mode--5e0a6-ges-theme-attribute-on-html-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4065,14 +4781,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1384,
+                      "duration": 1323,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:09.311Z",
+                      "startTime": "2026-03-28T18:58:03.143Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-dark-mode-UI-dark-mode-Theme-persists-after-page-reload-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4116,14 +4838,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1172,
+                      "duration": 936,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:39.131Z",
+                      "startTime": "2026-03-28T18:56:47.426Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-language-toggle-UI-lang-f57b9--EN-toggle-exists-in-navbar-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4150,14 +4878,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1298,
+                      "duration": 1226,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:40.315Z",
+                      "startTime": "2026-03-28T18:56:48.378Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-language-toggle-UI-lang-ae8a6--EN-mode-shows-English-text-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4184,14 +4918,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1337,
+                      "duration": 1161,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:41.625Z",
+                      "startTime": "2026-03-28T18:56:49.618Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-language-toggle-UI-lang-28c3e-ies-dir-rtl-on-html-element-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4218,14 +4958,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1339,
+                      "duration": 1135,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:10.710Z",
+                      "startTime": "2026-03-28T18:58:04.485Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-language-toggle-UI-lang-f57b9--EN-toggle-exists-in-navbar-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4252,14 +4998,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1691,
+                      "duration": 1290,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:12.062Z",
+                      "startTime": "2026-03-28T18:58:05.634Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-language-toggle-UI-lang-ae8a6--EN-mode-shows-English-text-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4286,14 +5038,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1449,
+                      "duration": 1271,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:13.765Z",
+                      "startTime": "2026-03-28T18:58:06.937Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-language-toggle-UI-lang-28c3e-ies-dir-rtl-on-html-element-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4337,14 +5095,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1162,
+                      "duration": 929,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:42.979Z",
+                      "startTime": "2026-03-28T18:56:50.803Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-responsive-UI-responsiv-89010-ional-listing-cards-visible-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4371,14 +5135,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1120,
+                      "duration": 977,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:44.153Z",
+                      "startTime": "2026-03-28T18:56:51.750Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-responsive-UI-responsiv-be5c7-ional-listing-cards-visible-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4405,14 +5175,20 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1125,
+                      "duration": 1036,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:55:45.286Z",
+                      "startTime": "2026-03-28T18:56:52.742Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-responsive-UI-responsiv-af1b9-ional-listing-cards-visible-Desktop-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4439,14 +5215,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1423,
+                      "duration": 1268,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:15.230Z",
+                      "startTime": "2026-03-28T18:58:08.224Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-responsive-UI-responsiv-89010-ional-listing-cards-visible-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4473,14 +5255,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1878,
+                      "duration": 1400,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:16.665Z",
+                      "startTime": "2026-03-28T18:58:09.507Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-responsive-UI-responsiv-be5c7-ional-listing-cards-visible-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4507,14 +5295,20 @@
                       "workerIndex": 1,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1988,
+                      "duration": 1844,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-03-28T21:57:18.556Z",
+                      "startTime": "2026-03-28T18:58:10.921Z",
                       "annotations": [],
-                      "attachments": []
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\osama\\OneDrive\\Documents\\Playground\\whale-marketplace-sync\\test-results\\ui-responsive-UI-responsiv-af1b9-ional-listing-cards-visible-Mobile-Chrome\\test-finished-1.png"
+                        }
+                      ]
                     }
                   ],
                   "status": "expected"
@@ -4532,8 +5326,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-03-28T21:54:17.657Z",
-    "duration": 183657.21,
+    "startTime": "2026-03-28T18:55:39.184Z",
+    "duration": 154048.675,
     "expected": 124,
     "skipped": 0,
     "unexpected": 0,

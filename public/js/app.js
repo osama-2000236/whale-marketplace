@@ -100,7 +100,7 @@
 
     fetch(form.action, {
       method: (form.method || 'POST').toUpperCase(),
-      body: new FormData(form),
+      body: new window.FormData(form),
       headers: {
         'x-csrf-token': document.querySelector('meta[name="csrf-token"]')?.content || '',
       },
@@ -111,7 +111,7 @@
         window.location.href = response.url || window.location.href;
       })
       .catch(function () {
-        HTMLFormElement.prototype.submit.call(form);
+        window.HTMLFormElement.prototype.submit.call(form);
       })
       .finally(function () {
         if (submitter) submitter.disabled = false;

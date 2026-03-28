@@ -50,6 +50,8 @@ jest.mock('../services/stateMachine', () => ({
   validateTransition: jest.fn(),
 }));
 
+process.env.DATABASE_URL = 'postgresql://test/db';
+
 const prisma = require('../lib/prisma');
 const emailService = require('../services/emailService');
 const { validateTransition } = require('../services/stateMachine');
