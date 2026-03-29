@@ -28,4 +28,14 @@ test.describe('UI dark mode', () => {
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', afterToggle ?? 'dark');
   });
+
+  test('Theme toggle icon changes after switching themes', async ({ page }) => {
+    // Intent: verify the live theme control updates its icon state alongside the underlying theme attribute.
+    await page.goto('/');
+
+    const icon = page.locator('.theme-toggle-icon');
+    const before = await icon.textContent();
+    await page.locator('[data-theme-toggle]').click();
+    await expect(icon).not.toHaveText(before ?? '');
+  });
 });

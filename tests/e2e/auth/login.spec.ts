@@ -32,11 +32,9 @@ test.describe('Auth login', () => {
     await page.locator('input[name="identifier"]').fill(user.email);
     await page.locator('input[name="password"]').fill(`${user.password}-wrong`);
 
-    await Promise.all([
-      page.waitForURL(/\/auth\/login$/),
-      page.locator('form[action="/auth/login"] button').click(),
-    ]);
+    await page.locator('form[action="/auth/login"] button').click();
 
+    await expect(page).toHaveURL(/\/auth\/login(?:\?.*)?$/);
     await expect(page.locator('.flash.flash-danger')).toBeVisible();
   });
 
@@ -46,11 +44,9 @@ test.describe('Auth login', () => {
     await page.locator('input[name="identifier"]').fill(`missing-${Date.now()}@whale-test.com`);
     await page.locator('input[name="password"]').fill('QATestWhale2026!');
 
-    await Promise.all([
-      page.waitForURL(/\/auth\/login$/),
-      page.locator('form[action="/auth/login"] button').click(),
-    ]);
+    await page.locator('form[action="/auth/login"] button').click();
 
+    await expect(page).toHaveURL(/\/auth\/login(?:\?.*)?$/);
     await expect(page.locator('.flash.flash-danger')).toBeVisible();
   });
 

@@ -31,7 +31,9 @@ export async function registerTestUser(page: Page, user: Partial<TestUser> = {})
   await page.locator('input[name="confirmPassword"]').fill(credentials.password);
 
   await Promise.all([
-    page.waitForURL((url) => !url.pathname.endsWith('/auth/register')),
+    page.waitForURL((url) => !url.pathname.endsWith('/auth/register'), {
+      waitUntil: 'domcontentloaded',
+    }),
     page.locator('form[action="/auth/register"] button').click(),
   ]);
 
@@ -64,7 +66,9 @@ export async function loginAs(
   await page.locator('input[name="password"]').fill(password);
 
   await Promise.all([
-    page.waitForURL((url) => !url.pathname.endsWith('/auth/login')),
+    page.waitForURL((url) => !url.pathname.endsWith('/auth/login'), {
+      waitUntil: 'domcontentloaded',
+    }),
     page.locator('form[action="/auth/login"] button').click(),
   ]);
 }

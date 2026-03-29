@@ -58,6 +58,7 @@ async function register({ username, email, password, confirmPassword }) {
         slug,
         email: normalizedEmail,
         passwordHash,
+        emailVerified: shouldAutoVerifyUsers,
         isVerified: shouldAutoVerifyUsers,
         subscription: {
           create: { plan: 'free', trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
@@ -73,6 +74,7 @@ async function register({ username, email, password, confirmPassword }) {
       username,
       email,
       passwordHash,
+      emailVerified: shouldAutoVerifyUsers,
       isVerified: shouldAutoVerifyUsers,
     });
     user.slug = slug;
@@ -84,7 +86,7 @@ async function register({ username, email, password, confirmPassword }) {
 
   emailService.sendWelcome(user).catch(() => {});
   if (!shouldAutoVerifyUsers) {
-    authSecurityService.sendEmailVerification(user).catch(() => {});
+    authSecurityService.sendVerificationEmail(user.id).catch(() => {});
   }
 
   return user;
@@ -129,6 +131,7 @@ async function findOrCreateOAuth(provider, providerId, profile) {
       username: baseName,
       email,
       passwordHash: null,
+      emailVerified: true,
       isVerified: true,
     });
     user.avatarUrl = profile.photos?.[0]?.value || null;
@@ -180,6 +183,7 @@ async function findOrCreateOAuth(provider, providerId, profile) {
       email: email || `${finalUsername}@oauth.whale`,
       [idField]: providerId,
       avatarUrl: profile.photos?.[0]?.value || null,
+      emailVerified: true,
       isVerified: true,
       subscription: {
         create: { plan: 'free', trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
@@ -192,7 +196,7 @@ async function findOrCreateOAuth(provider, providerId, profile) {
   });
 
   emailService.sendWelcome(user).catch(() => {});
-  authSecurityService.sendEmailVerification(user).catch(() => {});
+  authSecurityService.sendVerificationEmail(user.id).catch(() => {});
 
   return { user, isNew: true };
 }

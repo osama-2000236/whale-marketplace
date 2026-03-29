@@ -2,8 +2,8 @@ const { defineConfig, devices } = require('@playwright/test');
 
 const localPort = Number(process.env.PLAYWRIGHT_PORT || 3000);
 const localBaseUrl = `http://127.0.0.1:${localPort}`;
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || localBaseUrl;
-const useLocalServer = !process.env.PLAYWRIGHT_BASE_URL;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || localBaseUrl;
+const useLocalServer = !process.env.PLAYWRIGHT_BASE_URL && !process.env.BASE_URL;
 
 module.exports = defineConfig({
   testDir: './tests/e2e',
@@ -19,7 +19,7 @@ module.exports = defineConfig({
   use: {
     baseURL,
     screenshot: 'on',
-    video: 'retain-on-failure',
+    video: 'off',
     trace: 'retain-on-failure',
   },
   webServer: useLocalServer
@@ -41,8 +41,24 @@ module.exports = defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'Desktop Firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'Desktop Safari',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
       name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 14'] },
+    },
+    {
+      name: 'Tablet',
+      use: { ...devices['iPad (gen 7)'] },
     },
   ],
 });

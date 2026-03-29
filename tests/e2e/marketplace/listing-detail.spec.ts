@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const KNOWN_SLUG = '/whale/listing/playstation-5-bundle-vio2x';
+const SECOND_KNOWN_SLUG = '/whale/listing/mountain-bike-trek-2cb6o';
 
 test.describe('Marketplace listing detail', () => {
   test('Known slug loads correctly', async ({ page }) => {
@@ -30,12 +31,31 @@ test.describe('Marketplace listing detail', () => {
     await expect(page.locator('.listing-detail-category')).toContainText(/(Electronics|إلكترونيات)/);
   });
 
+  test('Shows seller info, gallery, and description content', async ({ page }) => {
+    // Intent: verify the detail page renders the live seller profile summary, image gallery, and description card for buyers.
+    await page.goto(KNOWN_SLUG);
+
+    await expect(page.locator('.gallery')).toBeVisible();
+    await expect(page.locator('.seller-info')).toBeVisible();
+    await expect(page.locator('.seller-info-name')).toBeVisible();
+    await expect(page.locator('.card .card-body').first()).toBeVisible();
+  });
+
   test('CTA section visible', async ({ page }) => {
     // Intent: verify the primary buyer action area is visible on the live listing detail page.
     await page.goto(KNOWN_SLUG);
 
     await expect(page.locator('.listing-detail-actions')).toBeVisible();
     await expect(page.locator('.listing-detail-actions a[href^="/auth/login?next="]')).toBeVisible();
+  });
+
+  test('Second known listing slug loads correctly', async ({ page }) => {
+    // Intent: verify coverage is not tied to a single seed listing and the alternate detail route still renders normally.
+    await page.goto(SECOND_KNOWN_SLUG);
+
+    await expect(page.locator('.listing-detail')).toBeVisible();
+    await expect(page.locator('.listing-detail h1')).toContainText(/(Mountain Bike|دراجة)/);
+    await expect(page.locator('.listing-detail-price')).toContainText('$');
   });
 
   test('Fake slug -> 404 or error page, not crash', async ({ page }) => {

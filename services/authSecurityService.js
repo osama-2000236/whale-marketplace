@@ -59,7 +59,11 @@ async function verifyEmail(token) {
     }),
     prisma.user.update({
       where: { id: authToken.userId },
-      data: { emailVerified: true },
+      data: { emailVerified: true, isVerified: true },
+    }),
+    prisma.sellerProfile.updateMany({
+      where: { userId: authToken.userId },
+      data: { isVerified: true },
     }),
   ]);
 

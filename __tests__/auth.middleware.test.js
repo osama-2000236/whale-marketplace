@@ -82,12 +82,26 @@ describe('auth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  test('requireAdmin allows admin', () => {
+  test('requireAdmin allows admin without 2FA requirement', () => {
     const req = { user: { role: 'ADMIN' }, session: {} };
     const res = makeRes();
     const next = jest.fn();
     requireAdmin(req, res, next);
     expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  test('requireAdmin redirects admins with 2FA enabled until they verify', () => {
+    const req = {
+      user: { role: 'ADMIN', twoFactorSecret: 'secret' },
+      session: {},
+    };
+    const res = makeRes();
+    const next = jest.fn();
+
+    requireAdmin(req, res, next);
+
+    expect(res.redirect).toHaveBeenCalledWith('/auth/2fa');
+    expect(next).not.toHaveBeenCalled();
   });
 
   test('hasAdminPermission grants super admin and matching scoped permissions', () => {
@@ -103,7 +117,7 @@ describe('auth middleware', () => {
   });
 
   test('requireAdminScope blocks non-admin', () => {
-    const middleware = requireAdminScope('payments.write');
+    const middleware = requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT');
     const req = { user: { role: 'MEMBER' } };
     const res = makeRes();
     const next = jest.fn();
@@ -112,9 +126,9 @@ describe('auth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  test('requireAdminScope allows super admin and matching scoped permission', () => {
-    const superAdmin = requireAdminScope('payments.write');
-    const supportAgent = requireAdminScope('payments.read');
+  test('requireAdminScope allows super admin and explicit supported scopes', () => {
+    const superAdmin = requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT');
+    const supportAgent = requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT');
 
     const res1 = makeRes();
     const next1 = jest.fn();
@@ -127,8 +141,8 @@ describe('auth middleware', () => {
     expect(next2).toHaveBeenCalledTimes(1);
   });
 
-  test('requireAdminScope blocks non-matching scoped permission', () => {
-    const middleware = requireAdminScope('payments.write');
+  test('requireAdminScope blocks non-matching scopes', () => {
+    const middleware = requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT');
     const req = { user: { role: 'ADMIN', adminScope: 'WAREHOUSE' } };
     const res = makeRes();
     const next = jest.fn();
@@ -137,8 +151,23 @@ describe('auth middleware', () => {
     expect(next).not.toHaveBeenCalled();
   });
 
+  test('requireAdminScope redirects admins with 2FA enabled until they verify', () => {
+    const middleware = requireAdminScope('SUPER_ADMIN');
+    const req = {
+      user: { role: 'ADMIN', adminScope: 'SUPER_ADMIN', twoFactorSecret: 'secret' },
+      session: {},
+    };
+    const res = makeRes();
+    const next = jest.fn();
+
+    middleware(req, res, next);
+
+    expect(res.redirect).toHaveBeenCalledWith('/auth/2fa');
+    expect(next).not.toHaveBeenCalled();
+  });
+
   test('requireAdmin2FA redirects admins without fresh verification', () => {
-    const req = { user: { role: 'ADMIN' }, session: {} };
+    const req = { user: { role: 'ADMIN', twoFactorSecret: 'secret' }, session: {} };
     const res = makeRes();
     const next = jest.fn();
     requireAdmin2FA(req, res, next);
@@ -146,14 +175,14 @@ describe('auth middleware', () => {
       type: 'warning',
       message: 'Admin verification required.',
     });
-    expect(res.redirect).toHaveBeenCalledWith('/admin/2fa');
+    expect(res.redirect).toHaveBeenCalledWith('/auth/2fa');
     expect(next).not.toHaveBeenCalled();
   });
 
-  test('requireAdmin2FA allows recently verified admins', () => {
+  test('requireAdmin2FA allows verified admins using the session contract', () => {
     const req = {
-      user: { role: 'ADMIN' },
-      session: { admin2faVerifiedAt: new Date().toISOString() },
+      user: { role: 'ADMIN', twoFactorSecret: 'secret' },
+      session: { admin2FAVerified: true },
     };
     const res = makeRes();
     const next = jest.fn();

@@ -27,7 +27,7 @@ jest.mock('../services/emailService', () => ({
 }));
 
 jest.mock('../services/authSecurityService', () => ({
-  sendEmailVerification: jest.fn(() => Promise.resolve()),
+  sendVerificationEmail: jest.fn(() => Promise.resolve()),
 }));
 
 process.env.DATABASE_URL = 'postgresql://test/db';
@@ -35,6 +35,7 @@ process.env.DATABASE_URL = 'postgresql://test/db';
 const prisma = require('../lib/prisma');
 const bcrypt = require('bcryptjs');
 const emailService = require('../services/emailService');
+const authSecurityService = require('../services/authSecurityService');
 const userService = require('../services/userService');
 
 describe('userService', () => {
@@ -100,6 +101,49 @@ describe('userService', () => {
         password: 'StrongPass123',
       })
     ).rejects.toThrow('EMAIL_TAKEN');
+  });
+
+  test('register sends verification email by user id when auto verification is disabled', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalAutoVerify = process.env.AUTO_VERIFY_USERS;
+
+    process.env.NODE_ENV = 'production';
+    delete process.env.AUTO_VERIFY_USERS;
+    jest.resetModules();
+
+    const isolatedPrisma = require('../lib/prisma');
+    const isolatedBcrypt = require('bcryptjs');
+    const isolatedAuthSecurityService = require('../services/authSecurityService');
+    const isolatedUserService = require('../services/userService');
+
+    isolatedPrisma.user.findFirst.mockResolvedValue(null);
+    isolatedBcrypt.hash.mockResolvedValue('hashed-pass');
+    isolatedPrisma.user.create.mockResolvedValue({
+      id: 'u-verification',
+      username: 'verify_me',
+      email: 'verify@example.com',
+      subscription: {},
+      sellerProfile: {},
+    });
+
+    await isolatedUserService.register({
+      username: 'verify_me',
+      email: 'verify@example.com',
+      password: 'StrongPass123',
+      confirmPassword: 'StrongPass123',
+    });
+
+    expect(isolatedAuthSecurityService.sendVerificationEmail).toHaveBeenCalledWith(
+      'u-verification'
+    );
+
+    process.env.NODE_ENV = originalNodeEnv;
+    if (originalAutoVerify === undefined) {
+      delete process.env.AUTO_VERIFY_USERS;
+    } else {
+      process.env.AUTO_VERIFY_USERS = originalAutoVerify;
+    }
+    jest.resetModules();
   });
 
   test('authenticate throws WRONG_PASSWORD when bcrypt compare fails', async () => {
@@ -188,6 +232,7 @@ describe('userService', () => {
       user: expect.objectContaining({ id: 'new-oauth-user' }),
       isNew: true,
     });
+    expect(authSecurityService.sendVerificationEmail).toHaveBeenCalledWith('new-oauth-user');
   });
 
   test('updateProfile updates user + sellerProfile in a transaction', async () => {

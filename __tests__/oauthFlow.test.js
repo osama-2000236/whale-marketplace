@@ -11,12 +11,13 @@ jest.mock('../services/emailService', () => ({
 }));
 
 jest.mock('../services/authSecurityService', () => ({
-  sendEmailVerification: jest.fn(() => Promise.resolve()),
+  sendVerificationEmail: jest.fn(() => Promise.resolve()),
 }));
 
 process.env.DATABASE_URL = 'postgresql://test/db';
 
 const prisma = require('../lib/prisma');
+const authSecurityService = require('../services/authSecurityService');
 const userService = require('../services/userService');
 
 describe('OAuth flow', () => {
@@ -147,5 +148,6 @@ describe('OAuth flow', () => {
       user: expect.objectContaining({ id: 'u_new' }),
       isNew: true,
     });
+    expect(authSecurityService.sendVerificationEmail).toHaveBeenCalledWith('u_new');
   });
 });
