@@ -23,6 +23,16 @@ router.post('/paypal', async (req, res) => {
         await paymentService.capturePaypalOrder(orderId);
       }
     }
+    if (['PAYMENT.CAPTURE.DENIED', 'CHECKOUT.ORDER.VOIDED'].includes(event.event_type)) {
+      const orderId =
+        event.resource?.supplementary_data?.related_ids?.order_id || event.resource?.id;
+      if (orderId) {
+        const payment = await paymentService.getPaymentByProviderPaymentId('paypal', orderId);
+        if (payment?.id) {
+          await paymentService.settlePaymentFailure(payment.id, { reason: event.event_type });
+        }
+      }
+    }
     res.json({ success: true });
   } catch (err) {
     console.error('[webhook/paypal]', err.message);

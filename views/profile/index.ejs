@@ -1,17 +1,20 @@
 <%- include('../partials/head') %>
 <%- include('../partials/navbar') %>
 <main class="main-content">
-  <div class="container" style="max-width: 640px">
+  <div class="container" style="max-width: 960px">
     <%- include('../partials/flash') %>
     <div class="page-header">
       <h1><%= t('profile.title') %></h1>
+      <p class="text-muted">
+        <%= locale === 'ar' ? 'إدارة ملفك الشخصي وإعدادات الحساب والعناوين.' : 'Manage your profile, account settings, and saved addresses.' %>
+      </p>
     </div>
 
     <% if (!profile.isVerified) { %>
     <div class="card mb-2" style="border-color: #f59e0b">
       <div class="card-body">
         <p style="margin-bottom: 0.75rem">
-          <%= locale === 'ar' ? 'يرجى تأكيد بريدك الإلكتروني لتفعيل كل الميزات.' : 'Please verify your email to unlock all account features.' %>
+          <%= locale === 'ar' ? 'يرجى تأكيد بريدك الإلكتروني لتفعيل البيع والدفع والإجراءات الحساسة.' : 'Verify your email to unlock selling, checkout, and sensitive account actions.' %>
         </p>
         <form method="POST" action="/auth/resend-verification">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
@@ -23,69 +26,273 @@
     </div>
     <% } %>
 
-    <div class="card">
+    <% if (profile.pendingEmail) { %>
+    <div class="card mb-2" style="border-color: #1472a3">
       <div class="card-body">
-        <form
-          method="POST"
-          action="/profile?_csrf=<%= encodeURIComponent(csrfToken) %>"
-          enctype="multipart/form-data"
-        >
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <p style="margin: 0">
+          <%= locale === 'ar' ? 'هناك تغيير بريد إلكتروني بانتظار التفعيل:' : 'There is a pending email change waiting for verification:' %>
+          <strong><%= profile.pendingEmail %></strong>
+        </p>
+      </div>
+    </div>
+    <% } %>
 
-          <div class="text-center mb-2">
-            <div class="avatar avatar-xl" style="margin: 0 auto 1rem">
-              <% if (profile.avatarUrl) { %>
-              <img src="<%= profile.avatarUrl %>" alt="" />
-              <% } else { %>
-              <%= profile.username.charAt(0).toUpperCase() %>
-              <% } %>
-            </div>
-            <div class="form-group">
-              <label class="form-label"><%= t('profile.avatar') %></label>
-              <input type="file" name="avatar" class="input" accept="image/*" />
-            </div>
-          </div>
+    <div style="display: grid; gap: 1.5rem; grid-template-columns: 1.2fr 1fr">
+      <div style="display: grid; gap: 1.5rem">
+        <div class="card">
+          <div class="card-body">
+            <h2 class="mb-2"><%= locale === 'ar' ? 'الملف العام' : 'Public Profile' %></h2>
+            <form method="POST" action="/profile" enctype="multipart/form-data">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
-          <div class="form-group">
-            <label class="form-label"><%= t('profile.display_name') %></label>
-            <input
-              type="text"
-              name="displayName"
-              class="input"
-              value="<%= profile.sellerProfile?.displayName || '' %>"
-              maxlength="100"
-            />
+              <div class="text-center mb-2">
+                <div class="avatar avatar-xl" style="margin: 0 auto 1rem">
+                  <% if (profile.avatarUrl) { %>
+                  <img src="<%= profile.avatarUrl %>" alt="" />
+                  <% } else { %>
+                  <%= profile.username.charAt(0).toUpperCase() %>
+                  <% } %>
+                </div>
+                <div class="form-group">
+                  <label class="form-label"><%= t('profile.avatar') %></label>
+                  <input type="file" name="avatar" class="input" accept="image/*" />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><%= t('profile.display_name') %></label>
+                <input
+                  type="text"
+                  name="displayName"
+                  class="input"
+                  value="<%= profile.sellerProfile?.displayName || '' %>"
+                  maxlength="100"
+                />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= t('profile.bio') %></label>
+                <textarea name="bio" class="textarea" maxlength="500"><%= profile.bio || '' %></textarea>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label"><%= t('profile.city') %></label>
+                  <input
+                    type="text"
+                    name="city"
+                    class="input"
+                    value="<%= profile.sellerProfile?.city || '' %>"
+                    maxlength="100"
+                  />
+                </div>
+                <div class="form-group">
+                  <label class="form-label"><%= t('profile.whatsapp') %></label>
+                  <input
+                    type="tel"
+                    name="whatsapp"
+                    class="input"
+                    value="<%= profile.sellerProfile?.whatsapp || '' %>"
+                    placeholder="+970..."
+                  />
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block btn-lg">
+                <%= t('profile.save') %>
+              </button>
+            </form>
           </div>
-          <div class="form-group">
-            <label class="form-label"><%= t('profile.bio') %></label>
-            <textarea name="bio" class="textarea" maxlength="500"><%= profile.bio || '' %></textarea>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label"><%= t('profile.city') %></label>
-              <input
-                type="text"
-                name="city"
-                class="input"
-                value="<%= profile.sellerProfile?.city || '' %>"
-                maxlength="100"
-              />
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <div style="display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap">
+              <div>
+                <h2 class="mb-1"><%= locale === 'ar' ? 'العناوين المحفوظة' : 'Saved Addresses' %></h2>
+                <p class="text-muted text-sm">
+                  <%= locale === 'ar' ? 'تُستخدم هذه العناوين أثناء الدفع.' : 'These addresses are available during checkout.' %>
+                </p>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label"><%= t('profile.whatsapp') %></label>
-              <input
-                type="tel"
-                name="whatsapp"
-                class="input"
-                value="<%= profile.sellerProfile?.whatsapp || '' %>"
-                placeholder="+970..."
-              />
+
+            <% if (addresses && addresses.length > 0) { %>
+            <div style="display: grid; gap: 1rem; margin-bottom: 1.5rem">
+              <% addresses.forEach(address => { %>
+              <div class="card" style="border-color: <%= address.isDefault ? 'var(--brand)' : 'var(--border)' %>">
+                <div class="card-body" style="padding: 1rem">
+                  <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start">
+                    <div>
+                      <div style="font-weight: 700">
+                        <%= address.label %>
+                        <% if (address.isDefault) { %>
+                        <span class="badge badge-info" style="margin-inline-start: 0.5rem">
+                          <%= locale === 'ar' ? 'الافتراضي' : 'Default' %>
+                        </span>
+                        <% } %>
+                      </div>
+                      <div class="text-sm text-muted"><%= address.street %></div>
+                      <div class="text-sm text-muted"><%= address.city %> · <%= address.phone %></div>
+                    </div>
+                    <form method="POST" action="/profile/addresses/<%= address.id %>/delete">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                      <button type="submit" class="btn btn-ghost btn-sm">
+                        <%= locale === 'ar' ? 'حذف' : 'Delete' %>
+                      </button>
+                    </form>
+                  </div>
+
+                  <form method="POST" action="/profile/addresses/<%= address.id %>" style="margin-top: 1rem">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label"><%= locale === 'ar' ? 'التسمية' : 'Label' %></label>
+                        <input type="text" name="label" class="input" value="<%= address.label %>" maxlength="50" />
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label"><%= t('profile.city') %></label>
+                        <input type="text" name="city" class="input" value="<%= address.city %>" maxlength="100" />
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label"><%= locale === 'ar' ? 'الشارع' : 'Street' %></label>
+                      <input type="text" name="street" class="input" value="<%= address.street %>" maxlength="200" />
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label class="form-label"><%= locale === 'ar' ? 'الهاتف' : 'Phone' %></label>
+                        <input type="tel" name="phone" class="input" value="<%= address.phone %>" maxlength="25" />
+                      </div>
+                      <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 2rem">
+                        <input type="checkbox" name="isDefault" id="address-default-<%= address.id %>" <%= address.isDefault ? 'checked' : '' %> />
+                        <label for="address-default-<%= address.id %>" class="form-label" style="margin: 0">
+                          <%= locale === 'ar' ? 'اجعله افتراضياً' : 'Set as default' %>
+                        </label>
+                      </div>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-sm">
+                      <%= locale === 'ar' ? 'تحديث العنوان' : 'Update Address' %>
+                    </button>
+                  </form>
+                </div>
+              </div>
+              <% }) %>
+            </div>
+            <% } %>
+
+            <h3 class="mb-2"><%= locale === 'ar' ? 'إضافة عنوان جديد' : 'Add New Address' %></h3>
+            <form method="POST" action="/profile/addresses">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label"><%= locale === 'ar' ? 'التسمية' : 'Label' %></label>
+                  <input type="text" name="label" class="input" maxlength="50" placeholder="<%= locale === 'ar' ? 'المنزل' : 'Home' %>" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label"><%= t('profile.city') %></label>
+                  <input type="text" name="city" class="input" maxlength="100" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'الشارع' : 'Street' %></label>
+                <input type="text" name="street" class="input" maxlength="200" required />
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label"><%= locale === 'ar' ? 'الهاتف' : 'Phone' %></label>
+                  <input type="tel" name="phone" class="input" maxlength="25" required />
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 2rem">
+                  <input type="checkbox" name="isDefault" id="address-default-new" />
+                  <label for="address-default-new" class="form-label" style="margin: 0">
+                    <%= locale === 'ar' ? 'اجعله افتراضياً' : 'Set as default' %>
+                  </label>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">
+                <%= locale === 'ar' ? 'حفظ العنوان' : 'Save Address' %>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; gap: 1.5rem">
+        <div class="card">
+          <div class="card-body">
+            <h2 class="mb-2"><%= locale === 'ar' ? 'بيانات الحساب' : 'Account Details' %></h2>
+            <div class="text-sm text-muted" style="display: grid; gap: 0.5rem">
+              <div><strong><%= locale === 'ar' ? 'اسم المستخدم' : 'Username' %>:</strong> <%= profile.username %></div>
+              <div><strong><%= locale === 'ar' ? 'البريد الإلكتروني' : 'Email' %>:</strong> <%= profile.email %></div>
             </div>
           </div>
-          <button type="submit" class="btn btn-primary btn-block btn-lg">
-            <%= t('profile.save') %>
-          </button>
-        </form>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <h2 class="mb-2"><%= locale === 'ar' ? 'تغيير اسم المستخدم' : 'Change Username' %></h2>
+            <form method="POST" action="/profile/account/username">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'اسم المستخدم الجديد' : 'New Username' %></label>
+                <input type="text" name="username" class="input" minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'كلمة المرور الحالية' : 'Current Password' %></label>
+                <input type="password" name="currentPassword" class="input" required />
+              </div>
+              <button type="submit" class="btn btn-secondary btn-block">
+                <%= locale === 'ar' ? 'تحديث اسم المستخدم' : 'Update Username' %>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <h2 class="mb-2"><%= locale === 'ar' ? 'تغيير البريد الإلكتروني' : 'Change Email' %></h2>
+            <form method="POST" action="/profile/account/email">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'البريد الإلكتروني الجديد' : 'New Email' %></label>
+                <input type="email" name="email" class="input" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'كلمة المرور الحالية' : 'Current Password' %></label>
+                <input type="password" name="currentPassword" class="input" required />
+              </div>
+              <button type="submit" class="btn btn-secondary btn-block">
+                <%= locale === 'ar' ? 'إرسال رابط التفعيل' : 'Send Verification Link' %>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <h2 class="mb-2"><%= locale === 'ar' ? 'تغيير كلمة المرور' : 'Change Password' %></h2>
+            <% if (!hasLocalPassword) { %>
+            <p class="text-muted text-sm">
+              <%= locale === 'ar' ? 'هذا الحساب يستخدم تسجيل دخول اجتماعي. ابدأ هذا النموذج وسيُرسل لك رابط إعداد كلمة مرور.' : 'This account currently uses social sign-in. Submitting this form will send you a password setup email.' %>
+            </p>
+            <% } %>
+            <form method="POST" action="/profile/account/password">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'كلمة المرور الحالية' : 'Current Password' %></label>
+                <input type="password" name="currentPassword" class="input" <%= hasLocalPassword ? 'required' : '' %> />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'كلمة المرور الجديدة' : 'New Password' %></label>
+                <input type="password" name="newPassword" class="input" minlength="8" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password' %></label>
+                <input type="password" name="confirmPassword" class="input" minlength="8" required />
+              </div>
+              <button type="submit" class="btn btn-secondary btn-block">
+                <%= locale === 'ar' ? 'تحديث كلمة المرور' : 'Update Password' %>
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   </div>

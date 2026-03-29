@@ -10,9 +10,12 @@ jest.mock('../lib/prisma', () => ({
   },
 }));
 
+process.env.DATABASE_URL = 'postgresql://test/db';
+
 const prisma = require('../lib/prisma');
 const {
   optionalAuth,
+  guardActiveSessionUser,
   requireAuth,
   requireAdmin,
   requireAdminScope,
@@ -51,6 +54,61 @@ describe('auth middleware', () => {
     optionalAuth(req, res, next);
     expect(res.locals.user).toEqual({ id: 'u1' });
     expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  test('guardActiveSessionUser clears invalid sessions and redirects to login', () => {
+    const logout = jest.fn((cb) => cb());
+    const destroy = jest.fn((cb) => cb());
+    const req = {
+      user: null,
+      session: { passport: { user: 'u1' }, destroy },
+      logout,
+      headers: {},
+    };
+    const res = {
+      ...makeRes(),
+      redirect: jest.fn(),
+    };
+    const next = jest.fn();
+
+    guardActiveSessionUser(req, res, next);
+
+    expect(logout).toHaveBeenCalledTimes(1);
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(req.session.flash).toEqual({
+      type: 'warning',
+      message: 'Your session is no longer valid. Please log in again.',
+    });
+    expect(res.redirect).toHaveBeenCalledWith('/auth/login');
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('guardActiveSessionUser returns json for suspended accounts', () => {
+    const logout = jest.fn((cb) => cb());
+    const destroy = jest.fn((cb) => cb());
+    const req = {
+      user: { id: 'u1', isBanned: true },
+      session: { passport: { user: 'u1' }, destroy },
+      logout,
+      headers: { accept: 'application/json' },
+    };
+    const res = {
+      ...makeRes(),
+      json: jest.fn(),
+    };
+    const next = jest.fn();
+
+    guardActiveSessionUser(req, res, next);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.json).toHaveBeenCalledWith({
+      ok: false,
+      error: {
+        code: 'USER_BANNED',
+        message: 'Your account is currently suspended.',
+      },
+    });
+    expect(next).not.toHaveBeenCalled();
   });
 
   test('requireAuth redirects unauthenticated users and sets flash', () => {

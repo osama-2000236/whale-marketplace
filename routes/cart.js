@@ -2,6 +2,20 @@ const router = require('express').Router();
 const { requireAuth } = require('../middleware/auth');
 const cartService = require('../services/cartService');
 
+function getCartMessage(code) {
+  return (
+    {
+      LISTING_NOT_FOUND: 'That listing could not be found.',
+      LISTING_NOT_AVAILABLE: 'That listing is no longer available.',
+      CANNOT_BUY_OWN: 'You cannot add your own listing to the cart.',
+      INVALID_QUANTITY: 'Please choose a valid quantity.',
+      INSUFFICIENT_STOCK: 'That listing does not have enough stock.',
+      CART_NOT_FOUND: 'Your cart could not be found.',
+      ITEM_NOT_FOUND: 'That cart item could not be found.',
+    }[code] || code || 'Unable to update the cart right now.'
+  );
+}
+
 router.use(requireAuth);
 
 // View cart
@@ -35,9 +49,9 @@ router.post('/add', async (req, res, next) => {
     res.redirect('/cart');
   } catch (err) {
     if (req.headers['accept']?.includes('json')) {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: getCartMessage(err.message) });
     }
-    req.session.flash = { type: 'danger', message: err.message };
+    req.session.flash = { type: 'danger', message: getCartMessage(err.message) };
     res.redirect('back');
   }
 });
@@ -55,9 +69,9 @@ router.post('/update/:itemId', async (req, res, next) => {
     res.redirect('/cart');
   } catch (err) {
     if (req.headers['accept']?.includes('json')) {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: getCartMessage(err.message) });
     }
-    req.session.flash = { type: 'danger', message: err.message };
+    req.session.flash = { type: 'danger', message: getCartMessage(err.message) };
     res.redirect('/cart');
   }
 });
@@ -76,9 +90,9 @@ router.post('/remove/:itemId', async (req, res, next) => {
     res.redirect('/cart');
   } catch (err) {
     if (req.headers['accept']?.includes('json')) {
-      return res.status(400).json({ error: err.message });
+      return res.status(400).json({ error: getCartMessage(err.message) });
     }
-    req.session.flash = { type: 'danger', message: err.message };
+    req.session.flash = { type: 'danger', message: getCartMessage(err.message) };
     res.redirect('/cart');
   }
 });

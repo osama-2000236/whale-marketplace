@@ -32,6 +32,8 @@ module.exports = defineConfig({
           BASE_URL: localBaseUrl,
           NODE_ENV: 'test',
           SESSION_SECRET: 'playwright-session-secret-for-local-runs',
+          GOOGLE_CLIENT_ID: 'playwright-google-client',
+          GOOGLE_CLIENT_SECRET: 'playwright-google-secret',
         },
       }
     : undefined,

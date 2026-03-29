@@ -29,6 +29,8 @@ jest.mock('../services/emailService', () => ({
   sendOrderPlaced: jest.fn(() => Promise.resolve()),
 }));
 
+process.env.DATABASE_URL = 'postgresql://test/db';
+
 const prisma = require('../lib/prisma');
 const cartService = require('../services/cartService');
 const emailService = require('../services/emailService');

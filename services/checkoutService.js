@@ -1,6 +1,10 @@
 const prisma = require('../lib/prisma');
+const fallbackStore = require('../lib/fallbackStore');
 const cartService = require('./cartService');
 const emailService = require('./emailService');
+const paymentService = require('./paymentService');
+
+const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 function toCents(amount) {
   return Math.round(Number(amount) * 100);
@@ -47,6 +51,30 @@ function prorateDiscounts(items, totalDiscountCents) {
   return allocations;
 }
 
+function ensureHostedProviderAvailable(paymentMethod) {
+  const provider = String(paymentMethod || '').toLowerCase();
+  const availability = paymentService.getProviderAvailability();
+  if (!availability[provider]) {
+    throw new Error('PAYMENT_PROVIDER_DISABLED');
+  }
+}
+
+async function loadValidatedCoupon(tx, couponCode, activeItems) {
+  if (!couponCode) return null;
+
+  const coupon = await tx.coupon.findUnique({ where: { code: couponCode.toUpperCase() } });
+  if (!coupon || !coupon.isActive) throw new Error('INVALID_COUPON');
+  if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new Error('COUPON_EXPIRED');
+  if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new Error('COUPON_EXHAUSTED');
+
+  const subtotal = calculateSubtotalCents(activeItems) / 100;
+  if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {
+    throw new Error('COUPON_MIN_NOT_MET');
+  }
+
+  return coupon;
+}
+
 async function createPendingOrder(
   tx,
   { buyerId, listingId, quantity, paymentMethod, shippingAddress, buyerNote, amountCents, note }
@@ -72,6 +100,7 @@ async function createPendingOrder(
       amount: centsToAmount(amountCents),
       currency: listing.currency,
       paymentMethod,
+      paymentStatus: paymentService.ORDER_PAYMENT_STATUS.pending,
       shippingAddress,
       buyerNote,
       events: {
@@ -103,11 +132,46 @@ async function createPendingOrder(
   return order;
 }
 
-/**
- * Checkout from cart — creates one order per cart item so the existing
- * order model stays aligned with listing detail, reviews, and refunds.
- */
-async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerNote, couponCode }) {
+function createFallbackPendingOrder({
+  buyerId,
+  listingId,
+  quantity,
+  paymentMethod,
+  shippingAddress,
+  buyerNote,
+  amountCents,
+  note,
+}) {
+  const listing = fallbackStore.findListingBySlugOrId(listingId);
+  if (!listing) throw new Error('LISTING_NOT_FOUND');
+  if (listing.status !== 'ACTIVE') throw new Error('LISTING_NOT_AVAILABLE');
+  if (listing.sellerId === buyerId) throw new Error('CANNOT_BUY_OWN');
+  if (quantity < 1) throw new Error('INVALID_QUANTITY');
+  if (quantity > listing.stock) throw new Error('INSUFFICIENT_STOCK');
+
+  const existing = fallbackStore
+    .listOrdersForUser(buyerId, 'buying')
+    .find((order) => order.listingId === listingId && order.status === 'PENDING');
+  if (existing) throw new Error('ORDER_ALREADY_PENDING');
+
+  listing.stock -= quantity;
+
+  return fallbackStore.createOrder({
+    listingId,
+    buyerId,
+    sellerId: listing.sellerId,
+    quantity,
+    amount: centsToAmount(amountCents),
+    currency: listing.currency,
+    paymentMethod,
+    paymentStatus: paymentService.ORDER_PAYMENT_STATUS.pending,
+    shippingAddress,
+    buyerNote,
+    note,
+  });
+}
+
+async function validateCartCheckout(userId) {
   const { cart, itemCount } = await cartService.getCartSummary(userId);
   if (itemCount === 0) throw new Error('CART_EMPTY');
 
@@ -123,49 +187,89 @@ async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerN
     }
   }
 
-  let coupon = null;
-  if (couponCode) {
-    coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } });
-    if (!coupon || !coupon.isActive) throw new Error('INVALID_COUPON');
-    if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new Error('COUPON_EXPIRED');
-    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new Error('COUPON_EXHAUSTED');
+  return { cart, activeItems };
+}
 
-    const subtotal = calculateSubtotalCents(activeItems) / 100;
-    if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {
-      throw new Error('COUPON_MIN_NOT_MET');
-    }
-  }
-
+async function buildCartOrders(
+  tx,
+  userId,
+  { activeItems, paymentMethod, shippingAddress, buyerNote, couponCode, eventNote }
+) {
+  const coupon = await loadValidatedCoupon(tx, couponCode, activeItems);
   const subtotalCents = calculateSubtotalCents(activeItems);
   const totalDiscountCents = calculateDiscountCents(subtotalCents, coupon);
   const discountByItemId = prorateDiscounts(activeItems, totalDiscountCents);
   const orders = [];
 
-  await prisma.$transaction(async (tx) => {
-    for (const item of activeItems) {
-      const itemSubtotalCents = toCents(item.listing.price) * item.quantity;
-      const itemDiscountCents = discountByItemId.get(item.id) || 0;
-      const order = await createPendingOrder(tx, {
+  for (const item of activeItems) {
+    const itemSubtotalCents = toCents(item.listing.price) * item.quantity;
+    const itemDiscountCents = discountByItemId.get(item.id) || 0;
+
+    const order = await createPendingOrder(tx, {
+      buyerId: userId,
+      listingId: item.listing.id,
+      quantity: item.quantity,
+      paymentMethod,
+      shippingAddress,
+      buyerNote,
+      amountCents: Math.max(0, itemSubtotalCents - itemDiscountCents),
+      note: eventNote,
+    });
+
+    orders.push(order);
+  }
+
+  if (coupon) {
+    await tx.coupon.update({
+      where: { id: coupon.id },
+      data: { usedCount: { increment: 1 } },
+    });
+  }
+
+  return orders;
+}
+
+async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerNote, couponCode }) {
+  const { cart, activeItems } = await validateCartCheckout(userId);
+
+  if (!hasDatabase) {
+    if (couponCode) throw new Error('INVALID_COUPON');
+
+    const orders = activeItems.map((item) =>
+      createFallbackPendingOrder({
         buyerId: userId,
         listingId: item.listing.id,
         quantity: item.quantity,
         paymentMethod,
         shippingAddress,
         buyerNote,
-        amountCents: Math.max(0, itemSubtotalCents - itemDiscountCents),
+        amountCents: toCents(item.listing.price) * item.quantity,
         note: 'Order placed from cart',
-      });
+      }),
+    );
 
-      orders.push(order);
+    fallbackStore.clearCartItems(userId);
+
+    for (const order of orders) {
+      emailService.sendOrderPlaced(order).catch(() => {});
     }
 
-    if (coupon) {
-      await tx.coupon.update({
-        where: { id: coupon.id },
-        data: { usedCount: { increment: 1 } },
-      });
-    }
+    return orders;
+  }
 
+  const orders = [];
+
+  await prisma.$transaction(async (tx) => {
+    const createdOrders = await buildCartOrders(tx, userId, {
+      activeItems,
+      paymentMethod,
+      shippingAddress,
+      buyerNote,
+      couponCode,
+      eventNote: 'Order placed from cart',
+    });
+
+    orders.push(...createdOrders);
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
   });
 
@@ -176,11 +280,79 @@ async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerN
   return orders;
 }
 
-/**
- * Single-item checkout (existing flow, enhanced with stock-aware order creation)
- */
+async function startCartHostedCheckout(
+  userId,
+  { paymentMethod, shippingAddress, buyerNote, couponCode }
+) {
+  if (!hasDatabase) {
+    throw new Error('PAYMENT_PROVIDER_DISABLED');
+  }
+
+  ensureHostedProviderAvailable(paymentMethod);
+
+  const { cart, activeItems } = await validateCartCheckout(userId);
+  const cartSnapshot = {
+    items: activeItems.map((item) => ({
+      listingId: item.listing.id,
+      quantity: item.quantity,
+    })),
+  };
+
+  const orders = [];
+
+  await prisma.$transaction(async (tx) => {
+    const createdOrders = await buildCartOrders(tx, userId, {
+      activeItems,
+      paymentMethod,
+      shippingAddress,
+      buyerNote,
+      couponCode,
+      eventNote: 'Order reserved awaiting payment',
+    });
+
+    orders.push(...createdOrders);
+    await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+  });
+
+  try {
+    const hostedPayment = await paymentService.createOrderPaymentSession(paymentMethod, {
+      userId,
+      orderIds: orders.map((order) => order.id),
+      amount: orders.reduce((sum, order) => sum + Number(order.amount), 0),
+      currency: orders[0]?.currency || 'USD',
+      flow: 'cart',
+      cartSnapshot,
+      shippingAddress,
+    });
+
+    for (const order of orders) {
+      emailService.sendOrderPlaced(order).catch(() => {});
+    }
+
+    return { ...hostedPayment, orders };
+  } catch (err) {
+    throw err;
+  }
+}
+
 async function checkoutSingle(userId, listingId, data) {
   const { paymentMethod, shippingAddress, buyerNote, quantity = 1 } = data;
+
+  if (!hasDatabase) {
+    const order = createFallbackPendingOrder({
+      buyerId: userId,
+      listingId,
+      quantity,
+      paymentMethod,
+      shippingAddress,
+      buyerNote,
+      amountCents: toCents(fallbackStore.findListingBySlugOrId(listingId)?.price || 0) * quantity,
+      note: 'Order placed',
+    });
+
+    emailService.sendOrderPlaced(order).catch(() => {});
+    return order;
+  }
 
   const listing = await prisma.listing.findUnique({ where: { id: listingId } });
   if (!listing) throw new Error('LISTING_NOT_FOUND');
@@ -205,6 +377,50 @@ async function checkoutSingle(userId, listingId, data) {
   return order;
 }
 
+async function startSingleHostedCheckout(userId, listingId, data) {
+  const { paymentMethod, shippingAddress, buyerNote, quantity = 1 } = data;
+  if (!hasDatabase) {
+    throw new Error('PAYMENT_PROVIDER_DISABLED');
+  }
+  ensureHostedProviderAvailable(paymentMethod);
+
+  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+  if (!listing) throw new Error('LISTING_NOT_FOUND');
+  if (listing.status !== 'ACTIVE') throw new Error('LISTING_NOT_AVAILABLE');
+  if (listing.sellerId === userId) throw new Error('CANNOT_BUY_OWN');
+  if (quantity > listing.stock) throw new Error('INSUFFICIENT_STOCK');
+
+  const order = await prisma.$transaction(async (tx) =>
+    createPendingOrder(tx, {
+      buyerId: userId,
+      listingId,
+      quantity,
+      paymentMethod,
+      shippingAddress,
+      buyerNote,
+      amountCents: toCents(listing.price) * quantity,
+      note: 'Order reserved awaiting payment',
+    })
+  );
+
+  try {
+    const hostedPayment = await paymentService.createOrderPaymentSession(paymentMethod, {
+      userId,
+      orderIds: [order.id],
+      amount: Number(order.amount),
+      currency: order.currency,
+      flow: 'single',
+      listingId,
+      shippingAddress,
+    });
+
+    emailService.sendOrderPlaced(order).catch(() => {});
+    return { ...hostedPayment, order };
+  } catch (err) {
+    throw err;
+  }
+}
+
 module.exports = {
   toCents,
   centsToAmount,
@@ -212,5 +428,7 @@ module.exports = {
   calculateDiscountCents,
   prorateDiscounts,
   checkoutFromCart,
+  startCartHostedCheckout,
   checkoutSingle,
+  startSingleHostedCheckout,
 };

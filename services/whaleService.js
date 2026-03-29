@@ -540,6 +540,10 @@ async function getSellerDashboard(sellerId) {
 
 // ── ORDERS LIST ──
 async function getUserOrders(userId, tab = 'buying') {
+  if (!hasDatabase) {
+    return fallbackStore.listOrdersForUser(userId, tab);
+  }
+
   const where = tab === 'selling' ? { sellerId: userId } : { buyerId: userId };
   return prisma.order.findMany({
     where,
@@ -553,6 +557,10 @@ async function getUserOrders(userId, tab = 'buying') {
 }
 
 async function getOrder(orderId) {
+  if (!hasDatabase) {
+    return fallbackStore.findOrderById(orderId);
+  }
+
   return prisma.order.findUnique({
     where: { id: orderId },
     include: {

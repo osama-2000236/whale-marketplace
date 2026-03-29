@@ -90,3 +90,52 @@ export async function openUserMenu(page: Page): Promise<void> {
   await trigger.click();
   await expect(page.locator('.user-menu-dropdown')).toBeVisible();
 }
+
+export async function getCsrfToken(page: Page): Promise<string> {
+  return page.locator('meta[name="csrf-token"]').getAttribute('content').then((value) => value || '');
+}
+
+export async function addCurrentListingToCart(page: Page, quantity = 1): Promise<string> {
+  const checkoutHref = await page.locator('.listing-detail-actions a[href^="/whale/checkout/"]').first().getAttribute('href');
+  if (!checkoutHref) {
+    throw new Error('Missing checkout link for listing');
+  }
+
+  const listingId = checkoutHref.split('/').pop();
+  if (!listingId) {
+    throw new Error('Missing listing id in checkout link');
+  }
+
+  const csrfToken = await getCsrfToken(page);
+  await Promise.all([
+    page.waitForURL(/\/cart$/),
+    page.evaluate(
+      ({ csrf, itemListingId, itemQuantity }) => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/cart/add';
+        form.style.display = 'none';
+
+        const fields = {
+          _csrf: csrf,
+          listingId: itemListingId,
+          quantity: String(itemQuantity),
+        };
+
+        Object.entries(fields).forEach(([name, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+      },
+      { csrf: csrfToken, itemListingId: listingId, itemQuantity: quantity },
+    ),
+  ]);
+
+  return listingId;
+}
