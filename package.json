@@ -4,6 +4,7 @@
   "description": "Whale (الحوت) — Trust-first peer-to-peer marketplace for Palestine and Arab cities",
   "main": "server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "node --watch server.js",
     "start": "node entrypoint.js",
     "prisma:generate": "prisma generate",

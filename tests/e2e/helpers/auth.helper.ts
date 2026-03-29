@@ -1,4 +1,3 @@
-import path from 'node:path';
 import { expect, type Browser, type Page } from '@playwright/test';
 
 export type TestUser = {
@@ -7,10 +6,16 @@ export type TestUser = {
   password: string;
 };
 
-export const SELL_IMAGE_PATH = path.resolve(
-  __dirname,
-  '../../../coverage/lcov-report/favicon.png'
-);
+const SELL_IMAGE_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==';
+
+export function buildSellImageFile() {
+  return {
+    name: 'sell-image.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(SELL_IMAGE_PNG_BASE64, 'base64'),
+  };
+}
 
 export function buildTestUser(prefix = 'qa'): TestUser {
   const stamp = `${Date.now()}${Math.random().toString(36).slice(2, 8)}`;

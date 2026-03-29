@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { SELL_IMAGE_PATH, registerTestUser, validationMessage } from '../helpers/auth.helper';
+import { buildSellImageFile, registerTestUser, validationMessage } from '../helpers/auth.helper';
 
 test.describe('Marketplace sell', () => {
   test('Unauthenticated -> redirects to /auth/login', async ({ page }) => {
@@ -57,7 +57,7 @@ test.describe('Marketplace sell', () => {
     await page.locator('select[name="condition"]').selectOption('GOOD');
     await page.locator('select[name="categoryId"]').selectOption('cat-electronics');
     await page.locator('select[name="city"]').selectOption('Gaza');
-    await page.locator('input[name="images"]').setInputFiles(SELL_IMAGE_PATH);
+    await page.locator('input[name="images"]').setInputFiles(buildSellImageFile());
     await page.locator('input[name="tags"]').fill('qa,automation');
 
     await Promise.all([
