@@ -10,6 +10,15 @@ test.describe('Navigation footer', () => {
     await expect(page.locator('footer.footer')).toBeVisible();
   });
 
+  test('Footer exposes links to all legal and info pages', async ({ page }) => {
+    // Intent: verify the shared footer keeps the live about, terms, privacy, and safety entry points visible.
+    await page.goto('/');
+
+    for (const path of staticPages) {
+      await expect(page.locator(`footer a[href="${path}"]`)).toBeVisible();
+    }
+  });
+
   for (const path of staticPages) {
     test(`${path} loads with content`, async ({ page, request }) => {
       // Intent: verify each footer destination returns a healthy response and renders markdown content inside the live prose container.

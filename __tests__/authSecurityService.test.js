@@ -3,6 +3,9 @@ jest.mock('../lib/prisma', () => ({
     findUnique: jest.fn(),
     update: jest.fn(),
   },
+  sellerProfile: {
+    updateMany: jest.fn(),
+  },
   authToken: {
     create: jest.fn(),
     findUnique: jest.fn(),
@@ -61,9 +64,18 @@ describe('authSecurityService', () => {
       });
       prisma.authToken.update.mockResolvedValue({});
       prisma.user.update.mockResolvedValue({});
+      prisma.sellerProfile.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await authSecurityService.verifyEmail('abc');
       expect(result.verified).toBe(true);
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: 'u1' },
+        data: { emailVerified: true, isVerified: true },
+      });
+      expect(prisma.sellerProfile.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'u1' },
+        data: { isVerified: true },
+      });
     });
 
     test('rejects expired token', async () => {

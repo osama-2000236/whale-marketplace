@@ -5,6 +5,7 @@ module.exports = [
       'coverage/**',
       'playwright-report/**',
       'test-results/**',
+      'tests/reports/**',
       'public/uploads/**',
       '.claude/**',
     ],

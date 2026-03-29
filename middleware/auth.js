@@ -46,6 +46,15 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+function enforceAdminTwoFactor(req, res) {
+  if (req.user?.twoFactorSecret && !req.session?.admin2FAVerified) {
+    req.session.flash = { type: 'warning', message: 'Admin verification required.' };
+    res.redirect('/auth/2fa');
+    return true;
+  }
+  return false;
+}
+
 const requireAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'ADMIN') {
     return res.status(403).render('error', {
@@ -54,19 +63,30 @@ const requireAdmin = (req, res, next) => {
       status: 403,
     });
   }
+  if (enforceAdminTwoFactor(req, res)) return;
   next();
 };
 
-const requireAdminScope = (permission) => {
+const requireAdminScope = (...scopes) => {
   return (req, res, next) => {
-    if (!hasAdminPermission(req.user, permission)) {
+    if (!req.user || req.user.role !== 'ADMIN') {
       return res.status(403).render('error', {
         title: 'Forbidden',
-        message: 'Admin scope does not permit this action.',
+        message: 'You do not have permission to access this page.',
         status: 403,
       });
     }
-    next();
+    if (enforceAdminTwoFactor(req, res)) return;
+
+    const scope = req.user.adminScope || 'SUPER_ADMIN';
+    if (scope === 'SUPER_ADMIN' || scopes.includes(scope)) return next();
+
+    return res.status(403).render('error', {
+      title: 'Forbidden',
+      message: 'You do not have the required admin scope for this action.',
+      status: 403,
+    });
+
   };
 };
 
@@ -79,13 +99,8 @@ const requireAdmin2FA = (req, res, next) => {
     });
   }
 
-  const verifiedAt = req.session.admin2faVerifiedAt ? new Date(req.session.admin2faVerifiedAt) : null;
-  const stale = !verifiedAt || Date.now() - verifiedAt.getTime() > 30 * 60 * 1000;
+  if (enforceAdminTwoFactor(req, res)) return;
 
-  if (stale) {
-    req.session.flash = { type: 'warning', message: 'Admin verification required.' };
-    return res.redirect('/admin/2fa');
-  }
   next();
 };
 

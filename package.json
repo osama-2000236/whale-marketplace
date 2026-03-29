@@ -15,7 +15,7 @@
     "format": "prettier --write \"**/*.{js,json,css}\"",
     "validate:env-example": "node scripts/validate-env-example.js",
     "validate:seed": "node scripts/validate-seed.js",
-    "test": "jest --forceExit",
+    "test": "jest",
     "test:coverage": "jest --coverage",
     "test:ui": "playwright test",
     "test:ui:html": "playwright test --reporter=html && playwright show-report"

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { registerTestUser } from '../helpers/auth.helper';
 
 test.describe('Security auth guards', () => {
   test('/whale/sell redirects unauthenticated users to /auth/login', async ({ page }) => {
@@ -6,6 +7,29 @@ test.describe('Security auth guards', () => {
     await page.goto('/whale/sell');
 
     await expect(page).toHaveURL(/\/auth\/login\?next=%2Fwhale%2Fsell$/);
+  });
+
+  test('/whale/dashboard redirects unauthenticated users to /auth/login', async ({ page }) => {
+    // Intent: verify the live dashboard route preserves its auth guard for anonymous visitors.
+    await page.goto('/whale/dashboard');
+
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Fwhale%2Fdashboard$/);
+  });
+
+  test('/whale/orders redirects unauthenticated users to /auth/login', async ({ page }) => {
+    // Intent: verify the live orders route preserves its auth guard for anonymous visitors.
+    await page.goto('/whale/orders');
+
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Fwhale%2Forders$/);
+  });
+
+  test('/admin blocks authenticated non-admin users', async ({ page }) => {
+    // Intent: verify the live admin area remains protected even after a normal user signs in successfully.
+    await registerTestUser(page);
+    const response = await page.goto('/admin');
+
+    expect(response?.status()).toBe(403);
+    await expect(page.locator('.empty-state h3')).toContainText('403');
   });
 
   test('<script>alert(1)</script> in input does not execute JS', async ({ page }) => {
@@ -42,5 +66,25 @@ test.describe('Security auth guards', () => {
 
     await expect(page.locator('form[action="/auth/login"]')).toBeVisible();
     await expect(page.locator('.flash.flash-danger')).toBeVisible();
+  });
+
+  test('SQL injection in search query does not crash browse', async ({ page }) => {
+    // Intent: verify the browse query parser handles SQL-like payloads as inert text and still renders the page.
+    await page.goto("/whale?q=' OR 1=1 --");
+
+    await expect(page.locator('.browse-layout')).toBeVisible();
+  });
+
+  test('POST /auth/login without CSRF does not create a successful login flow', async ({ page }) => {
+    // Intent: verify direct POST attempts without a form token are rejected or otherwise prevented from logging a user in.
+    const response = await page.request.post('/auth/login', {
+      form: {
+        identifier: 'test@example.com',
+        password: 'QATestWhale2026!',
+      },
+    });
+
+    expect(response.status()).not.toBe(500);
+    expect(response.headers()['location'] || '').not.toContain('/whale');
   });
 });

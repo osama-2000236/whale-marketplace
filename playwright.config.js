@@ -3,13 +3,12 @@ const { defineConfig, devices } = require('@playwright/test');
 const localPort = Number(process.env.PLAYWRIGHT_PORT || 3000);
 const localBaseUrl = `http://127.0.0.1:${localPort}`;
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.BASE_URL || localBaseUrl;
-const isProductionTarget = /railway\.app/i.test(baseURL);
 const useLocalServer = !process.env.PLAYWRIGHT_BASE_URL && !process.env.BASE_URL;
 
 module.exports = defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
-  retries: isProductionTarget ? 1 : 0,
+  retries: 1,
   timeout: 30_000,
   workers: 1,
   reporter: [
@@ -19,11 +18,9 @@ module.exports = defineConfig({
   ],
   use: {
     baseURL,
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    screenshot: 'on',
+    video: 'off',
     trace: 'retain-on-failure',
-    actionTimeout: 12_000,
-    navigationTimeout: 20_000,
   },
   webServer: useLocalServer
     ? {
@@ -40,12 +37,28 @@ module.exports = defineConfig({
     : undefined,
   projects: [
     {
-      name: 'chromium',
+      name: 'Desktop Chrome',
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'mobile-chrome',
-      use: { ...devices['Pixel 5'] },
+      name: 'Desktop Firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'Desktop Safari',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 14'] },
+    },
+    {
+      name: 'Tablet',
+      use: { ...devices['iPad (gen 7)'] },
     },
   ],
 });

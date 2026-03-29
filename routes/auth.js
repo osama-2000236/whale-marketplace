@@ -121,7 +121,7 @@ router.post('/resend-verification', async (req, res) => {
   }
 
   try {
-    await authSecurityService.sendEmailVerification(req.user);
+    await authSecurityService.sendVerificationEmail(req.user.id);
     req.session.flash = {
       type: 'success',
       message: 'Verification email sent. Please check your inbox.',
@@ -141,7 +141,7 @@ router.get('/forgot-password', (req, res) => {
 
 router.post('/forgot-password', authLimiter, async (req, res) => {
   const email = sanitizeBody(req.body, { email: 255 }).email;
-  await authSecurityService.requestPasswordReset(email).catch(() => {});
+  await authSecurityService.sendPasswordReset(email).catch(() => {});
   req.session.flash = {
     type: 'info',
     message: 'If your account exists, a reset link was sent to your email.',
@@ -209,6 +209,29 @@ router.post(
     res.redirect('/whale');
   }
 );
+
+// Admin 2FA verification page
+router.get('/2fa', (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') return res.redirect('/');
+  res.render('auth/2fa', { title: res.locals.t('auth.two_factor') });
+});
+
+// Admin 2FA verification handler
+router.post('/2fa', authLimiter, (req, res) => {
+  if (!req.user || req.user.role !== 'ADMIN') return res.redirect('/');
+  const { code } = req.body;
+  const secret = req.user.twoFactorSecret;
+
+  if (!secret || !authSecurityService.verifyAdmin2FA(secret, code)) {
+    req.session.flash = { type: 'danger', message: res.locals.t('auth.invalid_2fa') };
+    return res.redirect('/auth/2fa');
+  }
+
+  req.session.admin2FAVerified = true;
+  req.session.admin2faVerifiedAt = new Date().toISOString();
+  req.session.flash = { type: 'success', message: res.locals.t('flash.2fa_verified') };
+  res.redirect('/admin');
+});
 
 // Logout
 router.post('/logout', (req, res) => {

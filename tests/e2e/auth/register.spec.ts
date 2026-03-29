@@ -35,11 +35,9 @@ test.describe('Auth register', () => {
     await page.locator('input[name="password"]').fill(user.password);
     await page.locator('input[name="confirmPassword"]').fill('DifferentPass2026!');
 
-    await Promise.all([
-      page.waitForURL(/\/auth\/register$/),
-      page.locator('form[action="/auth/register"] button').click(),
-    ]);
+    await page.locator('form[action="/auth/register"] button').click();
 
+    await expect(page).toHaveURL(/\/auth\/register(?:\?.*)?$/);
     await expect(page.locator('.flash.flash-danger')).toContainText(/Passwords do not match/);
   });
 
@@ -78,11 +76,9 @@ test.describe('Auth register', () => {
       await page.locator('input[name="password"]').fill(existing.password);
       await page.locator('input[name="confirmPassword"]').fill(existing.password);
 
-      await Promise.all([
-        page.waitForURL(/\/auth\/register$/),
-        page.locator('form[action="/auth/register"] button').click(),
-      ]);
+      await page.locator('form[action="/auth/register"] button').click();
 
+      await expect(page).toHaveURL(/\/auth\/register(?:\?.*)?$/);
       await expect(page.locator('.flash.flash-danger')).toContainText('Email already registered');
     } finally {
       await context.close();

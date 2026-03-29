@@ -13,6 +13,9 @@ const path = require('path');
 
 const app = express();
 const hasDatabase = Boolean(process.env.DATABASE_URL);
+const baseUrl = process.env.BASE_URL || '';
+const shouldUpgradeInsecureRequests =
+  process.env.NODE_ENV === 'production' && baseUrl.toLowerCase().startsWith('https://');
 
 // 1. Security headers
 app.use(
@@ -26,6 +29,7 @@ app.use(
         scriptSrc: ["'self'"],
         connectSrc: ["'self'"],
         frameAncestors: ["'none'"],
+        upgradeInsecureRequests: shouldUpgradeInsecureRequests ? [] : null,
       },
     },
   })
