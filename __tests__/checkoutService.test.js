@@ -69,9 +69,22 @@ describe('checkoutService', () => {
       });
 
       expect(order.id).toBe('o1');
-      expect(prisma.listing.update).toHaveBeenCalled(); // stock decremented
+      expect(prisma.listing.update).toHaveBeenCalled();
       expect(prisma.notification.create).toHaveBeenCalled();
       expect(emailService.sendOrderPlaced).toHaveBeenCalled();
+    });
+
+    test('scopes duplicate pending order checks to the same buyer and listing', async () => {
+      prisma.listing.findUnique.mockResolvedValue(mockListing);
+      prisma.order.findFirst.mockResolvedValue({ id: 'existing' });
+
+      await expect(
+        checkoutService.checkoutSingle('buyer1', 'l1', { paymentMethod: 'cod' }),
+      ).rejects.toThrow('ORDER_ALREADY_PENDING');
+
+      expect(prisma.order.findFirst).toHaveBeenCalledWith({
+        where: { listingId: 'l1', buyerId: 'buyer1', status: 'PENDING' },
+      });
     });
 
     test('rejects non-existent listing', async () => {
@@ -101,14 +114,6 @@ describe('checkoutService', () => {
         checkoutService.checkoutSingle('buyer1', 'l1', { paymentMethod: 'cod', quantity: 1 }),
       ).rejects.toThrow('INSUFFICIENT_STOCK');
     });
-
-    test('rejects duplicate pending order', async () => {
-      prisma.listing.findUnique.mockResolvedValue(mockListing);
-      prisma.order.findFirst.mockResolvedValue({ id: 'existing' });
-      await expect(
-        checkoutService.checkoutSingle('buyer1', 'l1', { paymentMethod: 'cod' }),
-      ).rejects.toThrow('ORDER_ALREADY_PENDING');
-    });
   });
 
   describe('checkoutFromCart', () => {
@@ -123,15 +128,19 @@ describe('checkoutService', () => {
       ).rejects.toThrow('CART_EMPTY');
     });
 
-    test('creates orders grouped by seller', async () => {
+    test('creates one order per listing even when multiple items share a seller', async () => {
       const items = [
         {
-          id: 'ci1', listingId: 'l1', quantity: 1,
+          id: 'ci1',
+          listingId: 'l1',
+          quantity: 1,
           listing: { ...mockListing, sellerId: 'seller1' },
         },
         {
-          id: 'ci2', listingId: 'l2', quantity: 2,
-          listing: { ...mockListing, id: 'l2', sellerId: 'seller2', price: '10.00' },
+          id: 'ci2',
+          listingId: 'l2',
+          quantity: 2,
+          listing: { ...mockListing, id: 'l2', sellerId: 'seller1', price: '10.00' },
         },
       ];
       cartService.getCartSummary.mockResolvedValue({
@@ -139,13 +148,25 @@ describe('checkoutService', () => {
         itemCount: 2,
         total: '45.00',
       });
-      prisma.order.create.mockResolvedValue({
-        id: 'o1',
-        orderNumber: 'ON1',
-        buyer: { username: 'buyer', email: 'b@b.com' },
-        seller: { username: 'seller', email: 's@s.com' },
-        listing: mockListing,
-      });
+      prisma.order.findFirst.mockResolvedValue(null);
+      prisma.order.create
+        .mockResolvedValueOnce({
+          id: 'o1',
+          orderNumber: 'ON1',
+          buyer: { username: 'buyer', email: 'b@b.com' },
+          seller: { username: 'seller', email: 's@s.com' },
+          listing: mockListing,
+        })
+        .mockResolvedValueOnce({
+          id: 'o2',
+          orderNumber: 'ON2',
+          buyer: { username: 'buyer', email: 'b@b.com' },
+          seller: { username: 'seller', email: 's@s.com' },
+          listing: { ...mockListing, id: 'l2', price: '10.00' },
+        });
+      prisma.listing.findUnique
+        .mockResolvedValueOnce(items[0].listing)
+        .mockResolvedValueOnce(items[1].listing);
       prisma.listing.update.mockResolvedValue({});
       prisma.notification.create.mockResolvedValue({});
       prisma.cartItem.deleteMany.mockResolvedValue({});
@@ -157,11 +178,127 @@ describe('checkoutService', () => {
 
       expect(orders).toHaveLength(2);
       expect(prisma.order.create).toHaveBeenCalledTimes(2);
+      expect(prisma.order.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            listingId: 'l1',
+            sellerId: 'seller1',
+            quantity: 1,
+            amount: '25.00',
+          }),
+        }),
+      );
+      expect(prisma.order.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            listingId: 'l2',
+            sellerId: 'seller1',
+            quantity: 2,
+            amount: '20.00',
+          }),
+        }),
+      );
+    });
+
+    test('prorates coupon discounts across per-listing orders', async () => {
+      const items = [
+        {
+          id: 'ci1',
+          listingId: 'l1',
+          quantity: 1,
+          listing: { ...mockListing, sellerId: 'seller1' },
+        },
+        {
+          id: 'ci2',
+          listingId: 'l2',
+          quantity: 2,
+          listing: {
+            ...mockListing,
+            id: 'l2',
+            title: 'Second Item',
+            sellerId: 'seller2',
+            price: '10.00',
+          },
+        },
+      ];
+      cartService.getCartSummary.mockResolvedValue({
+        cart: { id: 'c1', items },
+        itemCount: 2,
+        total: '45.00',
+      });
+      prisma.coupon.findUnique.mockResolvedValue({
+        id: 'coupon-1',
+        code: 'SAVE10',
+        isActive: true,
+        discountType: 'percent',
+        discountValue: '10',
+        minOrderAmount: null,
+        maxUses: null,
+        usedCount: 0,
+        expiresAt: null,
+      });
+      prisma.order.findFirst.mockResolvedValue(null);
+      prisma.order.create
+        .mockResolvedValueOnce({
+          id: 'o1',
+          orderNumber: 'ON1',
+          buyer: { username: 'buyer', email: 'b@b.com' },
+          seller: { username: 'seller1', email: 's1@s.com' },
+          listing: mockListing,
+        })
+        .mockResolvedValueOnce({
+          id: 'o2',
+          orderNumber: 'ON2',
+          buyer: { username: 'buyer', email: 'b@b.com' },
+          seller: { username: 'seller2', email: 's2@s.com' },
+          listing: { ...mockListing, id: 'l2', title: 'Second Item' },
+        });
+      prisma.listing.findUnique
+        .mockResolvedValueOnce(items[0].listing)
+        .mockResolvedValueOnce(items[1].listing);
+      prisma.listing.update.mockResolvedValue({});
+      prisma.notification.create.mockResolvedValue({});
+      prisma.cartItem.deleteMany.mockResolvedValue({});
+      prisma.coupon.update.mockResolvedValue({});
+
+      await checkoutService.checkoutFromCart('buyer1', {
+        paymentMethod: 'cod',
+        shippingAddress: { street: '123', city: 'Gaza', phone: '0599' },
+        couponCode: 'SAVE10',
+      });
+
+      expect(prisma.order.create).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            listingId: 'l1',
+            amount: '22.50',
+          }),
+        }),
+      );
+      expect(prisma.order.create).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          data: expect.objectContaining({
+            listingId: 'l2',
+            amount: '18.00',
+          }),
+        }),
+      );
+      expect(prisma.coupon.update).toHaveBeenCalledWith({
+        where: { id: 'coupon-1' },
+        data: { usedCount: { increment: 1 } },
+      });
     });
 
     test('rejects invalid coupon', async () => {
       cartService.getCartSummary.mockResolvedValue({
-        cart: { id: 'c1', items: [{ id: 'ci1', listingId: 'l1', quantity: 1, listing: mockListing }] },
+        cart: {
+          id: 'c1',
+          items: [{ id: 'ci1', listingId: 'l1', quantity: 1, listing: mockListing }],
+        },
         itemCount: 1,
         total: '25.00',
       });

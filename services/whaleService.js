@@ -315,60 +315,6 @@ async function deleteListing(id, actorId, isAdmin = false) {
   });
 }
 
-// ── ORDERS ──
-async function createOrder(data) {
-  const { listingId, buyerId, quantity, paymentMethod, shippingAddress, buyerNote } = data;
-
-  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
-  if (!listing) throw new Error('LISTING_NOT_FOUND');
-  if (listing.status !== 'ACTIVE') throw new Error('LISTING_NOT_ACTIVE');
-  if (listing.sellerId === buyerId) throw new Error('CANNOT_BUY_OWN');
-
-  // Check for existing pending order
-  const pendingOrder = await prisma.order.findFirst({
-    where: { listingId, status: 'PENDING' },
-  });
-  if (pendingOrder) throw new Error('ORDER_ALREADY_PENDING');
-
-  const order = await prisma.order.create({
-    data: {
-      listingId,
-      buyerId,
-      sellerId: listing.sellerId,
-      quantity: parseInt(quantity) || 1,
-      amount: listing.price,
-      currency: listing.currency,
-      paymentMethod: paymentMethod || 'manual',
-      shippingAddress: shippingAddress || null,
-      buyerNote: buyerNote || null,
-      status: 'PENDING',
-      events: {
-        create: { event: 'created', actorId: buyerId, note: 'Order placed' },
-      },
-    },
-    include: {
-      listing: true,
-      buyer: { select: { id: true, username: true, email: true } },
-      seller: { select: { id: true, username: true, email: true } },
-    },
-  });
-
-  // Notify seller
-  await prisma.notification.create({
-    data: {
-      userId: listing.sellerId,
-      type: 'ORDER',
-      title: 'طلب جديد | New Order',
-      body: `Order #${order.orderNumber} for "${listing.title}"`,
-      link: `/whale/orders/${order.id}`,
-    },
-  });
-
-  emailService.sendOrderPlaced(order).catch(() => {});
-
-  return order;
-}
-
 async function transitionOrder(orderId, actorId, action, payload = {}) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -629,7 +575,6 @@ module.exports = {
   createListing,
   updateListing,
   deleteListing,
-  createOrder,
   transitionOrder,
   postReview,
   toggleSaved,

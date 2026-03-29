@@ -2,8 +2,110 @@ const prisma = require('../lib/prisma');
 const cartService = require('./cartService');
 const emailService = require('./emailService');
 
+function toCents(amount) {
+  return Math.round(Number(amount) * 100);
+}
+
+function centsToAmount(cents) {
+  return (cents / 100).toFixed(2);
+}
+
+function calculateSubtotalCents(items) {
+  return items.reduce((sum, item) => sum + toCents(item.listing.price) * item.quantity, 0);
+}
+
+function calculateDiscountCents(subtotalCents, coupon) {
+  if (!coupon || subtotalCents <= 0) return 0;
+
+  const requestedDiscount =
+    coupon.discountType === 'percent'
+      ? Math.round(subtotalCents * (Number(coupon.discountValue) / 100))
+      : toCents(coupon.discountValue);
+
+  return Math.min(subtotalCents, requestedDiscount);
+}
+
+function prorateDiscounts(items, totalDiscountCents) {
+  const allocations = new Map();
+  if (totalDiscountCents <= 0 || items.length === 0) return allocations;
+
+  let remainingSubtotal = calculateSubtotalCents(items);
+  let remainingDiscount = totalDiscountCents;
+
+  items.forEach((item, index) => {
+    const itemSubtotal = toCents(item.listing.price) * item.quantity;
+    const itemDiscount =
+      index === items.length - 1
+        ? remainingDiscount
+        : Math.floor((remainingDiscount * itemSubtotal) / remainingSubtotal);
+
+    allocations.set(item.id, itemDiscount);
+    remainingSubtotal -= itemSubtotal;
+    remainingDiscount -= itemDiscount;
+  });
+
+  return allocations;
+}
+
+async function createPendingOrder(
+  tx,
+  { buyerId, listingId, quantity, paymentMethod, shippingAddress, buyerNote, amountCents, note }
+) {
+  const listing = await tx.listing.findUnique({ where: { id: listingId } });
+  if (!listing) throw new Error('LISTING_NOT_FOUND');
+  if (listing.status !== 'ACTIVE') throw new Error('LISTING_NOT_AVAILABLE');
+  if (listing.sellerId === buyerId) throw new Error('CANNOT_BUY_OWN');
+  if (quantity < 1) throw new Error('INVALID_QUANTITY');
+  if (quantity > listing.stock) throw new Error('INSUFFICIENT_STOCK');
+
+  const existing = await tx.order.findFirst({
+    where: { listingId, buyerId, status: 'PENDING' },
+  });
+  if (existing) throw new Error('ORDER_ALREADY_PENDING');
+
+  const order = await tx.order.create({
+    data: {
+      listingId,
+      buyerId,
+      sellerId: listing.sellerId,
+      quantity,
+      amount: centsToAmount(amountCents),
+      currency: listing.currency,
+      paymentMethod,
+      shippingAddress,
+      buyerNote,
+      events: {
+        create: { event: 'created', actorId: buyerId, note },
+      },
+    },
+    include: {
+      listing: true,
+      buyer: { select: { username: true, email: true } },
+      seller: { select: { username: true, email: true } },
+    },
+  });
+
+  await tx.listing.update({
+    where: { id: listingId },
+    data: { stock: { decrement: quantity } },
+  });
+
+  await tx.notification.create({
+    data: {
+      userId: listing.sellerId,
+      type: 'ORDER',
+      title: `New order #${order.orderNumber}`,
+      body: `${order.buyer.username} placed an order for ${listing.title}`,
+      link: `/whale/orders/${order.id}`,
+    },
+  });
+
+  return order;
+}
+
 /**
- * Checkout from cart — creates orders for each unique seller
+ * Checkout from cart — creates one order per cart item so the existing
+ * order model stays aligned with listing detail, reviews, and refunds.
  */
 async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerNote, couponCode }) {
   const { cart, itemCount } = await cartService.getCartSummary(userId);
@@ -12,7 +114,6 @@ async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerN
   const activeItems = cart.items.filter((item) => item.listing.status === 'ACTIVE');
   if (activeItems.length === 0) throw new Error('CART_EMPTY');
 
-  // Validate stock
   for (const item of activeItems) {
     if (item.quantity > item.listing.stock) {
       throw new Error(`INSUFFICIENT_STOCK:${item.listing.title}`);
@@ -22,8 +123,6 @@ async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerN
     }
   }
 
-  // Apply coupon if provided
-  let discount = 0;
   let coupon = null;
   if (couponCode) {
     coupon = await prisma.coupon.findUnique({ where: { code: couponCode.toUpperCase() } });
@@ -31,90 +130,35 @@ async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerN
     if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new Error('COUPON_EXPIRED');
     if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) throw new Error('COUPON_EXHAUSTED');
 
-    const subtotal = activeItems.reduce(
-      (sum, item) => sum + Number(item.listing.price) * item.quantity,
-      0,
-    );
-
+    const subtotal = calculateSubtotalCents(activeItems) / 100;
     if (coupon.minOrderAmount && subtotal < Number(coupon.minOrderAmount)) {
       throw new Error('COUPON_MIN_NOT_MET');
     }
-
-    discount =
-      coupon.discountType === 'percent'
-        ? subtotal * (Number(coupon.discountValue) / 100)
-        : Number(coupon.discountValue);
   }
 
-  // Group items by seller
-  const sellerGroups = {};
-  for (const item of activeItems) {
-    const sid = item.listing.sellerId;
-    if (!sellerGroups[sid]) sellerGroups[sid] = [];
-    sellerGroups[sid].push(item);
-  }
-
+  const subtotalCents = calculateSubtotalCents(activeItems);
+  const totalDiscountCents = calculateDiscountCents(subtotalCents, coupon);
+  const discountByItemId = prorateDiscounts(activeItems, totalDiscountCents);
   const orders = [];
 
   await prisma.$transaction(async (tx) => {
-    for (const [sellerId, items] of Object.entries(sellerGroups)) {
-      const amount = items.reduce(
-        (sum, item) => sum + Number(item.listing.price) * item.quantity,
-        0,
-      );
-
-      // Proportional discount
-      const totalSubtotal = activeItems.reduce(
-        (sum, item) => sum + Number(item.listing.price) * item.quantity,
-        0,
-      );
-      const orderDiscount = totalSubtotal > 0 ? discount * (amount / totalSubtotal) : 0;
-      const finalAmount = Math.max(0, amount - orderDiscount);
-
-      const order = await tx.order.create({
-        data: {
-          listingId: items[0].listing.id,
-          buyerId: userId,
-          sellerId,
-          quantity: items.reduce((sum, item) => sum + item.quantity, 0),
-          amount: finalAmount.toFixed(2),
-          paymentMethod,
-          shippingAddress,
-          buyerNote,
-          events: {
-            create: { event: 'created', actorId: userId, note: 'Order placed from cart' },
-          },
-        },
-        include: {
-          listing: true,
-          buyer: { select: { username: true, email: true } },
-          seller: { select: { username: true, email: true } },
-        },
-      });
-
-      // Decrement stock
-      for (const item of items) {
-        await tx.listing.update({
-          where: { id: item.listing.id },
-          data: { stock: { decrement: item.quantity } },
-        });
-      }
-
-      // Notify seller
-      await tx.notification.create({
-        data: {
-          userId: sellerId,
-          type: 'ORDER',
-          title: `New order #${order.orderNumber}`,
-          body: `${order.buyer.username} placed an order`,
-          link: `/whale/orders/${order.id}`,
-        },
+    for (const item of activeItems) {
+      const itemSubtotalCents = toCents(item.listing.price) * item.quantity;
+      const itemDiscountCents = discountByItemId.get(item.id) || 0;
+      const order = await createPendingOrder(tx, {
+        buyerId: userId,
+        listingId: item.listing.id,
+        quantity: item.quantity,
+        paymentMethod,
+        shippingAddress,
+        buyerNote,
+        amountCents: Math.max(0, itemSubtotalCents - itemDiscountCents),
+        note: 'Order placed from cart',
       });
 
       orders.push(order);
     }
 
-    // Update coupon usage
     if (coupon) {
       await tx.coupon.update({
         where: { id: coupon.id },
@@ -122,11 +166,9 @@ async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerN
       });
     }
 
-    // Clear cart
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
   });
 
-  // Send emails (fire and forget)
   for (const order of orders) {
     emailService.sendOrderPlaced(order).catch(() => {});
   }
@@ -135,7 +177,7 @@ async function checkoutFromCart(userId, { paymentMethod, shippingAddress, buyerN
 }
 
 /**
- * Single-item checkout (existing flow, enhanced with stock/coupon)
+ * Single-item checkout (existing flow, enhanced with stock-aware order creation)
  */
 async function checkoutSingle(userId, listingId, data) {
   const { paymentMethod, shippingAddress, buyerNote, quantity = 1 } = data;
@@ -146,58 +188,29 @@ async function checkoutSingle(userId, listingId, data) {
   if (listing.sellerId === userId) throw new Error('CANNOT_BUY_OWN');
   if (quantity > listing.stock) throw new Error('INSUFFICIENT_STOCK');
 
-  // Check for existing pending order
-  const existing = await prisma.order.findFirst({
-    where: { listingId, buyerId: userId, status: 'PENDING' },
-  });
-  if (existing) throw new Error('ORDER_ALREADY_PENDING');
-
-  const amount = Number(listing.price) * quantity;
-
-  const order = await prisma.$transaction(async (tx) => {
-    const newOrder = await tx.order.create({
-      data: {
-        listingId,
-        buyerId: userId,
-        sellerId: listing.sellerId,
-        quantity,
-        amount: amount.toFixed(2),
-        paymentMethod,
-        shippingAddress,
-        buyerNote,
-        events: {
-          create: { event: 'created', actorId: userId },
-        },
-      },
-      include: {
-        listing: true,
-        buyer: { select: { username: true, email: true } },
-        seller: { select: { username: true, email: true } },
-      },
-    });
-
-    // Decrement stock
-    await tx.listing.update({
-      where: { id: listingId },
-      data: { stock: { decrement: quantity } },
-    });
-
-    // Notify seller
-    await tx.notification.create({
-      data: {
-        userId: listing.sellerId,
-        type: 'ORDER',
-        title: `New order #${newOrder.orderNumber}`,
-        body: `${newOrder.buyer.username} placed an order for ${listing.title}`,
-        link: `/whale/orders/${newOrder.id}`,
-      },
-    });
-
-    return newOrder;
-  });
+  const order = await prisma.$transaction(async (tx) =>
+    createPendingOrder(tx, {
+      buyerId: userId,
+      listingId,
+      quantity,
+      paymentMethod,
+      shippingAddress,
+      buyerNote,
+      amountCents: toCents(listing.price) * quantity,
+      note: 'Order placed',
+    })
+  );
 
   emailService.sendOrderPlaced(order).catch(() => {});
   return order;
 }
 
-module.exports = { checkoutFromCart, checkoutSingle };
+module.exports = {
+  toCents,
+  centsToAmount,
+  calculateSubtotalCents,
+  calculateDiscountCents,
+  prorateDiscounts,
+  checkoutFromCart,
+  checkoutSingle,
+};

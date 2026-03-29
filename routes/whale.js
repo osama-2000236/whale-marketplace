@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const whaleService = require('../services/whaleService');
+const checkoutService = require('../services/checkoutService');
 const {
   requireAuth,
   requireVerified,
@@ -244,9 +245,7 @@ router.post('/checkout/:id', requireAuth, requireVerified, async (req, res, next
       phone: 20,
       buyerNote: 500,
     });
-    const order = await whaleService.createOrder({
-      listingId: req.params.id,
-      buyerId: req.user.id,
+    const order = await checkoutService.checkoutSingle(req.user.id, req.params.id, {
       paymentMethod: data.paymentMethod,
       shippingAddress: { street: data.street, city: data.city, phone: data.phone },
       buyerNote: data.buyerNote,
