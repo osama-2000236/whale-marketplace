@@ -42,6 +42,8 @@ module.exports = [
       globals: {
         window: 'readonly',
         document: 'readonly',
+        FormData: 'readonly',
+        HTMLFormElement: 'readonly',
         navigator: 'readonly',
         localStorage: 'readonly',
         location: 'readonly',
