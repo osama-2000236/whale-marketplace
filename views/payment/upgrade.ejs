@@ -15,16 +15,21 @@
     </div>
 
     <div class="grid-stats" style="grid-template-columns: repeat(3, 1fr)">
-      <% [[1,'$5','upgrade.monthly'],[6,'$25','upgrade.semiannual'],[12,'$45','upgrade.annual']].forEach(([months,price,key]) => { %>
+      <% Object.entries(plans).forEach(([months, plan]) => { %>
       <div class="card text-center" style="padding: 2rem">
-        <h3><%= t(key) %></h3>
+        <h3>
+          <% if (Number(months) === 1) { %><%= t('upgrade.monthly') %><% } %>
+          <% if (Number(months) === 6) { %><%= t('upgrade.semiannual') %><% } %>
+          <% if (Number(months) === 12) { %><%= t('upgrade.annual') %><% } %>
+        </h3>
         <div style="font-size: 2.5rem; font-weight: 800; color: var(--brand); margin: 1rem 0">
-          <%= price %>
+          $<%= plan.price %>
         </div>
         <p class="text-muted text-sm mb-2">
           <%= months %> <%= locale === 'ar' ? 'شهر' : 'months' %>
         </p>
 
+        <% if (providerAvailability.paymob) { %>
         <form method="POST" action="/upgrade/paymob" style="margin-bottom: 0.5rem">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
           <input type="hidden" name="planMonths" value="<%= months %>" />
@@ -32,6 +37,8 @@
             <%= t('upgrade.pay_paymob') %>
           </button>
         </form>
+        <% } %>
+        <% if (providerAvailability.stripe) { %>
         <form method="POST" action="/upgrade/stripe" style="margin-bottom: 0.5rem">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
           <input type="hidden" name="planMonths" value="<%= months %>" />
@@ -39,6 +46,8 @@
             <%= locale === 'ar' ? '💳 فيزا / ماستركارد' : '💳 Visa / Mastercard' %>
           </button>
         </form>
+        <% } %>
+        <% if (providerAvailability.paypal) { %>
         <form method="POST" action="/upgrade/paypal">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
           <input type="hidden" name="planMonths" value="<%= months %>" />
@@ -46,6 +55,12 @@
             <%= t('upgrade.pay_paypal') %>
           </button>
         </form>
+        <% } %>
+        <% if (!providerAvailability.paymob && !providerAvailability.stripe && !providerAvailability.paypal) { %>
+        <p class="text-muted text-sm" style="margin: 0">
+          <%= locale === 'ar' ? 'لا توجد وسائل دفع مفعلة حالياً.' : 'No online payment providers are configured right now.' %>
+        </p>
+        <% } %>
       </div>
       <% }) %>
     </div>

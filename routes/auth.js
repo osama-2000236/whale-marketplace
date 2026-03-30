@@ -19,49 +19,117 @@ function getOAuthViewFlags() {
   };
 }
 
+function getAuthMessage(code) {
+  return (
+    {
+      INVALID_USERNAME: 'Username must be 3-30 characters using letters, numbers, or underscore.',
+      INVALID_EMAIL: 'Please enter a valid email address.',
+      WEAK_PASSWORD: 'Password must be at least 8 characters long.',
+      PASSWORD_MISMATCH: 'Passwords do not match.',
+      EMAIL_TAKEN: 'That email is already registered.',
+      USERNAME_TAKEN: 'That username is already taken.',
+      USER_NOT_FOUND: 'We could not find an account with those credentials.',
+      WRONG_PASSWORD: 'The password you entered is incorrect.',
+      USER_BANNED: 'This account is suspended.',
+      OAUTH_ONLY: 'Please sign in with Google or set a password first.',
+      OAUTH_EMAIL_REQUIRED: 'We could not read an email address from the provider.',
+      ALREADY_VERIFIED: 'Your email address is already verified.',
+      INVALID_TOKEN: 'This verification link is invalid.',
+      TOKEN_USED: 'This verification link has already been used.',
+      TOKEN_EXPIRED: 'This verification link has expired. Please request a new one.',
+      NO_PENDING_EMAIL: 'There is no pending email change for this account.',
+      CURRENT_PASSWORD_REQUIRED: 'Please enter your current password.',
+      CURRENT_PASSWORD_INVALID: 'Your current password is incorrect.',
+      PASSWORD_SETUP_REQUIRED:
+        'Set a password from the email we just sent before changing account settings.',
+    }[code] || code || 'Something went wrong.'
+  );
+}
+
+function withQueryLocation(path, nextUrl) {
+  const safeNext = safeRedirect(nextUrl, '/whale');
+  return safeNext === '/whale' ? path : `${path}?next=${encodeURIComponent(safeNext)}`;
+}
+
+function storeOAuthNext(req) {
+  req.session.oauthNext = safeRedirect(req.query.next, '/whale');
+}
+
+function completeOAuth(strategy) {
+  return (req, res, next) => {
+    passport.authenticate(strategy, (err, user, info) => {
+      if (err) return next(err);
+
+      if (!user) {
+        req.session.flash = {
+          type: 'danger',
+          message: getAuthMessage(info?.message || 'OAUTH_EMAIL_REQUIRED'),
+        };
+        const fallbackNext = req.session.oauthNext || '/whale';
+        delete req.session.oauthNext;
+        return res.redirect(withQueryLocation('/auth/login', fallbackNext));
+      }
+
+      req.logIn(user, (loginErr) => {
+        if (loginErr) return next(loginErr);
+        const nextUrl = safeRedirect(req.session.oauthNext, '/whale');
+        delete req.session.oauthNext;
+        req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
+        return res.redirect(nextUrl);
+      });
+    })(req, res, next);
+  };
+}
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'test' ? 10_000 : 20,
   message: 'Too many attempts. Please try again later.',
 });
 
-// Login page
 router.get('/login', (req, res) => {
   if (req.user) return res.redirect('/whale');
+  const nextUrl = safeRedirect(req.query.next, '/whale');
   res.render('auth/login', {
     title: res.locals.t('auth.login'),
-    next: req.query.next || '/whale',
+    next: nextUrl,
     ...getOAuthViewFlags(),
   });
 });
 
-// Login handler
 router.post('/login', authLimiter, (req, res, next) => {
   const nextUrl = safeRedirect(req.body.next, '/whale');
 
   passport.authenticate('local', (err, user, info) => {
     if (err) return next(err);
     if (!user) {
-      const errorKey = 'auth.error.' + (info?.message || 'USER_NOT_FOUND');
-      req.session.flash = { type: 'danger', message: res.locals.t(errorKey) };
-      return res.redirect('/auth/login');
+      req.session.flash = {
+        type: 'danger',
+        message: getAuthMessage(info?.message || 'USER_NOT_FOUND'),
+      };
+      return res.redirect(withQueryLocation('/auth/login', nextUrl));
     }
-    req.logIn(user, (err) => {
-      if (err) return next(err);
+    req.logIn(user, (loginErr) => {
+      if (loginErr) return next(loginErr);
       req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
-      res.redirect(nextUrl);
+      return res.redirect(nextUrl);
     });
   })(req, res, next);
 });
 
-// Register page
 router.get('/register', (req, res) => {
   if (req.user) return res.redirect('/whale');
-  res.render('auth/register', { title: res.locals.t('auth.register'), ...getOAuthViewFlags() });
+  const nextUrl = safeRedirect(req.query.next, '/whale');
+  res.render('auth/register', {
+    title: res.locals.t('auth.register'),
+    next: nextUrl,
+    ...getOAuthViewFlags(),
+  });
 });
 
-// Register handler
 router.post('/register', authLimiter, async (req, res, next) => {
+  const nextUrl = safeRedirect(req.body.next, '/whale');
+
   try {
     const data = sanitizeBody(req.body, {
       username: 30,
@@ -72,22 +140,14 @@ router.post('/register', authLimiter, async (req, res, next) => {
 
     const user = await userService.register(data);
 
-    req.logIn(user, (err) => {
-      if (err) return next(err);
+    req.logIn(user, (loginErr) => {
+      if (loginErr) return next(loginErr);
       req.session.flash = { type: 'success', message: res.locals.t('flash.register_success') };
-      res.redirect('/whale');
+      return res.redirect(nextUrl);
     });
   } catch (err) {
-    const messages = {
-      INVALID_USERNAME: 'Username must be 3-30 alphanumeric characters',
-      INVALID_EMAIL: 'Invalid email address',
-      WEAK_PASSWORD: 'Password must be at least 8 characters',
-      PASSWORD_MISMATCH: 'Passwords do not match',
-      EMAIL_TAKEN: 'Email already registered',
-      USERNAME_TAKEN: 'Username already taken',
-    };
-    req.session.flash = { type: 'danger', message: messages[err.message] || err.message };
-    res.redirect('/auth/register');
+    req.session.flash = { type: 'danger', message: getAuthMessage(err.message) };
+    return res.redirect(withQueryLocation('/auth/register', nextUrl));
   }
 });
 
@@ -104,14 +164,37 @@ router.get('/verify-email', async (req, res) => {
       type: 'success',
       message: 'Your email has been verified. You can continue safely.',
     };
-    return res.redirect('/auth/login');
-  } catch {
+  } catch (err) {
     req.session.flash = {
       type: 'danger',
-      message: 'Verification link is invalid or expired. Please request a new one.',
+      message: getAuthMessage(err.message),
     };
-    return res.redirect('/auth/login');
   }
+
+  return res.redirect('/auth/login');
+});
+
+router.get('/verify-email-change', async (req, res) => {
+  const token = req.query.token;
+  if (!token) {
+    req.session.flash = { type: 'danger', message: 'Missing email change token.' };
+    return res.redirect('/profile');
+  }
+
+  try {
+    await authSecurityService.verifyEmailChange(token);
+    req.session.flash = {
+      type: 'success',
+      message: 'Your new email address has been verified and activated.',
+    };
+  } catch (err) {
+    req.session.flash = {
+      type: 'danger',
+      message: getAuthMessage(err.message),
+    };
+  }
+
+  return res.redirect('/profile');
 });
 
 router.post('/resend-verification', async (req, res) => {
@@ -120,18 +203,27 @@ router.post('/resend-verification', async (req, res) => {
     return res.redirect('/auth/login');
   }
 
+  if (req.user.emailVerified || req.user.isVerified) {
+    req.session.flash = {
+      type: 'info',
+      message: 'Your email address is already verified.',
+    };
+    return res.redirect('/profile');
+  }
+
   try {
     await authSecurityService.sendVerificationEmail(req.user.id);
     req.session.flash = {
       type: 'success',
       message: 'Verification email sent. Please check your inbox.',
     };
-  } catch {
+  } catch (err) {
     req.session.flash = {
       type: 'danger',
-      message: 'Unable to send verification email right now.',
+      message: getAuthMessage(err.message),
     };
   }
+
   return res.redirect('/profile');
 });
 
@@ -157,7 +249,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
   const data = sanitizeBody(req.body, { token: 512, password: 128, confirmPassword: 128 });
   if (!data.password || data.password !== data.confirmPassword) {
     req.session.flash = { type: 'danger', message: 'Passwords do not match.' };
-    return res.redirect('/auth/reset-password?token=' + encodeURIComponent(data.token || ''));
+    return res.redirect(`/auth/reset-password?token=${encodeURIComponent(data.token || '')}`);
   }
 
   try {
@@ -165,58 +257,37 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     req.session.flash = { type: 'success', message: 'Password updated. Please log in.' };
     return res.redirect('/auth/login');
   } catch (err) {
-    const map = {
-      TOKEN_INVALID_OR_EXPIRED: 'Reset link is invalid or expired.',
-      WEAK_PASSWORD: 'Password must be at least 8 characters.',
-    };
-    req.session.flash = { type: 'danger', message: map[err.message] || 'Unable to reset password.' };
-    return res.redirect('/auth/reset-password?token=' + encodeURIComponent(data.token || ''));
+    req.session.flash = { type: 'danger', message: getAuthMessage(err.message) };
+    return res.redirect(`/auth/reset-password?token=${encodeURIComponent(data.token || '')}`);
   }
 });
 
-// Google OAuth
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', (req, res, next) => {
+  storeOAuthNext(req);
+  return passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
 
-router.get(
-  '/google/callback',
-  passport.authenticate('google', { failureRedirect: '/auth/login' }),
-  (req, res) => {
-    req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
-    res.redirect('/whale');
-  }
-);
+router.get('/google/callback', completeOAuth('google'));
 
-// Facebook OAuth
-router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }));
+router.get('/facebook', (req, res, next) => {
+  storeOAuthNext(req);
+  return passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
+});
 
-router.get(
-  '/facebook/callback',
-  passport.authenticate('facebook', { failureRedirect: '/auth/login' }),
-  (req, res) => {
-    req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
-    res.redirect('/whale');
-  }
-);
+router.get('/facebook/callback', completeOAuth('facebook'));
 
-// Apple Sign In
-router.get('/apple', passport.authenticate('apple'));
+router.get('/apple', (req, res, next) => {
+  storeOAuthNext(req);
+  return passport.authenticate('apple')(req, res, next);
+});
 
-router.post(
-  '/apple/callback',
-  passport.authenticate('apple', { failureRedirect: '/auth/login' }),
-  (req, res) => {
-    req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
-    res.redirect('/whale');
-  }
-);
+router.post('/apple/callback', completeOAuth('apple'));
 
-// Admin 2FA verification page
 router.get('/2fa', (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') return res.redirect('/');
   res.render('auth/2fa', { title: res.locals.t('auth.two_factor') });
 });
 
-// Admin 2FA verification handler
 router.post('/2fa', authLimiter, (req, res) => {
   if (!req.user || req.user.role !== 'ADMIN') return res.redirect('/');
   const { code } = req.body;
@@ -230,10 +301,9 @@ router.post('/2fa', authLimiter, (req, res) => {
   req.session.admin2FAVerified = true;
   req.session.admin2faVerifiedAt = new Date().toISOString();
   req.session.flash = { type: 'success', message: res.locals.t('flash.2fa_verified') };
-  res.redirect('/admin');
+  return res.redirect('/admin');
 });
 
-// Logout
 router.post('/logout', (req, res) => {
   req.logout(() => {
     req.session.destroy(() => {

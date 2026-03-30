@@ -1,4 +1,7 @@
 const prisma = require('../lib/prisma');
+const fallbackStore = require('../lib/fallbackStore');
+
+const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 const ADMIN_SCOPE_PERMISSIONS = {
   SUPER_ADMIN: [
@@ -35,6 +38,43 @@ function hasAdminPermission(user, permission) {
 const optionalAuth = (req, res, next) => {
   res.locals.user = req.user || null;
   next();
+};
+
+const guardActiveSessionUser = (req, res, next) => {
+  const hasSessionIdentity = Boolean(req.session?.passport?.user);
+  if (!hasSessionIdentity) return next();
+
+  if (req.user && !req.user.isBanned && !req.user.deletedAt) {
+    return next();
+  }
+
+  const message =
+    req.user?.isBanned
+      ? 'Your account is currently suspended.'
+      : 'Your session is no longer valid. Please log in again.';
+  const wantsJson = req.headers.accept?.includes('application/json');
+
+  const finish = () => {
+    if (wantsJson) {
+      return res.status(403).json({
+        ok: false,
+        error: {
+          code: req.user?.isBanned ? 'USER_BANNED' : 'SESSION_INVALID',
+          message,
+        },
+      });
+    }
+
+    if (req.session) {
+      req.session.flash = { type: 'warning', message };
+    }
+    return res.redirect('/auth/login');
+  };
+
+  return req.logout(() => {
+    if (!req.session?.destroy) return finish();
+    req.session.destroy(() => finish());
+  });
 };
 
 const requireAuth = (req, res, next) => {
@@ -157,7 +197,9 @@ const requireVerified = (req, res, next) => {
  */
 const requireOrderParty = async (req, res, next) => {
   try {
-    const order = await prisma.order.findUnique({ where: { id: req.params.id } });
+    const order = hasDatabase
+      ? await prisma.order.findUnique({ where: { id: req.params.id } })
+      : fallbackStore.findOrderById(req.params.id);
     if (!order) return res.status(404).render('404', { title: '404' });
 
     const isParty = req.user.id === order.buyerId || req.user.id === order.sellerId;
@@ -182,7 +224,11 @@ const requireOrderParty = async (req, res, next) => {
  * Requires that the current user is the seller of the order
  */
 const requireSeller = async (req, res, next) => {
-  const order = req.order || (await prisma.order.findUnique({ where: { id: req.params.id } }));
+  const order =
+    req.order ||
+    (hasDatabase
+      ? await prisma.order.findUnique({ where: { id: req.params.id } })
+      : fallbackStore.findOrderById(req.params.id));
   if (!order) return res.status(404).render('404', { title: '404' });
 
   if (req.user.id !== order.sellerId && req.user.role !== 'ADMIN') {
@@ -200,7 +246,11 @@ const requireSeller = async (req, res, next) => {
  * Requires that the current user is the buyer of the order
  */
 const requireBuyer = async (req, res, next) => {
-  const order = req.order || (await prisma.order.findUnique({ where: { id: req.params.id } }));
+  const order =
+    req.order ||
+    (hasDatabase
+      ? await prisma.order.findUnique({ where: { id: req.params.id } })
+      : fallbackStore.findOrderById(req.params.id));
   if (!order) return res.status(404).render('404', { title: '404' });
 
   if (req.user.id !== order.buyerId && req.user.role !== 'ADMIN') {
@@ -219,7 +269,9 @@ const requireBuyer = async (req, res, next) => {
  */
 const requireOwner = async (req, res, next) => {
   try {
-    const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
+    const listing = hasDatabase
+      ? await prisma.listing.findUnique({ where: { id: req.params.id } })
+      : fallbackStore.findListingBySlugOrId(req.params.id);
     if (!listing) return res.status(404).render('404', { title: '404' });
 
     if (req.user.id !== listing.sellerId && req.user.role !== 'ADMIN') {
@@ -237,6 +289,7 @@ const requireOwner = async (req, res, next) => {
 };
 
 module.exports = {
+  guardActiveSessionUser,
   optionalAuth,
   requireAuth,
   requireAdmin,

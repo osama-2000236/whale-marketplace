@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 const passport = require('./lib/passport');
 const { localeMiddleware } = require('./middleware/locale');
 const { subscriptionMiddleware } = require('./middleware/subscription');
-const { optionalAuth } = require('./middleware/auth');
+const { optionalAuth, guardActiveSessionUser } = require('./middleware/auth');
 const path = require('path');
 
 const app = express();
@@ -95,6 +95,7 @@ app.use((req, res, next) => {
 });
 
 // 8. Auth (populate res.locals.user)
+app.use(guardActiveSessionUser);
 app.use(optionalAuth);
 
 // 9. Subscription status
@@ -151,7 +152,7 @@ app.use('/profile', require('./routes/profile'));
 app.use('/notifications', require('./routes/notifications'));
 app.use('/cart', require('./routes/cart'));
 app.use('/', require('./routes/payment'));
-app.use('/', require('./routes/checkout'));
+app.use('/checkout', require('./routes/checkout'));
 app.use('/webhooks', require('./routes/webhooks'));
 app.use('/admin', require('./routes/admin'));
 

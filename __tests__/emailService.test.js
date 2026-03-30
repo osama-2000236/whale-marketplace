@@ -116,4 +116,33 @@ describe('emailService', () => {
       emailService.sendPasswordReset({ email: 'x@test.com', username: 'x' }, 'tok')
     ).resolves.toBeUndefined();
   });
+
+  test('sendOrderConfirmed sends to buyer when buyer is present', async () => {
+    await emailService.sendOrderConfirmed({
+      orderNumber: 'O-9',
+      buyer: { email: 'buyer@test.com' },
+    });
+    expect(mailer.sendMail).toHaveBeenCalledTimes(1);
+    expect(mailer.sendMail.mock.calls[0][0].to).toBe('buyer@test.com');
+    expect(mailer.sendMail.mock.calls[0][0].subject).toContain('O-9');
+  });
+
+  test('sendEmailChangeVerification sends verification link to new email', async () => {
+    await emailService.sendEmailChangeVerification(
+      { username: 'osama' },
+      'new@test.com',
+      'changetoken789'
+    );
+    expect(mailer.sendMail).toHaveBeenCalledTimes(1);
+    expect(mailer.sendMail.mock.calls[0][0].to).toBe('new@test.com');
+    const templatePayload = mailer.emailTemplate.mock.calls[0][0];
+    expect(templatePayload.bodyEn).toContain('changetoken789');
+  });
+
+  test('sendEmailChangeVerification swallows mail errors', async () => {
+    mailer.sendMail.mockImplementation(() => Promise.reject(new Error('smtp down')));
+    await expect(
+      emailService.sendEmailChangeVerification({ username: 'x' }, 'new@test.com', 'tok')
+    ).resolves.toBeUndefined();
+  });
 });

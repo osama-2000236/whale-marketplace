@@ -45,6 +45,12 @@ describe('playwright.config', () => {
         reuseExistingServer: true,
       })
     );
+    expect(config.webServer.env).toEqual(
+      expect.objectContaining({
+        GOOGLE_CLIENT_ID: 'playwright-google-client',
+        GOOGLE_CLIENT_SECRET: 'playwright-google-secret',
+      })
+    );
   });
 
   test('supports PLAYWRIGHT_BASE_URL and BASE_URL overrides without a local webServer', () => {
@@ -58,17 +64,17 @@ describe('playwright.config', () => {
     );
   });
 
-  test('restores the full compatibility matrix', () => {
+  test('exposes CLI-friendly project names', () => {
     const config = loadConfig();
     const names = config.projects.map((project) => project.name);
 
     expect(names).toEqual([
-      'Desktop Chrome',
-      'Desktop Firefox',
-      'Desktop Safari',
-      'Mobile Chrome',
-      'Mobile Safari',
-      'Tablet',
+      'chromium',
+      'firefox',
+      'webkit',
+      'mobile-chrome',
+      'mobile-safari',
+      'tablet',
     ]);
   });
 });

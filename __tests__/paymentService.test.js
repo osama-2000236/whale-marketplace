@@ -1,19 +1,51 @@
 const crypto = require('crypto');
 
-jest.mock('../lib/prisma', () => ({
-  payment: {
-    create: jest.fn(),
-    update: jest.fn(),
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
-    updateMany: jest.fn(),
-  },
-  subscription: {
-    update: jest.fn(),
-    findUnique: jest.fn(),
-  },
-  $transaction: jest.fn(),
+jest.mock('axios', () => ({
+  post: jest.fn(),
 }));
+
+jest.mock('../lib/prisma', () => {
+  const prisma = {
+    payment: {
+      create: jest.fn(),
+      update: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    subscription: {
+      update: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    order: {
+      findMany: jest.fn(),
+      update: jest.fn(),
+    },
+    listing: {
+      update: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    cart: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    cartItem: {
+      deleteMany: jest.fn(),
+      create: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
+    },
+  };
+
+  prisma.$transaction = jest.fn((input) => {
+    if (typeof input === 'function') {
+      return input(prisma);
+    }
+    return Promise.all(input);
+  });
+
+  return prisma;
+});
 
 const prisma = require('../lib/prisma');
 const paymentService = require('../services/paymentService');
@@ -30,85 +62,207 @@ describe('paymentService', () => {
     process.env = envBackup;
   });
 
-  test('createPaymobSession returns config warning when Paymob is not configured', async () => {
+  test('getProviderAvailability reflects configured providers', () => {
+    process.env.DATABASE_URL = 'postgresql://test/db';
+    process.env.PAYMOB_API_KEY = 'key';
+    process.env.PAYMOB_INTEGRATION_ID = 'integration';
+    process.env.PAYMOB_IFRAME_ID = 'iframe';
+    process.env.PAYPAL_CLIENT_ID = 'paypal-id';
+    process.env.PAYPAL_CLIENT_SECRET = 'paypal-secret';
+    process.env.STRIPE_SECRET_KEY = 'stripe-secret';
+
+    expect(paymentService.getProviderAvailability()).toEqual({
+      paymob: true,
+      paypal: true,
+      stripe: true,
+    });
+  });
+
+  test('createPaymobSession throws when Paymob is not configured', async () => {
     delete process.env.PAYMOB_API_KEY;
-    prisma.payment.create.mockResolvedValue({ id: 'pay-1' });
+    delete process.env.PAYMOB_INTEGRATION_ID;
+    delete process.env.PAYMOB_IFRAME_ID;
 
-    const result = await paymentService.createPaymobSession('user-1', 6);
-
-    expect(prisma.payment.create).toHaveBeenCalled();
-    expect(result).toEqual({
-      iframeUrl: null,
-      paymentId: 'pay-1',
-      error: 'Paymob not configured',
-    });
+    await expect(paymentService.createPaymobSession('user-1', 6)).rejects.toThrow(
+      'PAYMENT_PROVIDER_DISABLED',
+    );
+    expect(prisma.payment.create).not.toHaveBeenCalled();
   });
 
-  test('createPaypalOrder returns config warning when PayPal is not configured', async () => {
-    delete process.env.PAYPAL_CLIENT_ID;
-    delete process.env.PAYPAL_CLIENT_SECRET;
-    prisma.payment.create.mockResolvedValue({ id: 'pay-2' });
-
-    const result = await paymentService.createPaypalOrder('user-1', 12);
-
-    expect(result).toEqual({
-      approvalUrl: null,
-      orderId: 'pay-2',
-      error: 'PayPal not configured',
-    });
-  });
-
-  test('createStripeSession returns config warning when Stripe is not configured', async () => {
+  test('createOrderPaymentSession throws when the hosted provider is disabled', async () => {
     delete process.env.STRIPE_SECRET_KEY;
-    prisma.payment.create.mockResolvedValue({ id: 'pay-3' });
 
-    const result = await paymentService.createStripeSession('user-1', 1);
+    await expect(
+      paymentService.createOrderPaymentSession('stripe', {
+        userId: 'user-1',
+        orderIds: ['order-1'],
+        amount: '25.00',
+        currency: 'USD',
+        flow: 'single',
+        listingId: 'listing-1',
+      }),
+    ).rejects.toThrow('PAYMENT_PROVIDER_DISABLED');
 
-    expect(result).toEqual({
-      sessionUrl: null,
-      paymentId: 'pay-3',
-      error: 'Stripe not configured',
-    });
+    expect(prisma.payment.create).not.toHaveBeenCalled();
   });
 
-  test('activateSubscription updates subscription and marks pending payments completed', async () => {
-    prisma.subscription.update.mockResolvedValue({ userId: 'user-1' });
-    prisma.payment.updateMany.mockResolvedValue({ count: 2 });
-    prisma.$transaction.mockResolvedValue([{}, {}]);
+  test('settlePaymentSuccess completes only the targeted subscription payment', async () => {
+    prisma.payment.findUnique
+      .mockResolvedValueOnce({
+        id: 'pay-sub-1',
+        userId: 'user-1',
+        purpose: 'SUBSCRIPTION',
+        planMonths: 6,
+        status: 'PENDING',
+      })
+      .mockResolvedValueOnce({
+        id: 'pay-sub-1',
+        userId: 'user-1',
+        purpose: 'SUBSCRIPTION',
+        status: 'COMPLETED',
+      });
     prisma.subscription.findUnique.mockResolvedValue({
       userId: 'user-1',
-      plan: 'pro',
+      plan: 'free',
+      paidUntil: null,
     });
+    prisma.subscription.update.mockResolvedValue({ userId: 'user-1', plan: 'pro' });
+    prisma.payment.update.mockResolvedValue({ id: 'pay-sub-1', status: 'COMPLETED' });
 
-    const result = await paymentService.activateSubscription('user-1', 6);
+    const result = await paymentService.settlePaymentSuccess('pay-sub-1');
 
-    expect(prisma.subscription.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { userId: 'user-1' },
-        data: expect.objectContaining({
-          plan: 'pro',
-          autoRenew: false,
-        }),
-      })
-    );
-    expect(prisma.payment.updateMany).toHaveBeenCalledWith({
-      where: { userId: 'user-1', status: 'PENDING' },
+    expect(prisma.subscription.update).toHaveBeenCalledWith({
+      where: { userId: 'user-1' },
+      data: expect.objectContaining({
+        plan: 'pro',
+        paidUntil: expect.any(Date),
+        autoRenew: false,
+      }),
+    });
+    expect(prisma.payment.update).toHaveBeenCalledWith({
+      where: { id: 'pay-sub-1' },
       data: { status: 'COMPLETED' },
     });
-    expect(result).toEqual({ userId: 'user-1', plan: 'pro' });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'pay-sub-1',
+        status: 'COMPLETED',
+      }),
+    );
   });
 
-  test('verifyPaymobWebhook validates HMAC and activates subscription on success', async () => {
+  test('settlePaymentFailure cancels targeted order payments, restocks inventory, and restores the cart', async () => {
+    prisma.payment.findUnique
+      .mockResolvedValueOnce({
+        id: 'pay-order-1',
+        userId: 'buyer-1',
+        purpose: 'ORDER',
+        status: 'PENDING',
+        metadata: {
+          orderIds: ['order-1'],
+          flow: 'cart',
+          cartSnapshot: {
+            items: [{ listingId: 'listing-1', quantity: 2 }],
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        id: 'pay-order-1',
+        userId: 'buyer-1',
+        purpose: 'ORDER',
+        status: 'FAILED',
+      });
+    prisma.order.findMany.mockResolvedValue([
+      {
+        id: 'order-1',
+        listingId: 'listing-1',
+        quantity: 2,
+        status: 'PENDING',
+        paymentStatus: 'pending',
+        cancelReason: null,
+      },
+    ]);
+    prisma.payment.update.mockResolvedValue({ id: 'pay-order-1', status: 'FAILED' });
+    prisma.order.update.mockResolvedValue({ id: 'order-1', status: 'CANCELLED' });
+    prisma.listing.update.mockResolvedValue({});
+    prisma.cart.findUnique.mockResolvedValue({ id: 'cart-1', userId: 'buyer-1' });
+    prisma.cartItem.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.listing.findUnique.mockResolvedValue({
+      id: 'listing-1',
+      status: 'ACTIVE',
+      stock: 5,
+    });
+    prisma.cartItem.create.mockResolvedValue({});
+
+    const result = await paymentService.settlePaymentFailure('pay-order-1', {
+      reason: 'USER_CANCELLED',
+    });
+
+    expect(prisma.payment.update).toHaveBeenCalledWith({
+      where: { id: 'pay-order-1' },
+      data: expect.objectContaining({
+        status: 'FAILED',
+        metadata: expect.objectContaining({
+          failureReason: 'USER_CANCELLED',
+        }),
+      }),
+    });
+    expect(prisma.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: expect.objectContaining({
+        status: 'CANCELLED',
+        paymentStatus: paymentService.ORDER_PAYMENT_STATUS.failed,
+        cancelReason: 'Payment failed or was cancelled.',
+      }),
+    });
+    expect(prisma.listing.update).toHaveBeenNthCalledWith(1, {
+      where: { id: 'listing-1' },
+      data: { stock: { increment: 2 } },
+    });
+    expect(prisma.cartItem.deleteMany).toHaveBeenCalledWith({ where: { cartId: 'cart-1' } });
+    expect(prisma.cartItem.create).toHaveBeenCalledWith({
+      data: {
+        cartId: 'cart-1',
+        listingId: 'listing-1',
+        quantity: 2,
+      },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'pay-order-1',
+        status: 'FAILED',
+      }),
+    );
+  });
+
+  test('verifyPaymobWebhook validates HMAC and settles the targeted payment', async () => {
     process.env.PAYMOB_HMAC_SECRET = 'secret-hmac';
     prisma.payment.findFirst.mockResolvedValue({
       id: 'pay-4',
-      userId: 'user-1',
-      planMonths: 6,
+      provider: 'PAYMOB',
+      providerPaymentId: '9999',
     });
-    prisma.subscription.update.mockResolvedValue({ userId: 'user-1' });
-    prisma.payment.updateMany.mockResolvedValue({ count: 1 });
-    prisma.$transaction.mockResolvedValue([{}, {}]);
-    prisma.subscription.findUnique.mockResolvedValue({ userId: 'user-1', plan: 'pro' });
+    prisma.payment.findUnique
+      .mockResolvedValueOnce({
+        id: 'pay-4',
+        userId: 'user-1',
+        purpose: 'SUBSCRIPTION',
+        planMonths: 6,
+        status: 'PENDING',
+      })
+      .mockResolvedValueOnce({
+        id: 'pay-4',
+        userId: 'user-1',
+        purpose: 'SUBSCRIPTION',
+        status: 'COMPLETED',
+      });
+    prisma.subscription.findUnique.mockResolvedValue({
+      userId: 'user-1',
+      plan: 'free',
+      paidUntil: null,
+    });
+    prisma.subscription.update.mockResolvedValue({ userId: 'user-1', plan: 'pro' });
+    prisma.payment.update.mockResolvedValue({ id: 'pay-4', status: 'COMPLETED' });
 
     const webhook = {
       obj: {
@@ -163,9 +317,32 @@ describe('paymentService', () => {
     const result = await paymentService.verifyPaymobWebhook(webhook, hmac);
 
     expect(prisma.payment.findFirst).toHaveBeenCalledWith({
-      where: { providerPaymentId: '9999', provider: 'PAYMOB' },
+      where: { provider: 'PAYMOB', providerPaymentId: '9999' },
     });
     expect(prisma.subscription.update).toHaveBeenCalled();
     expect(result).toEqual({ success: true });
+  });
+
+  test('redirect helpers stay purpose-aware for order payments', () => {
+    expect(
+      paymentService.getOrderRedirectPath({
+        purpose: 'ORDER',
+        metadata: { flow: 'single', orderIds: ['order-1'] },
+      }),
+    ).toBe('/whale/orders/order-1');
+
+    expect(
+      paymentService.getCancellationRedirectPath({
+        purpose: 'ORDER',
+        metadata: { flow: 'cart', orderIds: ['order-1', 'order-2'] },
+      }),
+    ).toBe('/cart');
+
+    expect(
+      paymentService.getCancellationRedirectPath({
+        purpose: 'SUBSCRIPTION',
+        metadata: {},
+      }),
+    ).toBe('/upgrade');
   });
 });

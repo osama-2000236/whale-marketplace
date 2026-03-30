@@ -23,6 +23,13 @@ test.describe('Security auth guards', () => {
     await expect(page).toHaveURL(/\/auth\/login\?next=%2Fwhale%2Forders$/);
   });
 
+  test('/checkout redirects unauthenticated users to /auth/login', async ({ page }) => {
+    // Intent: verify the cart checkout route preserves its auth guard for anonymous visitors.
+    await page.goto('/checkout');
+
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Fcheckout$/);
+  });
+
   test('/admin blocks authenticated non-admin users', async ({ page }) => {
     // Intent: verify the live admin area remains protected even after a normal user signs in successfully.
     await registerTestUser(page);

@@ -140,7 +140,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
+      - name: Run Playwright tests (chromium project)
         run: npx playwright test --project=chromium
         env:
           PORT: 3000

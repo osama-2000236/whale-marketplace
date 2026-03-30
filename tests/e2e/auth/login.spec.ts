@@ -15,6 +15,15 @@ test.describe('Auth login', () => {
     await expect(page.locator('input[name="password"]')).toBeVisible();
   });
 
+  test('Google sign-in button is visible when Google OAuth is configured', async ({ page }) => {
+    // Intent: verify the local test server exposes the Google sign-in CTA and local icon asset when Google OAuth env vars are present.
+    await page.goto('/auth/login?next=/checkout');
+
+    const googleButton = page.locator('a[href="/auth/google?next=%2Fcheckout"]').first();
+    await expect(googleButton).toBeVisible();
+    await expect(googleButton.locator('img[src="/icons/google.svg"]')).toBeVisible();
+  });
+
   test('Empty submission shows validation errors', async ({ page }) => {
     // Intent: verify the browser-native required validation blocks empty login submits on the production form.
     await page.goto('/auth/login');

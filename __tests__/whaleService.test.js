@@ -40,7 +40,6 @@ jest.mock('../lib/prisma', () => ({
 }));
 
 jest.mock('../services/emailService', () => ({
-  sendOrderPlaced: jest.fn(() => Promise.resolve()),
   sendOrderConfirmed: jest.fn(() => Promise.resolve()),
   sendOrderShipped: jest.fn(() => Promise.resolve()),
   sendOrderCompleted: jest.fn(() => Promise.resolve()),

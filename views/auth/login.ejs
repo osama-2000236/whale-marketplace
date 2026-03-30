@@ -10,19 +10,14 @@
       <% if (hasGoogle || hasFacebook || hasApple) { %>
       <div class="oauth-buttons">
         <% if (hasGoogle) { %>
-        <a href="/auth/google" class="btn btn-secondary btn-block">
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt=""
-            width="18"
-            height="18"
-          />
+        <a href="/auth/google?next=<%= encodeURIComponent(next || '/whale') %>" class="btn btn-secondary btn-block">
+          <img src="/icons/google.svg" alt="" width="18" height="18" />
           <%= t('auth.google') %>
         </a>
         <% } %>
         <% if (hasFacebook) { %>
         <a
-          href="/auth/facebook"
+          href="/auth/facebook?next=<%= encodeURIComponent(next || '/whale') %>"
           class="btn btn-secondary btn-block"
           style="background: #1877f2; color: #fff; border-color: #1877f2"
         >
@@ -31,7 +26,7 @@
         <% } %>
         <% if (hasApple) { %>
         <a
-          href="/auth/apple"
+          href="/auth/apple?next=<%= encodeURIComponent(next || '/whale') %>"
           class="btn btn-secondary btn-block"
           style="background: #000; color: #fff; border-color: #000"
         >
@@ -73,7 +68,7 @@
       </div>
       <div class="auth-footer">
         <%= t('auth.no_account') %>
-        <a href="/auth/register"><%= t('auth.register') %></a>
+        <a href="/auth/register?next=<%= encodeURIComponent(next || '/whale') %>"><%= t('auth.register') %></a>
       </div>
     </div>
   </div>

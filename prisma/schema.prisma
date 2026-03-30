@@ -12,6 +12,7 @@ model User {
   username      String         @unique
   slug          String         @unique
   email         String         @unique
+  pendingEmail  String?        @unique
   emailVerified Boolean        @default(false)
   passwordHash  String?
   googleId      String?        @unique
@@ -222,6 +223,7 @@ model Notification {
 model Payment {
   id                String          @id @default(cuid())
   userId            String
+  purpose           PaymentPurpose  @default(SUBSCRIPTION)
   provider          PaymentProvider
   providerPaymentId String?
   idempotencyKey    String          @unique
@@ -287,6 +289,11 @@ enum PaymentProvider {
   MANUAL
 }
 
+enum PaymentPurpose {
+  SUBSCRIPTION
+  ORDER
+}
+
 enum PaymentStatus {
   PENDING
   COMPLETED
@@ -302,6 +309,7 @@ enum AdminScope {
 
 enum AuthTokenType {
   EMAIL_VERIFICATION
+  EMAIL_CHANGE
   PASSWORD_RESET
 }
 
