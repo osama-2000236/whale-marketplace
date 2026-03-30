@@ -22,17 +22,16 @@
         <%= locale === 'ar' ? 'أو' : 'or' %>
       </div>
 
-      <button
-        type="button"
-        class="auth-local-toggle"
-        id="show-local-login"
-        aria-expanded="false"
-        aria-controls="local-login-form"
-      >
-        <%= locale === 'ar' ? 'تسجيل الدخول بكلمة المرور' : 'Sign in with password instead' %>
-      </button>
+      <details class="auth-local-disclosure">
+        <summary
+          class="auth-local-toggle"
+          id="show-local-login"
+          aria-controls="local-login-form"
+        >
+          <%= locale === 'ar' ? 'تسجيل الدخول بكلمة المرور' : 'Sign in with password instead' %>
+        </summary>
 
-      <div class="auth-local-form" id="local-login-form" style="display:none">
+      <div class="auth-local-form" id="local-login-form">
       <% } %>
 
         <form method="POST" action="/auth/login">
@@ -67,6 +66,7 @@
 
       <% if (hasGoogle) { %>
       </div><!-- /#local-login-form -->
+      </details>
       <% } %>
 
       <div class="auth-footer">
@@ -76,23 +76,6 @@
     </div>
   </div>
 </main>
-
-<script>
-  (function () {
-    var btn = document.getElementById('show-local-login');
-    var form = document.getElementById('local-login-form');
-    if (!btn || !form) return;
-    btn.addEventListener('click', function () {
-      var isHidden = form.style.display === 'none';
-      form.style.display = isHidden ? 'block' : 'none';
-      btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-      if (isHidden) {
-        var firstInput = form.querySelector('input:not([type=hidden])');
-        if (firstInput) firstInput.focus();
-      }
-    });
-  })();
-</script>
 
 <%- include('../partials/footer') %>
 </body>

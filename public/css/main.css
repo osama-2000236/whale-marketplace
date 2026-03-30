@@ -470,6 +470,7 @@ html[data-theme='dark'] .btn-google:hover {
 }
 
 .auth-local-toggle {
+  list-style: none;
   background: none;
   border: none;
   color: var(--text-muted);
@@ -483,9 +484,18 @@ html[data-theme='dark'] .btn-google:hover {
 .auth-local-toggle:hover {
   color: var(--text-primary);
 }
+.auth-local-toggle::-webkit-details-marker {
+  display: none;
+}
+.auth-local-toggle::marker {
+  content: '';
+}
+.auth-local-disclosure[open] .auth-local-toggle {
+  margin-bottom: 1rem;
+}
 
 .auth-local-form {
-  /* collapsed by default via inline style; JS toggles display */
+  margin-top: 0;
 }
 
 /* ── CARDS ── */

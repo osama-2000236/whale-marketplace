@@ -24,17 +24,16 @@
         <%= locale === 'ar' ? 'أو' : 'or' %>
       </div>
 
-      <button
-        type="button"
-        class="auth-local-toggle"
-        id="show-local-register"
-        aria-expanded="false"
-        aria-controls="local-register-form"
-      >
-        <%= locale === 'ar' ? 'إنشاء حساب بالبريد الإلكتروني' : 'Register with email instead' %>
-      </button>
+      <details class="auth-local-disclosure">
+        <summary
+          class="auth-local-toggle"
+          id="show-local-register"
+          aria-controls="local-register-form"
+        >
+          <%= locale === 'ar' ? 'إنشاء حساب بالبريد الإلكتروني' : 'Register with email instead' %>
+        </summary>
 
-      <div class="auth-local-form" id="local-register-form" style="display:none">
+      <div class="auth-local-form" id="local-register-form">
       <% } %>
 
         <form method="POST" action="/auth/register">
@@ -84,6 +83,7 @@
 
       <% if (hasGoogle) { %>
       </div><!-- /#local-register-form -->
+      </details>
       <% } %>
 
       <div class="auth-footer">
@@ -93,23 +93,6 @@
     </div>
   </div>
 </main>
-
-<script>
-  (function () {
-    var btn = document.getElementById('show-local-register');
-    var form = document.getElementById('local-register-form');
-    if (!btn || !form) return;
-    btn.addEventListener('click', function () {
-      var isHidden = form.style.display === 'none';
-      form.style.display = isHidden ? 'block' : 'none';
-      btn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
-      if (isHidden) {
-        var firstInput = form.querySelector('input:not([type=hidden])');
-        if (firstInput) firstInput.focus();
-      }
-    });
-  })();
-</script>
 
 <%- include('../partials/footer') %>
 </body>
