@@ -140,4 +140,35 @@ describe('auth oauth routes', () => {
     expect(response.status).toBe(302);
     expect(response.headers.location).toBe('/auth/login?next=%2Fprofile');
   });
+
+  test('GET /auth/login renders Google as primary button and hides local form toggle when hasGoogle is false', async () => {
+    const saved = { id: process.env.GOOGLE_CLIENT_ID, sec: process.env.GOOGLE_CLIENT_SECRET };
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
+
+    const response = await request(createApp()).get('/auth/login');
+
+    expect(response.status).toBe(200);
+    expect(response.body.locals).toEqual(
+      expect.objectContaining({ hasGoogle: false })
+    );
+
+    process.env.GOOGLE_CLIENT_ID = saved.id;
+    process.env.GOOGLE_CLIENT_SECRET = saved.sec;
+  });
+
+  test('GET /auth/register exposes hasGoogle flag matching env vars', async () => {
+    process.env.GOOGLE_CLIENT_ID = 'test-id';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-secret';
+
+    const response = await request(createApp()).get('/auth/register');
+
+    expect(response.status).toBe(200);
+    expect(response.body.locals).toEqual(
+      expect.objectContaining({ hasGoogle: true })
+    );
+
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
+  });
 });

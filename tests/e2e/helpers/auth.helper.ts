@@ -26,10 +26,32 @@ export function buildTestUser(prefix = 'qa'): TestUser {
   };
 }
 
+async function openAuthDisclosure(page: Page, formSelector: string, toggleSelector: string): Promise<void> {
+  const form = page.locator(formSelector);
+  if (await form.isVisible()) {
+    return;
+  }
+
+  const toggle = page.locator(toggleSelector);
+  if (await toggle.count()) {
+    await toggle.first().click();
+    await expect(form).toBeVisible();
+  }
+}
+
+export async function ensureLoginFormVisible(page: Page): Promise<void> {
+  await openAuthDisclosure(page, 'form[action="/auth/login"]', '#show-local-login');
+}
+
+export async function ensureRegisterFormVisible(page: Page): Promise<void> {
+  await openAuthDisclosure(page, 'form[action="/auth/register"]', '#show-local-register');
+}
+
 export async function registerTestUser(page: Page, user: Partial<TestUser> = {}): Promise<TestUser> {
   const credentials = { ...buildTestUser(), ...user };
 
   await page.goto('/auth/register');
+  await ensureRegisterFormVisible(page);
   await page.locator('input[name="username"]').fill(credentials.username);
   await page.locator('input[name="email"]').fill(credentials.email);
   await page.locator('input[name="password"]').fill(credentials.password);
@@ -67,6 +89,7 @@ export async function loginAs(
   next = '/whale'
 ): Promise<void> {
   await page.goto(`/auth/login?next=${encodeURIComponent(next)}`);
+  await ensureLoginFormVisible(page);
   await page.locator('input[name="identifier"]').fill(identifier);
   await page.locator('input[name="password"]').fill(password);
 
