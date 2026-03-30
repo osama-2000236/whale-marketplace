@@ -2,16 +2,19 @@ import { expect, test } from '@playwright/test';
 import {
   buildTestUser,
   createRegisteredUser,
+  ensureRegisterFormVisible,
   registerTestUser,
   validationMessage,
 } from '../helpers/auth.helper';
 
 test.describe('Auth register', () => {
   test('Page loads with correct heading', async ({ page }) => {
-    // Intent: verify the deployed register page exposes the expected public form and heading.
+    // Intent: verify the Google-first register page still exposes the local form after opening the disclosure.
     await page.goto('/auth/register');
 
     await expect(page.locator('h1')).toHaveText(/(إنشاء حساب|Create Account)/);
+    await expect(page.locator('#show-local-register')).toBeVisible();
+    await ensureRegisterFormVisible(page);
     await expect(page.locator('form[action="/auth/register"]')).toBeVisible();
   });
 
@@ -27,6 +30,7 @@ test.describe('Auth register', () => {
   test('Empty form shows validation errors', async ({ page }) => {
     // Intent: verify native required validation is wired to the real live inputs before any submit reaches the server.
     await page.goto('/auth/register');
+    await ensureRegisterFormVisible(page);
     await page.locator('form[action="/auth/register"] button').click();
 
     await expect.poll(() => validationMessage(page, 'input[name="username"]')).not.toBe('');
@@ -39,6 +43,7 @@ test.describe('Auth register', () => {
     const user = buildTestUser('mismatch');
 
     await page.goto('/auth/register');
+    await ensureRegisterFormVisible(page);
     await page.locator('input[name="username"]').fill(user.username);
     await page.locator('input[name="email"]').fill(user.email);
     await page.locator('input[name="password"]').fill(user.password);
@@ -53,6 +58,7 @@ test.describe('Auth register', () => {
   test('Short password is rejected', async ({ page }) => {
     // Intent: verify the live register form enforces its password minlength constraint before submit.
     await page.goto('/auth/register');
+    await ensureRegisterFormVisible(page);
     await page.locator('input[name="username"]').fill(buildTestUser().username);
     await page.locator('input[name="email"]').fill(buildTestUser().email);
     await page.locator('input[name="password"]').fill('short');
@@ -80,6 +86,7 @@ test.describe('Auth register', () => {
 
     try {
       await page.goto('/auth/register');
+      await ensureRegisterFormVisible(page);
       await page.locator('input[name="username"]').fill(buildTestUser('dup').username);
       await page.locator('input[name="email"]').fill(existing.email);
       await page.locator('input[name="password"]').fill(existing.password);

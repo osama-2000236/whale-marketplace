@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   createRegisteredUser,
+  ensureLoginFormVisible,
   loginAs,
   openUserMenu,
   validationMessage,
@@ -8,9 +9,11 @@ import {
 
 test.describe('Auth login', () => {
   test('Page loads with email and password fields', async ({ page }) => {
-    // Intent: verify the live login form exposes the shared identifier field and password field expected by the deployed app.
+    // Intent: verify the Google-first login page still exposes the shared local login form after opening the disclosure.
     await page.goto('/auth/login');
 
+    await expect(page.locator('#show-local-login')).toBeVisible();
+    await ensureLoginFormVisible(page);
     await expect(page.locator('input[name="identifier"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
   });
@@ -27,6 +30,7 @@ test.describe('Auth login', () => {
   test('Empty submission shows validation errors', async ({ page }) => {
     // Intent: verify the browser-native required validation blocks empty login submits on the production form.
     await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
     await page.locator('form[action="/auth/login"] button').click();
 
     await expect.poll(() => validationMessage(page, 'input[name="identifier"]')).not.toBe('');
@@ -38,6 +42,7 @@ test.describe('Auth login', () => {
     const user = await createRegisteredUser(browser);
 
     await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
     await page.locator('input[name="identifier"]').fill(user.email);
     await page.locator('input[name="password"]').fill(`${user.password}-wrong`);
 
@@ -50,6 +55,7 @@ test.describe('Auth login', () => {
   test('Non-existent email shows error', async ({ page }) => {
     // Intent: verify the backend rejects unknown identifiers cleanly instead of crashing or redirecting incorrectly.
     await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
     await page.locator('input[name="identifier"]').fill(`missing-${Date.now()}@whale-test.com`);
     await page.locator('input[name="password"]').fill('QATestWhale2026!');
 
