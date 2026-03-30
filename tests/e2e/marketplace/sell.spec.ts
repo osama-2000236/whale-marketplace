@@ -48,6 +48,14 @@ test.describe('Marketplace sell', () => {
     await registerTestUser(page);
     await page.goto('/whale/sell');
 
+    const category = await page.locator('select[name="categoryId"]').evaluate((select) => {
+      const option = Array.from((select as HTMLSelectElement).options).find((entry) => entry.value);
+      return option ? { value: option.value, label: option.textContent?.trim() || '' } : null;
+    });
+    if (!category) {
+      throw new Error('Sell form did not render any category options');
+    }
+
     const title = `QA sell listing ${Date.now()}`;
     await page.locator('input[name="title"]').fill(title);
     await page.locator('input[name="titleAr"]').fill('منتج بيع اختباري');
@@ -55,7 +63,7 @@ test.describe('Marketplace sell', () => {
     await page.locator('textarea[name="descriptionAr"]').fill('إعلان اختباري تم إنشاؤه تلقائياً.');
     await page.locator('input[name="price"]').fill('123');
     await page.locator('select[name="condition"]').selectOption('GOOD');
-    await page.locator('select[name="categoryId"]').selectOption('cat-electronics');
+    await page.locator('select[name="categoryId"]').selectOption(category.value);
     await page.locator('select[name="city"]').selectOption('Gaza');
     await page.locator('input[name="images"]').setInputFiles(buildSellImageFile());
     await page.locator('input[name="tags"]').fill('qa,automation');
@@ -66,6 +74,6 @@ test.describe('Marketplace sell', () => {
     ]);
 
     await expect(page.locator('.listing-detail h1')).toContainText(title);
-    await expect(page.locator('.listing-detail-category')).toContainText(/(Electronics|إلكترونيات)/);
+    await expect(page.locator('.listing-detail-category')).toContainText(category.label);
   });
 });

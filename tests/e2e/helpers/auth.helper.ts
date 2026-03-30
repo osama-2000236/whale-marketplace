@@ -107,35 +107,37 @@ export async function addCurrentListingToCart(page: Page, quantity = 1): Promise
   }
 
   const csrfToken = await getCsrfToken(page);
-  await Promise.all([
-    page.waitForURL(/\/cart$/),
-    page.evaluate(
-      ({ csrf, itemListingId, itemQuantity }) => {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/cart/add';
-        form.style.display = 'none';
-
-        const fields = {
-          _csrf: csrf,
+  const result = await page.evaluate(
+    async ({ csrf, itemListingId, itemQuantity }) => {
+      const response = await fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          'x-csrf-token': csrf,
+        },
+        body: JSON.stringify({
           listingId: itemListingId,
-          quantity: String(itemQuantity),
-        };
+          quantity: itemQuantity,
+        }),
+      });
 
-        Object.entries(fields).forEach(([name, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = name;
-          input.value = value;
-          form.appendChild(input);
-        });
+      const body = await response.json().catch(() => null);
+      return {
+        ok: response.ok,
+        status: response.status,
+        error: body?.error || body?.message || null,
+      };
+    },
+    { csrf: csrfToken, itemListingId: listingId, itemQuantity: quantity },
+  );
 
-        document.body.appendChild(form);
-        form.submit();
-      },
-      { csrf: csrfToken, itemListingId: listingId, itemQuantity: quantity },
-    ),
-  ]);
+  if (!result.ok) {
+    throw new Error(result.error || `Failed to add listing ${listingId} to cart (${result.status})`);
+  }
+
+  await page.goto('/cart');
+  await expect(page).toHaveURL(/\/cart$/);
 
   return listingId;
 }

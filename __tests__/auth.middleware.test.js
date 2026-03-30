@@ -474,3 +474,46 @@ describe('auth middleware', () => {
     expect(next4).toHaveBeenCalledWith(err);
   });
 });
+
+describe('guardActiveSessionUser — active user passes through', () => {
+  test('calls next() immediately when the session user is active and not banned', () => {
+    const next = jest.fn();
+    const req = {
+      user: { id: 'u1', isBanned: false, deletedAt: null },
+      session: { passport: { user: 'u1' } },
+      headers: {},
+    };
+    const res = { status: jest.fn().mockReturnThis(), redirect: jest.fn() };
+
+    guardActiveSessionUser(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.redirect).not.toHaveBeenCalled();
+  });
+});
+
+describe('requireAdmin2FA — non-admin rejection', () => {
+  test('renders 403 when user is not an admin', () => {
+    const render = jest.fn();
+    const res = { status: jest.fn().mockReturnThis(), render };
+    const next = jest.fn();
+
+    requireAdmin2FA({ user: { role: 'MEMBER' }, session: {} }, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(render).toHaveBeenCalledWith('error', expect.objectContaining({ status: 403 }));
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('renders 403 when there is no authenticated user', () => {
+    const render = jest.fn();
+    const res = { status: jest.fn().mockReturnThis(), render };
+    const next = jest.fn();
+
+    requireAdmin2FA({ user: null, session: {} }, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(render).toHaveBeenCalledWith('error', expect.objectContaining({ status: 403 }));
+    expect(next).not.toHaveBeenCalled();
+  });
+});
