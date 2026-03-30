@@ -412,6 +412,82 @@ ol {
   width: 100%;
 }
 
+/* ── OAUTH BUTTONS ── */
+.oauth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0;
+}
+
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  background: #ffffff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: box-shadow var(--transition), background var(--transition);
+  box-shadow: var(--shadow-xs);
+}
+.btn-google:hover {
+  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+  background: #f8f9fa;
+  color: #3c4043;
+  text-decoration: none;
+}
+html[data-theme='dark'] .btn-google {
+  background: #2d2e30;
+  color: #e8eaed;
+  border-color: #5f6368;
+}
+html[data-theme='dark'] .btn-google:hover {
+  background: #3c4043;
+}
+
+.auth-or-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.25rem 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+.auth-or-divider::before,
+.auth-or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-local-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  display: block;
+  margin: 0 auto 1rem;
+}
+.auth-local-toggle:hover {
+  color: var(--text-primary);
+}
+
+.auth-local-form {
+  /* collapsed by default via inline style; JS toggles display */
+}
+
 /* ── CARDS ── */
 .card {
   background: var(--surface-0);
