@@ -12,6 +12,7 @@ const { optionalAuth, guardActiveSessionUser } = require('./middleware/auth');
 const path = require('path');
 
 const app = express();
+app.set('trust proxy', 1);
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const baseUrl = process.env.BASE_URL || '';
 const shouldUpgradeInsecureRequests =
@@ -61,7 +62,7 @@ app.use(
       : new session.MemoryStore(),
     secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     rolling: true,
     cookie: {
       httpOnly: true,
