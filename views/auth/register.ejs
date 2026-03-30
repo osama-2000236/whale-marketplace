@@ -12,19 +12,14 @@
       <% if (hasGoogle || hasFacebook || hasApple) { %>
       <div class="oauth-buttons">
         <% if (hasGoogle) { %>
-        <a href="/auth/google" class="btn btn-secondary btn-block">
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt=""
-            width="18"
-            height="18"
-          />
+        <a href="/auth/google?next=<%= encodeURIComponent(next || '/whale') %>" class="btn btn-secondary btn-block">
+          <img src="/icons/google.svg" alt="" width="18" height="18" />
           <%= t('auth.google') %>
         </a>
         <% } %>
         <% if (hasFacebook) { %>
         <a
-          href="/auth/facebook"
+          href="/auth/facebook?next=<%= encodeURIComponent(next || '/whale') %>"
           class="btn btn-secondary btn-block"
           style="background: #1877f2; color: #fff; border-color: #1877f2"
         >
@@ -33,7 +28,7 @@
         <% } %>
         <% if (hasApple) { %>
         <a
-          href="/auth/apple"
+          href="/auth/apple?next=<%= encodeURIComponent(next || '/whale') %>"
           class="btn btn-secondary btn-block"
           style="background: #000; color: #fff; border-color: #000"
         >
@@ -46,6 +41,7 @@
 
       <form method="POST" action="/auth/register">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <input type="hidden" name="next" value="<%= typeof next !== 'undefined' ? next : '/whale' %>" />
         <div class="form-group">
           <label class="form-label">
             <%= t('auth.username') %>
@@ -90,7 +86,7 @@
 
       <div class="auth-footer">
         <%= t('auth.has_account') %>
-        <a href="/auth/login"><%= t('auth.login') %></a>
+        <a href="/auth/login?next=<%= encodeURIComponent(next || '/whale') %>"><%= t('auth.login') %></a>
       </div>
     </div>
   </div>

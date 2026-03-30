@@ -1,4 +1,4 @@
-const { t } = require('../lib/i18n');
+const { t, translations } = require('../lib/i18n');
 
 describe('i18n translator', () => {
   test('returns Arabic by default', () => {
@@ -19,5 +19,12 @@ describe('i18n translator', () => {
 
   test('interpolates variables in text', () => {
     expect(t('home.hero.title', 'en', { name: 'Whale' })).toBe('Buy and Sell with Confidence');
+  });
+
+  test('falls back to key when entry exists but has no matching locale or en', () => {
+    const testKey = '__test_no_en__';
+    translations[testKey] = { de: 'nur deutsch' };
+    expect(t(testKey, 'fr')).toBe(testKey);
+    delete translations[testKey];
   });
 });

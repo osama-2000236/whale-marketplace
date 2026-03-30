@@ -15,6 +15,15 @@ test.describe('Auth register', () => {
     await expect(page.locator('form[action="/auth/register"]')).toBeVisible();
   });
 
+  test('Google sign-in button is visible on register when Google OAuth is configured', async ({ page }) => {
+    // Intent: verify the registration page exposes the Google CTA with the local icon asset under the local Playwright server config.
+    await page.goto('/auth/register?next=/whale/sell');
+
+    const googleButton = page.locator('a[href="/auth/google?next=%2Fwhale%2Fsell"]').first();
+    await expect(googleButton).toBeVisible();
+    await expect(googleButton.locator('img[src="/icons/google.svg"]')).toBeVisible();
+  });
+
   test('Empty form shows validation errors', async ({ page }) => {
     // Intent: verify native required validation is wired to the real live inputs before any submit reaches the server.
     await page.goto('/auth/register');
@@ -79,7 +88,9 @@ test.describe('Auth register', () => {
       await page.locator('form[action="/auth/register"] button').click();
 
       await expect(page).toHaveURL(/\/auth\/register(?:\?.*)?$/);
-      await expect(page.locator('.flash.flash-danger')).toContainText('Email already registered');
+      await expect(page.locator('.flash.flash-danger')).toContainText(
+        'That email is already registered.',
+      );
     } finally {
       await context.close();
     }

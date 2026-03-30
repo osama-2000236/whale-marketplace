@@ -32,32 +32,34 @@ module.exports = defineConfig({
           BASE_URL: localBaseUrl,
           NODE_ENV: 'test',
           SESSION_SECRET: 'playwright-session-secret-for-local-runs',
+          GOOGLE_CLIENT_ID: 'playwright-google-client',
+          GOOGLE_CLIENT_SECRET: 'playwright-google-secret',
         },
       }
     : undefined,
   projects: [
     {
-      name: 'Desktop Chrome',
+      name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
     {
-      name: 'Desktop Firefox',
+      name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
     },
     {
-      name: 'Desktop Safari',
+      name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
     {
-      name: 'Mobile Chrome',
+      name: 'mobile-chrome',
       use: { ...devices['Pixel 7'] },
     },
     {
-      name: 'Mobile Safari',
+      name: 'mobile-safari',
       use: { ...devices['iPhone 14'] },
     },
     {
-      name: 'Tablet',
+      name: 'tablet',
       use: { ...devices['iPad (gen 7)'] },
     },
   ],

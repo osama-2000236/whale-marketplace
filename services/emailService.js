@@ -117,6 +117,21 @@ async function sendVerificationEmail(user, token) {
   }).catch(() => {});
 }
 
+async function sendEmailChangeVerification(user, nextEmail, token) {
+  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+  const link = `${baseUrl}/auth/verify-email-change?token=${token}`;
+  sendMail({
+    to: nextEmail,
+    subject: 'تأكيد البريد الإلكتروني الجديد | Verify Your New Email',
+    html: emailTemplate({
+      titleAr: 'تأكيد بريدك الإلكتروني الجديد',
+      titleEn: 'Verify Your New Email',
+      bodyAr: `مرحباً ${user.username}، اضغط على الرابط لتأكيد البريد الإلكتروني الجديد: <a href="${link}">${link}</a>`,
+      bodyEn: `Hi ${user.username}, click the link to verify your new email address: <a href="${link}">${link}</a>`,
+    }),
+  }).catch(() => {});
+}
+
 async function sendPasswordReset(user, token) {
   const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
   const link = `${baseUrl}/auth/reset-password?token=${token}`;
@@ -140,5 +155,6 @@ module.exports = {
   sendOrderCompleted,
   sendTrialEnding,
   sendVerificationEmail,
+  sendEmailChangeVerification,
   sendPasswordReset,
 };

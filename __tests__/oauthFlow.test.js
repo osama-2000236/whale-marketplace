@@ -1,7 +1,11 @@
 jest.mock('../lib/prisma', () => ({
   user: {
+    findFirst: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
+  },
+  sellerProfile: {
     update: jest.fn(),
   },
 }));
@@ -17,12 +21,20 @@ jest.mock('../services/authSecurityService', () => ({
 process.env.DATABASE_URL = 'postgresql://test/db';
 
 const prisma = require('../lib/prisma');
+const emailService = require('../services/emailService');
 const authSecurityService = require('../services/authSecurityService');
 const userService = require('../services/userService');
 
 describe('OAuth flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    prisma.user.findFirst.mockReset();
+    prisma.user.findUnique.mockReset();
+    prisma.user.create.mockReset();
+    prisma.user.update.mockReset();
+    prisma.sellerProfile.update.mockReset();
+    emailService.sendWelcome.mockResolvedValue();
+    authSecurityService.sendVerificationEmail.mockResolvedValue();
   });
 
   test('google provider uses googleId lookup', async () => {
@@ -45,6 +57,7 @@ describe('OAuth flow', () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 'u_google' },
       data: { lastSeenAt: expect.any(Date) },
+      include: { subscription: true, sellerProfile: true },
     });
     expect(result).toEqual({ user: expect.objectContaining({ id: 'u_google' }), isNew: false });
   });
@@ -90,24 +103,43 @@ describe('OAuth flow', () => {
   test('existing user by email gets provider id linked and returns isNew false', async () => {
     prisma.user.findUnique
       .mockResolvedValueOnce(null) // provider lookup
-      .mockResolvedValueOnce({ id: 'u_by_email', email: 'user@example.com' }); // email lookup
+      .mockResolvedValueOnce({
+        id: 'u_by_email',
+        email: 'user@example.com',
+        avatarUrl: null,
+        isBanned: false,
+        sellerProfile: { isVerified: false },
+      }); // email lookup
     prisma.user.update.mockResolvedValueOnce({
       id: 'u_by_email',
       email: 'user@example.com',
       googleId: 'google-999',
       subscription: {},
-      sellerProfile: {},
+      sellerProfile: { isVerified: false },
     });
+    prisma.sellerProfile.update.mockResolvedValueOnce({ userId: 'u_by_email', isVerified: true });
 
     const result = await userService.findOrCreateOAuth('google', 'google-999', {
       displayName: 'Existing User',
       emails: [{ value: 'user@example.com' }],
+      photos: [{ value: 'https://example.com/avatar.jpg' }],
     });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: 'u_by_email' },
-      data: { googleId: 'google-999', lastSeenAt: expect.any(Date) },
+      data: {
+        googleId: 'google-999',
+        avatarUrl: 'https://example.com/avatar.jpg',
+        emailVerified: true,
+        isVerified: true,
+        lastSeenAt: expect.any(Date),
+        pendingEmail: null,
+      },
       include: { subscription: true, sellerProfile: true },
+    });
+    expect(prisma.sellerProfile.update).toHaveBeenCalledWith({
+      where: { userId: 'u_by_email' },
+      data: { isVerified: true },
     });
     expect(result).toEqual({
       user: expect.objectContaining({ id: 'u_by_email', googleId: 'google-999' }),
@@ -119,11 +151,14 @@ describe('OAuth flow', () => {
     prisma.user.findUnique
       .mockResolvedValueOnce(null) // provider lookup
       .mockResolvedValueOnce(null) // email lookup
-      .mockResolvedValueOnce(null); // username uniqueness check
+      .mockResolvedValueOnce(null) // username collision check
+      .mockResolvedValueOnce(null); // username available
+    prisma.user.findFirst.mockResolvedValue(null);
 
     prisma.user.create.mockResolvedValueOnce({
       id: 'u_new',
       username: 'newoauthuser',
+      email: 'new@example.com',
       subscription: {},
       sellerProfile: {},
     });
@@ -148,6 +183,7 @@ describe('OAuth flow', () => {
       user: expect.objectContaining({ id: 'u_new' }),
       isNew: true,
     });
-    expect(authSecurityService.sendVerificationEmail).toHaveBeenCalledWith('u_new');
+    expect(emailService.sendWelcome).toHaveBeenCalled();
+    expect(authSecurityService.sendVerificationEmail).not.toHaveBeenCalled();
   });
 });
