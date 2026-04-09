@@ -9,11 +9,7 @@
 
     <div class="card">
       <div class="card-body">
-        <form
-          method="POST"
-          action="/whale/sell?_csrf=<%= encodeURIComponent(csrfToken) %>"
-          enctype="multipart/form-data"
-        >
+        <form method="POST" action="/whale/sell?_csrf=<%= encodeURIComponent(csrfToken) %>" enctype="multipart/form-data">
           <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
 
           <div class="form-row">

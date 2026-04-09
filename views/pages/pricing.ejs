@@ -1,0 +1,43 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <h1 class="page-title"><%= title %></h1>
+
+    <p class="pricing-intro">
+      <%= locals.locale === 'ar'
+        ? 'جرّب الحوت مجاناً لمدة 30 يوماً. لا يلزم بطاقة ائتمان.'
+        : 'Try Whale free for 30 days. No credit card required.' %>
+    </p>
+
+    <div class="pricing-grid">
+      <% Object.entries(plans).forEach(([months, plan]) => { %>
+        <div class="pricing-card">
+          <div class="pricing-label"><%= plan.label %></div>
+          <div class="pricing-price">$<%= plan.price %></div>
+          <div class="pricing-period">
+            <%= months == 1 ? (locals.locale === 'ar' ? 'شهرياً' : '/ month') : '' %>
+            <%= months == 6 ? (locals.locale === 'ar' ? 'كل 6 أشهر' : '/ 6 months') : '' %>
+            <%= months == 12 ? (locals.locale === 'ar' ? 'سنوياً' : '/ year') : '' %>
+          </div>
+          <% if (locals.user) { %>
+            <a href="/upgrade" class="btn btn-primary">
+              <%= locals.locale === 'ar' ? 'ابدأ الآن' : 'Get Started' %>
+            </a>
+          <% } else { %>
+            <a href="/auth/register" class="btn btn-primary">
+              <%= locals.locale === 'ar' ? 'سجّل مجاناً' : 'Sign up free' %>
+            </a>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+
+    <p class="pricing-note">
+      <%= locals.locale === 'ar'
+        ? 'جميع الخطط تشمل: نظام الضمان، دعم العملاء، وعدد غير محدود من الطلبات.'
+        : 'All plans include: escrow protection, customer support, and unlimited orders.' %>
+    </p>
+  </div>
+</main>
+<%- include('../partials/footer') %>

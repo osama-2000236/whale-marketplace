@@ -1,4 +1,11 @@
 require('dotenv').config();
+
+// Fail fast on missing critical secrets in production
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  console.error('[fatal] SESSION_SECRET must be set in production');
+  process.exit(1);
+}
+
 const express = require('express');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
@@ -143,7 +150,18 @@ app.use(
   })
 );
 
-// 14. Routes
+// 14. Health check (before auth middleware so Railway can probe it freely)
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
+
+// Webhook-specific rate limit (tighter window to limit flood attacks)
+const webhookRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  max: isTestEnv ? 1_000_000 : 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 15. Routes
 app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
 app.use('/whale', require('./routes/whale'));
@@ -152,10 +170,10 @@ app.use('/notifications', require('./routes/notifications'));
 app.use('/cart', require('./routes/cart'));
 app.use('/', require('./routes/payment'));
 app.use('/', require('./routes/checkout'));
-app.use('/webhooks', require('./routes/webhooks'));
+app.use('/webhooks', webhookRateLimit, require('./routes/webhooks'));
 app.use('/admin', require('./routes/admin'));
 
-// 15. Redirects
+// 16. Redirects
 app.get('/marketplace', (req, res) => res.redirect(301, '/whale'));
 app.get('/market', (req, res) => res.redirect(301, '/whale'));
 app.get('/rooms', (req, res) => res.redirect(301, '/whale'));

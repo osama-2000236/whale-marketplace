@@ -1,6 +1,8 @@
+const sanitizeHtml = require('sanitize-html');
+
 function strip(str) {
   if (typeof str !== 'string') return '';
-  return str.replace(/<[^>]*>/g, '').trim();
+  return sanitizeHtml(str, { allowedTags: [], allowedAttributes: {} }).trim();
 }
 
 function truncate(str, maxLen) {

@@ -10,12 +10,16 @@ const hasDatabase = Boolean(process.env.DATABASE_URL);
 const shouldAutoVerifyUsers =
   process.env.AUTO_VERIFY_USERS === '1' || !hasDatabase || process.env.NODE_ENV !== 'production';
 
+// Allows: Arabic (U+0600–U+06FF, U+0750–U+077F, U+08A0–U+08FF),
+//         Latin alphanumeric, underscore.
+const VALID_USERNAME_RE = /^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FFa-zA-Z0-9_]+$/;
+
 async function register({ username, email, password, confirmPassword }) {
   if (
     !username ||
     username.length < 3 ||
     username.length > 30 ||
-    !/^[a-zA-Z0-9_]+$/.test(username)
+    !VALID_USERNAME_RE.test(username)
   ) {
     throw new Error('INVALID_USERNAME');
   }
@@ -48,7 +52,18 @@ async function register({ username, email, password, confirmPassword }) {
   }
 
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-  const slug = slugify(username, { lower: true, strict: true });
+
+  // slugify strips non-ASCII chars; for Arabic usernames produce a short random slug
+  let slug = slugify(username, { lower: true, strict: true });
+  if (!slug || slug.length < 2) {
+    slug = 'u-' + Math.random().toString(36).slice(2, 10);
+  }
+  // Ensure slug uniqueness
+  let baseSlug = slug;
+  let attempt = 1;
+  while (await prisma.user.findUnique({ where: { slug } })) {
+    slug = baseSlug + '-' + attempt++;
+  }
   let user;
 
   if (hasDatabase) {

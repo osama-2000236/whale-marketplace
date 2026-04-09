@@ -1333,28 +1333,24 @@ main button {
     font-size: 1.0625rem;
   }
   .navbar-nav {
-    display: none;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 0.25rem 0;
+    border-top: 1px solid var(--border-light);
+    gap: 0.25rem;
   }
   .navbar-toggle {
     display: flex;
   }
   .navbar-nav.open {
     display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: 64px;
-    left: 0;
-    right: 0;
-    background: var(--surface-0);
-    border-bottom: 1px solid var(--border-light);
-    padding: 1rem;
-    box-shadow: var(--shadow-lg);
-    z-index: 99;
-    max-height: calc(100vh - 84px);
-    overflow-y: auto;
   }
-  .navbar-nav.open .nav-link {
-    width: 100%;
+  /* Hide duplicate auth buttons in navbar-actions on mobile
+     since .navbar-nav already shows login/register links */
+  .navbar-actions a.btn {
+    display: none;
   }
   .hero h1 {
     font-size: 1.5rem;

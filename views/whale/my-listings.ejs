@@ -1,0 +1,57 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">
+      <h1><%= t('my_listings.title') %></h1>
+      <a href="/whale/sell" class="btn btn-primary"><%= t('my_listings.add') %></a>
+    </div>
+
+    <% if (listings.length === 0) { %>
+    <div class="empty-state">
+      <div class="empty-state-icon">📦</div>
+      <h3><%= t('my_listings.empty') %></h3>
+      <a href="/whale/sell" class="btn btn-primary"><%= t('my_listings.add') %></a>
+    </div>
+    <% } else { %>
+    <div class="grid-listings">
+      <% listings.forEach(function(listing) { %>
+      <div class="listing-card">
+        <a href="/whale/listing/<%= listing.slug %>">
+          <img
+            src="<%= listing.images && listing.images[0] ? listing.images[0] : '/images/placeholder.png' %>"
+            alt="<%= listing.title %>"
+            class="listing-img"
+          />
+        </a>
+        <div class="listing-body">
+          <a href="/whale/listing/<%= listing.slug %>" class="listing-title" dir="auto">
+            <%= listing.titleAr || listing.title %>
+          </a>
+          <div class="listing-price"><%= listing.price %> $</div>
+          <div class="listing-meta">
+            <span class="badge badge-<%= listing.status === 'ACTIVE' ? 'success' : 'secondary' %>">
+              <%= t('status.' + listing.status) %>
+            </span>
+          </div>
+          <div class="listing-actions" style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap">
+            <a href="/whale/listing/<%= listing.id %>/edit" class="btn btn-sm btn-ghost">
+              <%= t('listing.edit') %>
+            </a>
+            <form method="POST" action="/whale/listing/<%= listing.id %>/delete" style="margin:0">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn btn-sm btn-danger"
+                onclick="return confirm('<%= locale === \'ar\' ? \'هل تريد حذف هذا المنتج؟\' : \'Delete this listing?\' %>')">
+                <%= t('listing.delete') %>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <% }) %>
+    </div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

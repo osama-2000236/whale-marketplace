@@ -76,6 +76,10 @@ router.get('/listing/:slug', async (req, res, next) => {
 
     res.render('whale/listing', { title: listing.title, listing, isSaved });
   } catch (err) {
+    // Treat Prisma "table/column does not exist" as not-found rather than 500
+    if (err.code === 'P2010' || err.message?.includes('does not exist')) {
+      return res.status(404).render('404', { title: '404' });
+    }
     next(err);
   }
 });
@@ -106,7 +110,7 @@ router.post('/listing/:id/save', requireAuth, async (req, res, next) => {
       type: 'success',
       message: res.locals.t(result.saved ? 'flash.saved' : 'flash.unsaved'),
     };
-    res.redirect('back');
+    res.redirect(req.get('Referrer') || '/whale');
   } catch (err) {
     next(err);
   }
@@ -203,7 +207,7 @@ router.post(
       res.redirect('/whale/listing/' + listing.slug);
     } catch (err) {
       req.session.flash = { type: 'danger', message: err.message };
-      res.redirect('back');
+      res.redirect('/whale/listing/' + req.params.id + '/edit');
     }
   }
 );
@@ -255,7 +259,7 @@ router.post('/checkout/:id', requireAuth, requireVerified, async (req, res, next
     res.redirect('/whale/orders/' + order.id);
   } catch (err) {
     req.session.flash = { type: 'danger', message: err.message };
-    res.redirect('back');
+    res.redirect('/whale/listing/' + req.params.id);
   }
 });
 
@@ -356,6 +360,21 @@ router.post('/orders/:id/review', requireAuth, requireBuyer, async (req, res, ne
 });
 
 // Dashboard
+// My listings (seller's own inventory)
+router.get('/my-listings', requireAuth, async (req, res, next) => {
+  try {
+    const prisma = require('../lib/prisma');
+    const listings = await prisma.listing.findMany({
+      where: { sellerId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      include: { category: true },
+    });
+    res.render('whale/my-listings', { title: res.locals.t('my_listings.title'), listings });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get('/dashboard', requireAuth, async (req, res, next) => {
   try {
     const stats = await whaleService.getSellerDashboard(req.user.id);

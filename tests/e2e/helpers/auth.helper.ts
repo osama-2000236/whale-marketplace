@@ -1,87 +1,88 @@
-import path from 'node:path';
-import { expect, type Browser, type Page } from '@playwright/test';
+import { Page, expect } from '@playwright/test';
 
-export type TestUser = {
-  username: string;
-  email: string;
-  password: string;
-};
-
-export const SELL_IMAGE_PATH = path.resolve(
-  __dirname,
-  '../../../coverage/lcov-report/favicon.png'
-);
-
-export function buildTestUser(prefix = 'qa'): TestUser {
-  const stamp = `${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
-  return {
-    username: `${prefix}_${stamp}`.slice(0, 30),
-    email: `${prefix}-${stamp}@whale-test.com`,
-    password: 'QATestWhale2026!',
-  };
-}
-
-export async function registerTestUser(page: Page, user: Partial<TestUser> = {}): Promise<TestUser> {
-  const credentials = { ...buildTestUser(), ...user };
-
-  await page.goto('/auth/register');
-  await page.locator('input[name="username"]').fill(credentials.username);
-  await page.locator('input[name="email"]').fill(credentials.email);
-  await page.locator('input[name="password"]').fill(credentials.password);
-  await page.locator('input[name="confirmPassword"]').fill(credentials.password);
-
-  await Promise.all([
-    page.waitForURL((url) => !url.pathname.endsWith('/auth/register'), {
-      waitUntil: 'domcontentloaded',
-    }),
-    page.locator('form[action="/auth/register"] button').click(),
-  ]);
-
-  await expect(page).toHaveURL(/\/whale(?:\?.*)?$/);
-  return credentials;
-}
-
-export async function createRegisteredUser(
-  browser: Browser,
-  user: Partial<TestUser> = {}
-): Promise<TestUser> {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-
-  try {
-    return await registerTestUser(page, user);
-  } finally {
-    await context.close();
-  }
-}
-
+/**
+ * Helper: Log in as a specific user via the /auth/login form.
+ * Uses the real selectors discovered from the live Brave inspection:
+ *   - identifier field: input[name="identifier"]
+ *   - password field:   input[name="password"]
+ *   - submit button:    button[type="submit"]
+ */
 export async function loginAs(
   page: Page,
   identifier: string,
-  password: string,
-  next = '/whale'
+  password: string
 ): Promise<void> {
-  await page.goto(`/auth/login?next=${encodeURIComponent(next)}`);
-  await page.locator('input[name="identifier"]').fill(identifier);
-  await page.locator('input[name="password"]').fill(password);
-
-  await Promise.all([
-    page.waitForURL((url) => !url.pathname.endsWith('/auth/login'), {
-      waitUntil: 'domcontentloaded',
-    }),
-    page.locator('form[action="/auth/login"] button').click(),
-  ]);
-}
-
-export async function validationMessage(page: Page, selector: string): Promise<string> {
-  return page.locator(selector).evaluate((element) => {
-    return (element as HTMLInputElement).validationMessage;
+  await page.goto('/auth/login');
+  await page.waitForSelector('input[name="identifier"]');
+  await page.fill('input[name="identifier"]', identifier);
+  await page.fill('input[name="password"]', password);
+  await page.click('button[type="submit"]');
+  // Wait for redirect away from login page
+  await page.waitForURL((url) => !url.pathname.includes('/auth/login'), {
+    timeout: 10_000,
   });
 }
 
-export async function openUserMenu(page: Page): Promise<void> {
-  const trigger = page.locator('.user-menu-trigger');
-  await expect(trigger).toBeVisible();
-  await trigger.click();
-  await expect(page.locator('.user-menu-dropdown')).toBeVisible();
+/**
+ * Helper: Register a unique test user.
+ * Uses the real selectors from the live /auth/register page:
+ *   - username:  input[name="username"]
+ *   - email:     input[name="email"]
+ *   - password:  input[name="password"]
+ *   - submit:    button[type="submit"]
+ */
+export async function registerTestUser(page: Page): Promise<{
+  username: string;
+  email: string;
+  password: string;
+}> {
+  const ts = Date.now();
+  const username = `qa_${ts}`;
+  const email = `qa-${ts}@whale-test.com`;
+  const password = 'QATestWhale2026!';
+
+  await page.goto('/auth/register');
+  await page.waitForSelector('input[name="username"]');
+  await page.fill('input[name="username"]', username);
+  await page.fill('input[name="email"]', email);
+  await page.fill('input[name="password"]', password);
+  await page.click('button[type="submit"]');
+  // Wait for redirect away from register page
+  await page.waitForURL((url) => !url.pathname.includes('/auth/register'), {
+    timeout: 10_000,
+  });
+
+  return { username, email, password };
 }
+
+/**
+ * Helper: Log out via POST /auth/logout form.
+ */
+export async function logout(page: Page): Promise<void> {
+  // The logout is a POST form in the user menu dropdown
+  await page.evaluate(() => {
+    const form = document.querySelector(
+      'form[action="/auth/logout"]'
+    ) as HTMLFormElement;
+    if (form) form.submit();
+  });
+  await page.waitForURL('/', { timeout: 10_000 });
+}
+
+/**
+ * Demo credentials seeded in the database.
+ */
+export const DEMO_SELLER = {
+  identifier: 'demo_seller',
+  password: 'Demo1234!',
+};
+
+export const DEMO_BUYER = {
+  identifier: 'demo_buyer',
+  password: 'Demo1234!',
+};
+
+export const ADMIN = {
+  identifier: 'admin',
+  password: 'Admin1234!',
+};

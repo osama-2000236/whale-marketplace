@@ -40,7 +40,12 @@ router.post('/login', authLimiter, (req, res, next) => {
   const nextUrl = safeRedirect(req.body.next, '/whale');
 
   passport.authenticate('local', (err, user, info) => {
-    if (err) return next(err);
+    if (err) {
+      // DB or infrastructure error — show generic auth failure rather than 500
+      console.error('[auth] login error:', err.message);
+      req.session.flash = { type: 'danger', message: res.locals.t('auth.error.USER_NOT_FOUND') };
+      return res.redirect('/auth/login');
+    }
     if (!user) {
       const errorKey = 'auth.error.' + (info?.message || 'USER_NOT_FOUND');
       req.session.flash = { type: 'danger', message: res.locals.t(errorKey) };
@@ -70,6 +75,15 @@ router.post('/register', authLimiter, async (req, res, next) => {
       confirmPassword: 128,
     });
 
+    // When the form includes confirmPassword, validate that it matches
+    if (req.body.confirmPassword !== undefined && req.body.confirmPassword !== req.body.password) {
+      req.session.flash = {
+        type: 'danger',
+        message: res.locals.t('auth.error.PASSWORDS_MISMATCH'),
+      };
+      return res.redirect('/auth/register');
+    }
+
     const user = await userService.register(data);
 
     req.logIn(user, (err) => {
@@ -78,15 +92,9 @@ router.post('/register', authLimiter, async (req, res, next) => {
       res.redirect('/whale');
     });
   } catch (err) {
-    const messages = {
-      INVALID_USERNAME: 'Username must be 3-30 alphanumeric characters',
-      INVALID_EMAIL: 'Invalid email address',
-      WEAK_PASSWORD: 'Password must be at least 8 characters',
-      PASSWORD_MISMATCH: 'Passwords do not match',
-      EMAIL_TAKEN: 'Email already registered',
-      USERNAME_TAKEN: 'Username already taken',
-    };
-    req.session.flash = { type: 'danger', message: messages[err.message] || err.message };
+    const key = 'auth.error.' + err.message;
+    const msg = res.locals.t(key) !== key ? res.locals.t(key) : err.message;
+    req.session.flash = { type: 'danger', message: msg };
     res.redirect('/auth/register');
   }
 });

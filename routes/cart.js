@@ -38,7 +38,7 @@ router.post('/add', async (req, res, next) => {
       return res.status(400).json({ error: err.message });
     }
     req.session.flash = { type: 'danger', message: err.message };
-    res.redirect('back');
+    res.redirect('/cart');
   }
 });
 
