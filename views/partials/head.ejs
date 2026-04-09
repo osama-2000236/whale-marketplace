@@ -11,6 +11,9 @@
   <meta property="og:url" content="<%= typeof canonicalUrl !== 'undefined' && canonicalUrl ? canonicalUrl : '/' %>">
   <meta property="og:image" content="<%= typeof ogImage !== 'undefined' && ogImage ? ogImage : '/favicon.ico' %>">
   <meta property="og:site_name" content="Whale | الحوت">
+  <link rel="alternate" hreflang="ar" href="<%= typeof canonicalUrl !== 'undefined' && canonicalUrl ? canonicalUrl + '?lang=ar' : '/?lang=ar' %>">
+  <link rel="alternate" hreflang="en" href="<%= typeof canonicalUrl !== 'undefined' && canonicalUrl ? canonicalUrl + '?lang=en' : '/?lang=en' %>">
+  <link rel="alternate" hreflang="x-default" href="<%= typeof canonicalUrl !== 'undefined' && canonicalUrl ? canonicalUrl : '/' %>">
   <title><%= typeof title !== 'undefined' && title ? title + ' — ' : '' %>Whale | الحوت</title>
   <script>
     try {

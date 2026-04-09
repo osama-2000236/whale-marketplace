@@ -14,8 +14,7 @@ const {
 const { sanitizeBody } = require('../utils/sanitize');
 const { upload, processImages } = require('../utils/images');
 const { FALLBACK_CATEGORY, createFallbackListing } = require('../lib/fallbackMarketplace');
-
-const CITIES = ['Gaza', 'Ramallah', 'Nablus', 'Hebron', 'Jenin', 'Jerusalem'];
+const { getCities } = require('../lib/cities');
 
 function getWhaleCheckoutMessage(code) {
   return (
@@ -70,7 +69,7 @@ router.get('/', async (req, res) => {
     total,
     categories,
     filters,
-    cities: CITIES,
+    cities: getCities(req.locale),
     degraded,
   });
 });
@@ -148,7 +147,7 @@ router.get('/my-listings', requireAuth, async (req, res, next) => {
 router.get('/sell', requireAuth, requireVerified, requirePro, async (req, res, next) => {
   try {
     const categories = await whaleService.getCategories();
-    res.render('whale/sell', { title: res.locals.t('sell.title'), categories, cities: CITIES });
+    res.render('whale/sell', { title: res.locals.t('sell.title'), categories, cities: getCities(req.locale) });
   } catch (err) {
     next(err);
   }
@@ -197,7 +196,7 @@ router.get('/listing/:id/edit', requireAuth, requireVerified, requireOwner, asyn
       title: res.locals.t('sell.edit_title'),
       listing: req.listing,
       categories,
-      cities: CITIES,
+      cities: getCities(req.locale),
     });
   } catch (err) {
     next(err);
@@ -261,7 +260,7 @@ router.get('/checkout/:id', requireAuth, requireVerified, async (req, res, next)
     res.render('whale/checkout', {
       title: res.locals.t('checkout.title'),
       listing,
-      cities: CITIES,
+      cities: getCities(req.locale),
       providerAvailability: paymentService.getProviderAvailability(),
     });
   } catch (err) {

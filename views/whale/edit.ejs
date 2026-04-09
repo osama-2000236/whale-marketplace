@@ -105,7 +105,7 @@
               <label class="form-label"><%= t('sell.city') %></label>
               <select name="city" class="select" required>
                 <% cities.forEach((c) => { %>
-                  <option value="<%= c %>" <%= listing.city === c ? 'selected' : '' %>><%= c %></option>
+                  <option value="<%= c.value %>" <%= listing.city === c.value ? 'selected' : '' %>><%= c.label %></option>
                 <% }) %>
               </select>
             </div>

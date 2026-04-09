@@ -39,7 +39,7 @@
             <select name="city" class="select">
               <option value=""><%= t('whale.all_cities') %></option>
               <% cities.forEach((c) => { %>
-                <option value="<%= c %>" <%= filters.city === c ? 'selected' : '' %>><%= c %></option>
+                <option value="<%= c.value %>" <%= filters.city === c.value ? 'selected' : '' %>><%= c.label %></option>
               <% }) %>
             </select>
           </div>
