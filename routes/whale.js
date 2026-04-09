@@ -127,6 +127,23 @@ router.post('/listing/:id/save', requireAuth, async (req, res, next) => {
   }
 });
 
+// My listings
+router.get('/my-listings', requireAuth, async (req, res, next) => {
+  try {
+    const listings = await prisma.listing.findMany({
+      where: { sellerId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      include: { category: true },
+    });
+    res.render('whale/my-listings', {
+      title: res.locals.t('my_listings.title'),
+      listings,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Sell form
 router.get('/sell', requireAuth, requireVerified, requirePro, async (req, res, next) => {
   try {

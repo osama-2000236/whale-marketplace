@@ -3,6 +3,7 @@ const whaleService = require('../services/whaleService');
 const fallback = require('../services/fallbackMarketplace');
 const { marked } = require('marked');
 const { safeRedirect } = require('../utils/safeRedirect');
+const paymentService = require('../services/paymentService');
 
 // Home page (with fallback resilience)
 router.get('/', async (req, res, next) => {
@@ -47,6 +48,12 @@ router.post('/locale', (req, res) => {
   res.redirect(safeRedirect(req.headers.referer, '/'));
 });
 
+// Public pricing page — shows plan info, links authenticated users to /upgrade
+router.get('/pricing', (req, res) => {
+  const title = res.locals.locale === 'ar' ? 'الأسعار والباقات' : 'Pricing & Plans';
+  res.render('pages/pricing', { title, plans: paymentService.PLANS });
+});
+
 // Static pages
 const PAGES = {
   about: {
@@ -74,6 +81,17 @@ const PAGES = {
     contentEn: `# Safety Tips\n\n## For Buyers\n\n- Always use the escrow system\n- Never send money outside the platform\n- Check seller ratings and reviews\n- Only confirm delivery after inspecting the item\n\n## For Sellers\n\n- Use clear, real photos\n- Ship on time\n- Communicate politely with buyers\n- Add tracking numbers when shipping`,
   },
 };
+
+// Buyer protection page — dedicated URL referenced from marketing copy
+router.get('/buyer-protection', (req, res) => {
+  const locale = res.locals.locale;
+  const title = locale === 'ar' ? 'حماية المشتري' : 'Buyer Protection';
+  const contentAr = `# حماية المشتري — الحوت\n\n## كيف تعمل حماية المشتري؟\n\nعند الشراء عبر الحوت، أموالك **محفوظة** حتى تؤكد استلام المنتج بنفسك — البائع لا يرى أي مبلغ قبل ذلك.\n\n## ماذا يحدث إذا لم أستلم المنتج؟\n\nإذا لم يصلك المنتج أو كان مختلفاً عن الوصف، **نسترد أموالك كاملة**. افتح نزاعاً من صفحة الطلب خلال 48 ساعة من تأكيد التوصيل.\n\n## كيف تعمل آلية الضمان؟\n\n1. **تدفع** — تذهب أموالك إلى حساب ضمان محمي، وليس للبائع مباشرة\n2. **تستلم** — تفحص المنتج وتضغط \"تأكيد الاستلام\"\n3. **يُحوَّل المبلغ** — فقط بعد تأكيدك يصل المبلغ للبائع\n\n## هل تحتاج مساعدة؟\n\nتواصل معنا مباشرة عبر واتساب: [اضغط هنا للتواصل](https://wa.me/970597127547)`;
+  const contentEn = `# Buyer Protection — Whale\n\n## How does buyer protection work?\n\nWhen you purchase on Whale, your money is **held securely** until you confirm receipt of the item — the seller receives nothing until you do.\n\n## What if I don't receive my item?\n\nIf your item doesn't arrive or doesn't match the description, **we refund you in full**. Open a dispute from your order page within 48 hours of the delivery confirmation.\n\n## How does escrow work?\n\n1. **You pay** — funds go into a protected escrow account, not directly to the seller\n2. **You receive** — inspect the item and press "Confirm Delivery"\n3. **Funds release** — only after your confirmation does the seller get paid\n\n## Need help?\n\nContact us directly on WhatsApp: [Message us](https://wa.me/970597127547)`;
+  const content = locale === 'ar' ? contentAr : contentEn;
+  const html = marked(content);
+  res.render('pages/static', { title, content: html });
+});
 
 router.get('/pages/:slug', (req, res, next) => {
   const page = PAGES[req.params.slug];

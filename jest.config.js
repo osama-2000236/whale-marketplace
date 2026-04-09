@@ -1,6 +1,7 @@
 module.exports = {
   testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.test.js'],
+  testMatch: ['**/__tests__/**/*.test.js', '**/tests/**/*.test.js'],
+  testPathIgnorePatterns: ['/node_modules/', '/.claude/worktrees/', '/tests/e2e/'],
   collectCoverageFrom: [
     'lib/i18n.js',
     'middleware/auth.js',
