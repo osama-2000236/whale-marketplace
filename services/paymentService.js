@@ -205,6 +205,28 @@ async function getPaypalAccessToken() {
   return { base, accessToken: tokenRes.data.access_token };
 }
 
+/**
+ * Verify a PayPal webhook notification signature via the PayPal REST API.
+ * @param {Object} verificationPayload - Contains auth_algo, cert_url, transmission_id, transmission_sig, transmission_time, webhook_id, webhook_event
+ * @throws {Error} If verification fails or returns FAILURE
+ */
+async function verifyPaypalWebhook(verificationPayload) {
+  const { base, accessToken } = await getPaypalAccessToken();
+  const verifyRes = await axios.post(
+    `${base}/v1/notifications/verify-webhook-signature`,
+    verificationPayload,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+  if (verifyRes.data.verification_status !== 'SUCCESS') {
+    throw new Error('PAYPAL_WEBHOOK_SIGNATURE_INVALID');
+  }
+}
+
 async function startPaypalCheckout(payment, { description }) {
   ensureProviderConfigured('paypal');
 
@@ -712,6 +734,7 @@ module.exports = {
   createOrderPaymentSession,
   verifyStripeWebhook,
   verifyPaymobWebhook,
+  verifyPaypalWebhook,
   settlePaymentSuccess,
   settlePaymentFailure,
   handleSuccessReturn,

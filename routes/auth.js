@@ -109,10 +109,19 @@ router.post('/login', authLimiter, (req, res, next) => {
       };
       return res.redirect(withQueryLocation('/auth/login', nextUrl));
     }
-    req.logIn(user, (loginErr) => {
-      if (loginErr) return next(loginErr);
-      req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
-      return res.redirect(nextUrl);
+    // Regenerate session to prevent session fixation attacks
+    const oldSession = { ...req.session };
+    req.session.regenerate((regenerateErr) => {
+      if (regenerateErr) return next(regenerateErr);
+      // Restore non-auth session data (locale, cart, etc.)
+      if (oldSession.locale) req.session.locale = oldSession.locale;
+      if (oldSession.cart) req.session.cart = oldSession.cart;
+
+      req.logIn(user, (loginErr) => {
+        if (loginErr) return next(loginErr);
+        req.session.flash = { type: 'success', message: res.locals.t('flash.login_success') };
+        return res.redirect(nextUrl);
+      });
     });
   })(req, res, next);
 });

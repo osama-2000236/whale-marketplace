@@ -3,7 +3,7 @@
 const TRANSITIONS = {
   PENDING: { confirm: 'CONFIRMED', cancel: 'CANCELLED' },
   CONFIRMED: { ship: 'SHIPPED', cancel: 'CANCELLED' },
-  SHIPPED: { deliver: 'COMPLETED', dispute: 'DISPUTED' },
+  SHIPPED: { deliver: 'DELIVERED', dispute: 'DISPUTED' },
   DELIVERED: { complete: 'COMPLETED', dispute: 'DISPUTED' },
   DISPUTED: { resolve: null },
 };
