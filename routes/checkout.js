@@ -6,7 +6,7 @@ const cartService = require('../services/cartService');
 const paymentService = require('../services/paymentService');
 const userService = require('../services/userService');
 
-const CITIES = ['Gaza', 'Ramallah', 'Nablus', 'Hebron', 'Jenin', 'Jerusalem'];
+const { getCities } = require('../lib/cities');
 
 function getCheckoutMessage(code) {
   if (String(code || '').startsWith('INSUFFICIENT_STOCK:')) {
@@ -45,7 +45,7 @@ router.get('/', async (req, res, next) => {
       itemCount,
       total,
       currency,
-      cities: CITIES,
+      cities: getCities(req.locale),
       addresses,
       providerAvailability: paymentService.getProviderAvailability(),
     });

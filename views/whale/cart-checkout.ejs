@@ -37,7 +37,7 @@
               <label class="form-label"><%= t('checkout.city') %> <span class="required">*</span></label>
               <select name="city" id="city" class="select" required>
                 <% cities.forEach(c => { %>
-                <option value="<%= c %>"><%= c %></option>
+                <option value="<%= c.value %>"><%= c.label %></option>
                 <% }) %>
               </select>
             </div>

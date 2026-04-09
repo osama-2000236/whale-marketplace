@@ -86,7 +86,7 @@
               <select name="city" class="select" required>
                 <option value="">--</option>
                 <% cities.forEach(c => { %>
-                <option value="<%= c %>"><%= c %></option>
+                <option value="<%= c.value %>"><%= c.label %></option>
                 <% }) %>
               </select>
             </div>

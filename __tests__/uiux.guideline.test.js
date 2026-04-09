@@ -49,11 +49,14 @@ describe('UI/UX guideline checks (deep)', () => {
     expect(css).toContain("html[data-theme='dark']");
   });
 
-  test('CSS includes RTL rules for key components', () => {
+  test('CSS includes RTL support via logical properties and font swap', () => {
+    // After Phase 2A RTL modernization, physical [dir='rtl'] overrides were replaced
+    // with CSS logical properties. Only the font-family swap remains.
     expect(css).toContain("html[dir='rtl']");
-    expect(css).toContain("[dir='rtl'] .notification-count");
-    expect(css).toContain("[dir='rtl'] .user-menu-dropdown");
-    expect(css).toContain("[dir='rtl'] .timeline::before");
+    // Verify logical properties are used instead of physical overrides
+    expect(css).toContain('inset-inline-start');
+    expect(css).toContain('inset-inline-end');
+    expect(css).toContain('padding-inline-end');
   });
 
   test('CSS includes base responsive breakpoints', () => {
