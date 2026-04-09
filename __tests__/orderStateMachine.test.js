@@ -43,10 +43,10 @@ describe('Order State Machine', () => {
     expect(result).toBe('CANCELLED');
   });
 
-  test('SHIPPED + deliver → COMPLETED (buyer)', () => {
+  test('SHIPPED + deliver → DELIVERED (buyer)', () => {
     const order = makeOrder('SHIPPED');
     const result = validateTransition(order, 'buyer1', 'MEMBER', 'deliver');
-    expect(result).toBe('COMPLETED');
+    expect(result).toBe('DELIVERED');
   });
 
   test('SHIPPED + dispute → DISPUTED (buyer)', () => {

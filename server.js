@@ -62,7 +62,7 @@ app.use(
       : new session.MemoryStore(),
     secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
     rolling: true,
     cookie: {
       httpOnly: true,
@@ -178,7 +178,7 @@ function ensureLocals(res) {
     isPro: false,
     inTrial: false,
     notifCount: 0,
-    flash: { success: [], error: [], info: [] },
+    flash: null,
     hasGoogle: !!process.env.GOOGLE_CLIENT_ID,
     hasFacebook: !!process.env.FACEBOOK_APP_ID,
     hasApple: !!process.env.APPLE_SERVICE_ID,

@@ -276,12 +276,31 @@ router.post('/refunds/:id', requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT'), a
 // Admin 2FA setup
 router.post('/setup-2fa', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
   try {
-    const { secret } = await authSecurityService.setupAdmin2FA(req.user.id);
-    req.session.flash = { type: 'success', message: '2FA enabled. Secret: ' + secret };
-    res.redirect('/admin');
+    const { secret, otpauthUrl } = await authSecurityService.setupAdmin2FA(req.user.id);
+    // Never expose the raw secret in flash messages — store in session for one-time display
+    req.session.pending2FA = { secret, otpauthUrl };
+    req.session.flash = { type: 'success', message: '2FA enabled. Please scan the QR code or copy your secret from the setup page.' };
+    res.redirect('/admin/confirm-2fa');
   } catch (err) {
     next(err);
   }
+});
+
+// 2FA setup confirmation page — shows secret once, then clears it from session
+router.get('/confirm-2fa', requireAdminScope('SUPER_ADMIN'), (req, res) => {
+  const pending = req.session.pending2FA;
+  if (!pending) {
+    req.session.flash = { type: 'info', message: '2FA setup has already been completed.' };
+    return res.redirect('/admin');
+  }
+  // Clear from session after reading — secret is shown only once
+  delete req.session.pending2FA;
+  req.session.save();
+  res.render('admin/confirm-2fa', {
+    title: '2FA Setup',
+    secret: pending.secret,
+    otpauthUrl: pending.otpauthUrl,
+  });
 });
 
 module.exports = router;

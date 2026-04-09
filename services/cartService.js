@@ -62,6 +62,15 @@ async function addItem(userId, listingId, quantity = 1) {
 
   const cart = await getOrCreateCart(userId);
 
+  // Block mixed-currency carts — all items must share the same currency
+  if (cart.items.length > 0) {
+    const cartCurrency = cart.items[0].listing?.currency || 'USD';
+    const itemCurrency = listing.currency || 'USD';
+    if (itemCurrency !== cartCurrency) {
+      throw new Error('MIXED_CURRENCY');
+    }
+  }
+
   const existing = cart.items.find((item) => item.listingId === listingId);
   if (existing) {
     const newQty = existing.quantity + quantity;
@@ -173,6 +182,12 @@ async function getCartSummary(userId) {
   const cart = await getOrCreateCart(userId);
   const items = cart.items.filter((item) => item.listing.status === 'ACTIVE');
 
+  // Validate all items share the same currency
+  const currencies = [...new Set(items.map((item) => item.listing?.currency || 'USD'))];
+  if (currencies.length > 1) {
+    throw new Error('MIXED_CURRENCY');
+  }
+
   let total = 0;
   for (const item of items) {
     total += Number(item.listing.price) * item.quantity;
@@ -182,7 +197,7 @@ async function getCartSummary(userId) {
     cart,
     itemCount: items.length,
     total: total.toFixed(2),
-    currency: items[0]?.listing?.currency || 'USD',
+    currency: currencies[0] || 'USD',
   };
 }
 
