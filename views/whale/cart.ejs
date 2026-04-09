@@ -62,7 +62,7 @@
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
         <button type="submit" class="btn btn-ghost"><%= locale === 'ar' ? 'تفريغ السلة' : 'Clear Cart' %></button>
       </form>
-      <div style="text-align: right">
+      <div style="text-align: end">
         <div style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem">
           <%= locale === 'ar' ? 'الإجمالي:' : 'Total:' %> <%= currency %> <%= parseFloat(total).toFixed(2) %>
         </div>
