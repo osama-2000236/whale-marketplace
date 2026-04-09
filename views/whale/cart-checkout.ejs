@@ -59,8 +59,15 @@
             <div class="form-group">
               <select name="paymentMethod" class="select">
                 <option value="manual"><%= locale === 'ar' ? 'دفع يدوي / عند الاستلام' : 'Manual / Cash on Delivery' %></option>
+                <% if (providerAvailability?.paymob) { %>
                 <option value="paymob">Paymob</option>
+                <% } %>
+                <% if (providerAvailability?.paypal) { %>
                 <option value="paypal">PayPal</option>
+                <% } %>
+                <% if (providerAvailability?.stripe) { %>
+                <option value="stripe">Stripe</option>
+                <% } %>
               </select>
             </div>
 

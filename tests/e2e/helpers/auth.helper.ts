@@ -1,88 +1,166 @@
-import { Page, expect } from '@playwright/test';
+import { expect, type Browser, type Page } from '@playwright/test';
 
-/**
- * Helper: Log in as a specific user via the /auth/login form.
- * Uses the real selectors discovered from the live Brave inspection:
- *   - identifier field: input[name="identifier"]
- *   - password field:   input[name="password"]
- *   - submit button:    button[type="submit"]
- */
-export async function loginAs(
-  page: Page,
-  identifier: string,
-  password: string
-): Promise<void> {
-  await page.goto('/auth/login');
-  await page.waitForSelector('input[name="identifier"]');
-  await page.fill('input[name="identifier"]', identifier);
-  await page.fill('input[name="password"]', password);
-  await page.click('button[type="submit"]');
-  // Wait for redirect away from login page
-  await page.waitForURL((url) => !url.pathname.includes('/auth/login'), {
-    timeout: 10_000,
-  });
-}
-
-/**
- * Helper: Register a unique test user.
- * Uses the real selectors from the live /auth/register page:
- *   - username:  input[name="username"]
- *   - email:     input[name="email"]
- *   - password:  input[name="password"]
- *   - submit:    button[type="submit"]
- */
-export async function registerTestUser(page: Page): Promise<{
+export type TestUser = {
   username: string;
   email: string;
   password: string;
-}> {
-  const ts = Date.now();
-  const username = `qa_${ts}`;
-  const email = `qa-${ts}@whale-test.com`;
-  const password = 'QATestWhale2026!';
+};
+
+const SELL_IMAGE_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==';
+
+export function buildSellImageFile() {
+  return {
+    name: 'sell-image.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(SELL_IMAGE_PNG_BASE64, 'base64'),
+  };
+}
+
+export function buildTestUser(prefix = 'qa'): TestUser {
+  const stamp = `${Date.now()}${Math.random().toString(36).slice(2, 8)}`;
+  return {
+    username: `${prefix}_${stamp}`.slice(0, 30),
+    email: `${prefix}-${stamp}@whale-test.com`,
+    password: 'QATestWhale2026!',
+  };
+}
+
+async function openAuthDisclosure(page: Page, formSelector: string, toggleSelector: string): Promise<void> {
+  const form = page.locator(formSelector);
+  if (await form.isVisible()) {
+    return;
+  }
+
+  const toggle = page.locator(toggleSelector);
+  if (await toggle.count()) {
+    await toggle.first().click();
+    await expect(form).toBeVisible();
+  }
+}
+
+export async function ensureLoginFormVisible(page: Page): Promise<void> {
+  await openAuthDisclosure(page, 'form[action="/auth/login"]', '#show-local-login');
+}
+
+export async function ensureRegisterFormVisible(page: Page): Promise<void> {
+  await openAuthDisclosure(page, 'form[action="/auth/register"]', '#show-local-register');
+}
+
+export async function registerTestUser(page: Page, user: Partial<TestUser> = {}): Promise<TestUser> {
+  const credentials = { ...buildTestUser(), ...user };
 
   await page.goto('/auth/register');
-  await page.waitForSelector('input[name="username"]');
-  await page.fill('input[name="username"]', username);
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
-  await page.click('button[type="submit"]');
-  // Wait for redirect away from register page
-  await page.waitForURL((url) => !url.pathname.includes('/auth/register'), {
-    timeout: 10_000,
-  });
+  await ensureRegisterFormVisible(page);
+  await page.locator('input[name="username"]').fill(credentials.username);
+  await page.locator('input[name="email"]').fill(credentials.email);
+  await page.locator('input[name="password"]').fill(credentials.password);
+  await page.locator('input[name="confirmPassword"]').fill(credentials.password);
 
-  return { username, email, password };
+  await Promise.all([
+    page.waitForURL((url) => !url.pathname.endsWith('/auth/register'), {
+      waitUntil: 'domcontentloaded',
+    }),
+    page.locator('form[action="/auth/register"] button').click(),
+  ]);
+
+  await expect(page).toHaveURL(/\/whale(?:\?.*)?$/);
+  return credentials;
 }
 
-/**
- * Helper: Log out via POST /auth/logout form.
- */
-export async function logout(page: Page): Promise<void> {
-  // The logout is a POST form in the user menu dropdown
-  await page.evaluate(() => {
-    const form = document.querySelector(
-      'form[action="/auth/logout"]'
-    ) as HTMLFormElement;
-    if (form) form.submit();
-  });
-  await page.waitForURL('/', { timeout: 10_000 });
+export async function createRegisteredUser(
+  browser: Browser,
+  user: Partial<TestUser> = {}
+): Promise<TestUser> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+
+  try {
+    return await registerTestUser(page, user);
+  } finally {
+    await context.close();
+  }
 }
 
-/**
- * Demo credentials seeded in the database.
- */
-export const DEMO_SELLER = {
-  identifier: 'demo_seller',
-  password: 'Demo1234!',
-};
+export async function loginAs(
+  page: Page,
+  identifier: string,
+  password: string,
+  next = '/whale'
+): Promise<void> {
+  await page.goto(`/auth/login?next=${encodeURIComponent(next)}`);
+  await ensureLoginFormVisible(page);
+  await page.locator('input[name="identifier"]').fill(identifier);
+  await page.locator('input[name="password"]').fill(password);
 
-export const DEMO_BUYER = {
-  identifier: 'demo_buyer',
-  password: 'Demo1234!',
-};
+  await Promise.all([
+    page.waitForURL((url) => !url.pathname.endsWith('/auth/login'), {
+      waitUntil: 'domcontentloaded',
+    }),
+    page.locator('form[action="/auth/login"] button').click(),
+  ]);
+}
 
-export const ADMIN = {
-  identifier: 'admin',
-  password: 'Admin1234!',
-};
+export async function validationMessage(page: Page, selector: string): Promise<string> {
+  return page.locator(selector).evaluate((element) => {
+    return (element as HTMLInputElement).validationMessage;
+  });
+}
+
+export async function openUserMenu(page: Page): Promise<void> {
+  const trigger = page.locator('.user-menu-trigger');
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  await expect(page.locator('.user-menu-dropdown')).toBeVisible();
+}
+
+export async function getCsrfToken(page: Page): Promise<string> {
+  return page.locator('meta[name="csrf-token"]').getAttribute('content').then((value) => value || '');
+}
+
+export async function addCurrentListingToCart(page: Page, quantity = 1): Promise<string> {
+  const checkoutHref = await page.locator('.listing-detail-actions a[href^="/whale/checkout/"]').first().getAttribute('href');
+  if (!checkoutHref) {
+    throw new Error('Missing checkout link for listing');
+  }
+
+  const listingId = checkoutHref.split('/').pop();
+  if (!listingId) {
+    throw new Error('Missing listing id in checkout link');
+  }
+
+  const csrfToken = await getCsrfToken(page);
+  const result = await page.evaluate(
+    async ({ csrf, itemListingId, itemQuantity }) => {
+      const response = await fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          'x-csrf-token': csrf,
+        },
+        body: JSON.stringify({
+          listingId: itemListingId,
+          quantity: itemQuantity,
+        }),
+      });
+
+      const body = await response.json().catch(() => null);
+      return {
+        ok: response.ok,
+        status: response.status,
+        error: body?.error || body?.message || null,
+      };
+    },
+    { csrf: csrfToken, itemListingId: listingId, itemQuantity: quantity },
+  );
+
+  if (!result.ok) {
+    throw new Error(result.error || `Failed to add listing ${listingId} to cart (${result.status})`);
+  }
+
+  await page.goto('/cart');
+  await expect(page).toHaveURL(/\/cart$/);
+
+  return listingId;
+}

@@ -4,6 +4,7 @@
   "description": "Whale (الحوت) — Trust-first peer-to-peer marketplace for Palestine and Arab cities",
   "main": "server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "node --watch server.js",
     "start": "node entrypoint.js",
     "prisma:generate": "prisma generate",
@@ -24,6 +25,7 @@
     "@anthropic-ai/sdk": "^0.24.0",
     "@prisma/client": "^6.19.2",
     "@sendgrid/mail": "^8.1.0",
+    "axios": "^1.14.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.0.0",
     "connect-pg-simple": "^9.0.0",

@@ -15,6 +15,8 @@ jest.mock('../lib/prisma', () => ({
   },
 }));
 
+process.env.DATABASE_URL = 'postgresql://test/db';
+
 const prisma = require('../lib/prisma');
 const cartService = require('../services/cartService');
 

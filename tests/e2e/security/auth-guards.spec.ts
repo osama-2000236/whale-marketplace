@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { registerTestUser } from '../helpers/auth.helper';
+import { ensureLoginFormVisible, registerTestUser } from '../helpers/auth.helper';
 
 test.describe('Security auth guards', () => {
   test('/whale/sell redirects unauthenticated users to /auth/login', async ({ page }) => {
@@ -23,6 +23,13 @@ test.describe('Security auth guards', () => {
     await expect(page).toHaveURL(/\/auth\/login\?next=%2Fwhale%2Forders$/);
   });
 
+  test('/checkout redirects unauthenticated users to /auth/login', async ({ page }) => {
+    // Intent: verify the cart checkout route preserves its auth guard for anonymous visitors.
+    await page.goto('/checkout');
+
+    await expect(page).toHaveURL(/\/auth\/login\?next=%2Fcheckout$/);
+  });
+
   test('/admin blocks authenticated non-admin users', async ({ page }) => {
     // Intent: verify the live admin area remains protected even after a normal user signs in successfully.
     await registerTestUser(page);
@@ -41,6 +48,7 @@ test.describe('Security auth guards', () => {
     });
 
     await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
     await page.locator('input[name="identifier"]').fill('<script>alert(1)</script>');
     await page.locator('input[name="password"]').fill('QATestWhale2026!');
 
@@ -56,6 +64,7 @@ test.describe('Security auth guards', () => {
   test('SQL injection in login field does not crash app', async ({ page }) => {
     // Intent: verify a classic SQL injection payload is handled as plain text and leaves the live app responsive.
     await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
     await page.locator('input[name="identifier"]').fill("' OR 1=1 --");
     await page.locator('input[name="password"]').fill('QATestWhale2026!');
 
@@ -64,6 +73,7 @@ test.describe('Security auth guards', () => {
       page.locator('form[action="/auth/login"] button').click(),
     ]);
 
+    await ensureLoginFormVisible(page);
     await expect(page.locator('form[action="/auth/login"]')).toBeVisible();
     await expect(page.locator('.flash.flash-danger')).toBeVisible();
   });

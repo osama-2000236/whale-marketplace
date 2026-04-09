@@ -1,69 +1,89 @@
-import { test, expect } from '@playwright/test';
-import { loginAs, DEMO_SELLER } from '../helpers/auth.helper';
+import { expect, test } from '@playwright/test';
+import {
+  createRegisteredUser,
+  ensureLoginFormVisible,
+  loginAs,
+  openUserMenu,
+  validationMessage,
+} from '../helpers/auth.helper';
 
-test.describe('Login Page (/auth/login)', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('Auth login', () => {
+  test('Page loads with email and password fields', async ({ page }) => {
+    // Intent: verify the Google-first login page still exposes the shared local login form after opening the disclosure.
     await page.goto('/auth/login');
-  });
 
-  /** Login page renders with correct heading and form fields */
-  test('page loads with heading and form', async ({ page }) => {
-    // With ar-PS locale the page title and heading are in Arabic
-    await expect(page).toHaveTitle(/تسجيل الدخول/);
-    const heading = page.locator('h1, h2').first();
-    await expect(heading).toContainText(/تسجيل الدخول/);
-    // Real form fields: input[name="identifier"] and input[name="password"]
+    await expect(page.locator('#show-local-login')).toBeVisible();
+    await ensureLoginFormVisible(page);
     await expect(page.locator('input[name="identifier"]')).toBeVisible();
     await expect(page.locator('input[name="password"]')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
-    // "Forgot Password?" link observed in Brave
-    await expect(page.locator('a[href="/auth/forgot-password"]')).toBeVisible();
   });
 
-  /** Empty submission triggers HTML5 validation (stays on page) */
-  test('empty form does not submit', async ({ page }) => {
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL(/\/auth\/login/);
+  test('Google sign-in button is visible when Google OAuth is configured', async ({ page }) => {
+    // Intent: verify the local test server exposes the Google sign-in CTA and local icon asset when Google OAuth env vars are present.
+    await page.goto('/auth/login?next=/checkout');
+
+    const googleButton = page.locator('a[href="/auth/google?next=%2Fcheckout"]').first();
+    await expect(googleButton).toBeVisible();
+    await expect(googleButton.locator('img[src="/icons/google.svg"]')).toBeVisible();
   });
 
-  /** Wrong password keeps user on login page with flash error */
-  test('wrong password shows error', async ({ page }) => {
-    await page.fill('input[name="identifier"]', 'admin');
-    await page.fill('input[name="password"]', 'WrongPassword123!');
-    await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
-    // Should redirect back to login (flash sets then redirects)
-    await expect(page).toHaveURL(/\/auth\/login/);
+  test('Empty submission shows validation errors', async ({ page }) => {
+    // Intent: verify the browser-native required validation blocks empty login submits on the production form.
+    await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
+    await page.locator('form[action="/auth/login"] button').click();
+
+    await expect.poll(() => validationMessage(page, 'input[name="identifier"]')).not.toBe('');
+    await expect.poll(() => validationMessage(page, 'input[name="password"]')).not.toBe('');
   });
 
-  /** Non-existent user shows error */
-  test('non-existent user shows error', async ({ page }) => {
-    await page.fill('input[name="identifier"]', 'nonexistentuser99999');
-    await page.fill('input[name="password"]', 'SomePassword123!');
-    await page.click('button[type="submit"]');
-    await page.waitForTimeout(2000);
-    await expect(page).toHaveURL(/\/auth\/login/);
+  test('Wrong password shows error', async ({ browser, page }) => {
+    // Intent: verify a real user cannot authenticate with an incorrect password and receives a visible error state.
+    const user = await createRegisteredUser(browser);
+
+    await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
+    await page.locator('input[name="identifier"]').fill(user.email);
+    await page.locator('input[name="password"]').fill(`${user.password}-wrong`);
+
+    await page.locator('form[action="/auth/login"] button').click();
+
+    await expect(page).toHaveURL(/\/auth\/login(?:\?.*)?$/);
+    await expect(page.locator('.flash.flash-danger')).toBeVisible();
   });
 
-  /** Valid credentials log in and redirect to /whale */
-  test('valid login redirects to app', async ({ page }) => {
-    await page.fill('input[name="identifier"]', DEMO_SELLER.identifier);
-    await page.fill('input[name="password"]', DEMO_SELLER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL((url) => !url.pathname.includes('/auth/login'), {
-      timeout: 10_000,
-    });
-    // Should be on /whale or dashboard
-    expect(page.url()).not.toContain('/auth/login');
+  test('Non-existent email shows error', async ({ page }) => {
+    // Intent: verify the backend rejects unknown identifiers cleanly instead of crashing or redirecting incorrectly.
+    await page.goto('/auth/login');
+    await ensureLoginFormVisible(page);
+    await page.locator('input[name="identifier"]').fill(`missing-${Date.now()}@whale-test.com`);
+    await page.locator('input[name="password"]').fill('QATestWhale2026!');
+
+    await page.locator('form[action="/auth/login"] button').click();
+
+    await expect(page).toHaveURL(/\/auth\/login(?:\?.*)?$/);
+    await expect(page.locator('.flash.flash-danger')).toBeVisible();
   });
 
-  /** After login, nav shows logged-in state (no Login/Register links) */
-  test('nav updates after login', async ({ page }) => {
-    await loginAs(page, DEMO_SELLER.identifier, DEMO_SELLER.password);
-    // Dashboard link exists in DOM — on mobile it's inside a collapsed hamburger menu
-    // so we check attachment (present in DOM) rather than visibility.
-    await expect(page.locator('nav a[href="/whale/dashboard"]')).toBeAttached();
-    // Login link should NOT be present (logged-in state removes it from DOM)
-    await expect(page.locator('nav a[href="/auth/login"]')).toBeHidden();
+  test('Valid credentials log in and redirect', async ({ browser, page }) => {
+    // Intent: verify a production account created through the live UI can authenticate on a fresh session and reach the target route.
+    const user = await createRegisteredUser(browser);
+
+    await loginAs(page, user.email, user.password);
+
+    await expect(page).toHaveURL(/\/whale(?:\?.*)?$/);
+    await expect(page.locator('.user-menu-trigger')).toBeVisible();
+  });
+
+  test('Nav reflects logged-in state after login', async ({ browser, page }) => {
+    // Intent: verify the public login/register navbar actions disappear and the authenticated user menu appears after login.
+    const user = await createRegisteredUser(browser);
+
+    await loginAs(page, user.email, user.password);
+    await openUserMenu(page);
+
+    await expect(page.locator('.user-menu-dropdown a[href="/profile"]')).toBeVisible();
+    await expect(page.locator('.navbar-actions a[href="/auth/login"]')).toHaveCount(0);
+    await expect(page.locator('.navbar-actions a[href="/auth/register"]')).toHaveCount(0);
   });
 });

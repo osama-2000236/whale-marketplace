@@ -1,39 +1,134 @@
-const prisma = require('../lib/prisma');
 const crypto = require('crypto');
+const axios = require('axios');
+const prisma = require('../lib/prisma');
 
-// Pricing tiers (USD)
-const PLANS = {
-  1: { price: 5, label: 'Monthly' },
-  6: { price: 25, label: '6 Months' },
-  12: { price: 45, label: 'Annual' },
+const ORDER_PAYMENT_STATUS = {
+  pending: 'pending',
+  paid: 'paid',
+  failed: 'failed',
+  refunded: 'refunded',
 };
 
-function getPlanPrice(months) {
-  return PLANS[months]?.price || PLANS[1].price;
+function getPlans() {
+  return {
+    1: { price: Number(process.env.PRO_MONTHLY_PRICE || 5), label: 'Monthly' },
+    6: { price: Number(process.env.PRO_SEMIANNUAL_PRICE || 25), label: '6 Months' },
+    12: { price: Number(process.env.PRO_ANNUAL_PRICE || 45), label: 'Annual' },
+  };
 }
 
-async function createPaymobSession(userId, planMonths) {
-  const price = getPlanPrice(planMonths);
-  const idempotencyKey = crypto.randomUUID();
+const PLANS = getPlans();
 
-  const payment = await prisma.payment.create({
-    data: {
-      userId,
-      provider: 'PAYMOB',
-      amount: price,
-      currency: 'USD',
-      planMonths: parseInt(planMonths) || 1,
-      idempotencyKey,
-      status: 'PENDING',
-    },
-  });
+function getPlanPrice(months) {
+  const normalizedMonths = [1, 6, 12].includes(Number(months)) ? Number(months) : 1;
+  return getPlans()[normalizedMonths].price;
+}
 
-  if (!process.env.PAYMOB_API_KEY) {
-    return { iframeUrl: null, paymentId: payment.id, error: 'Paymob not configured' };
+function getPlanLabel(months) {
+  const normalizedMonths = [1, 6, 12].includes(Number(months)) ? Number(months) : 1;
+  return getPlans()[normalizedMonths].label;
+}
+
+function getBaseUrl() {
+  return process.env.BASE_URL || 'http://localhost:3000';
+}
+
+function getProviderAvailability() {
+  if (!process.env.DATABASE_URL) {
+    return {
+      paymob: false,
+      paypal: false,
+      stripe: false,
+    };
   }
 
-  // Paymob integration: auth → order → payment key → iframe
-  const axios = require('axios');
+  return {
+    paymob: Boolean(process.env.PAYMOB_API_KEY && process.env.PAYMOB_INTEGRATION_ID && process.env.PAYMOB_IFRAME_ID),
+    paypal: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
+    stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+  };
+}
+
+function normalizeProvider(provider) {
+  return String(provider || '').trim().toLowerCase();
+}
+
+function providerToEnum(provider) {
+  return normalizeProvider(provider).toUpperCase();
+}
+
+function mergePaymentMetadata(currentMetadata, patch) {
+  return {
+    ...(currentMetadata || {}),
+    ...(patch || {}),
+    providerRefs: {
+      ...((currentMetadata && currentMetadata.providerRefs) || {}),
+      ...((patch && patch.providerRefs) || {}),
+    },
+  };
+}
+
+function ensureProviderConfigured(provider) {
+  const availability = getProviderAvailability();
+  if (!availability[normalizeProvider(provider)]) {
+    throw new Error('PAYMENT_PROVIDER_DISABLED');
+  }
+}
+
+async function findPaymentByProviderPaymentId(provider, providerPaymentId) {
+  return prisma.payment.findFirst({
+    where: {
+      provider: providerToEnum(provider),
+      providerPaymentId: String(providerPaymentId),
+    },
+  });
+}
+
+async function createPaymentRecord({
+  userId,
+  purpose,
+  provider,
+  amount,
+  currency = 'USD',
+  planMonths = 1,
+  metadata = {},
+}) {
+  return prisma.payment.create({
+    data: {
+      userId,
+      purpose,
+      provider: providerToEnum(provider),
+      amount: Number(amount).toFixed(2),
+      currency,
+      planMonths: Number(planMonths) || 1,
+      idempotencyKey: crypto.randomUUID(),
+      status: 'PENDING',
+      metadata,
+    },
+  });
+}
+
+async function markPaymentFailedOnly(paymentId, reason) {
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment || payment.status !== 'PENDING') return payment;
+
+  const metadata = mergePaymentMetadata(payment.metadata, { failureReason: reason || null });
+  return prisma.payment.update({
+    where: { id: paymentId },
+    data: { status: 'FAILED', metadata },
+  });
+}
+
+async function getUserBillingIdentity(userId) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, username: true },
+  });
+}
+
+async function startPaymobCheckout(payment, { description, email }) {
+  ensureProviderConfigured('paymob');
+
   const base = process.env.PAYMOB_BASE_URL || 'https://accept.paymob.com/api';
 
   const authRes = await axios.post(`${base}/auth/tokens`, { api_key: process.env.PAYMOB_API_KEY });
@@ -42,12 +137,12 @@ async function createPaymobSession(userId, planMonths) {
   const orderRes = await axios.post(`${base}/ecommerce/orders`, {
     auth_token: token,
     delivery_needed: false,
-    amount_cents: price * 100,
-    currency: 'USD',
+    amount_cents: Math.round(Number(payment.amount) * 100),
+    currency: payment.currency,
     items: [
       {
-        name: `Whale Pro - ${PLANS[planMonths]?.label || 'Monthly'}`,
-        amount_cents: price * 100,
+        name: description,
+        amount_cents: Math.round(Number(payment.amount) * 100),
         quantity: 1,
       },
     ],
@@ -55,13 +150,13 @@ async function createPaymobSession(userId, planMonths) {
 
   const payKeyRes = await axios.post(`${base}/acceptance/payment_keys`, {
     auth_token: token,
-    amount_cents: price * 100,
+    amount_cents: Math.round(Number(payment.amount) * 100),
     expiration: 3600,
     order_id: orderRes.data.id,
     billing_data: {
       first_name: 'Whale',
       last_name: 'User',
-      email: 'user@whale.ps',
+      email: email || 'user@whale.ps',
       phone_number: '0000',
       street: 'N/A',
       city: 'N/A',
@@ -73,47 +168,33 @@ async function createPaymobSession(userId, planMonths) {
       shipping_method: 'N/A',
       postal_code: 'N/A',
     },
-    currency: 'USD',
+    currency: payment.currency,
     integration_id: process.env.PAYMOB_INTEGRATION_ID,
   });
 
   await prisma.payment.update({
     where: { id: payment.id },
-    data: { providerPaymentId: String(orderRes.data.id) },
-  });
-
-  const iframeUrl = `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${payKeyRes.data.token}`;
-
-  return { iframeUrl, paymentId: payment.id };
-}
-
-async function createPaypalOrder(userId, planMonths) {
-  const price = getPlanPrice(planMonths);
-  const idempotencyKey = crypto.randomUUID();
-
-  const payment = await prisma.payment.create({
     data: {
-      userId,
-      provider: 'PAYPAL',
-      amount: price,
-      currency: 'USD',
-      planMonths: parseInt(planMonths) || 1,
-      idempotencyKey,
-      status: 'PENDING',
+      providerPaymentId: String(orderRes.data.id),
+      metadata: mergePaymentMetadata(payment.metadata, {
+        providerRefs: { paymobOrderId: String(orderRes.data.id) },
+      }),
     },
   });
 
-  if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
-    return { approvalUrl: null, orderId: payment.id, error: 'PayPal not configured' };
-  }
+  return {
+    redirectUrl: `https://accept.paymob.com/api/acceptance/iframes/${process.env.PAYMOB_IFRAME_ID}?payment_token=${payKeyRes.data.token}`,
+    providerPaymentId: String(orderRes.data.id),
+  };
+}
 
-  const axios = require('axios');
+async function getPaypalAccessToken() {
   const mode = process.env.PAYPAL_MODE === 'live' ? 'api-m' : 'api-m.sandbox';
   const base = `https://${mode}.paypal.com`;
-
   const authStr = Buffer.from(
     `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
   ).toString('base64');
+
   const tokenRes = await axios.post(`${base}/v1/oauth2/token`, 'grant_type=client_credentials', {
     headers: {
       Authorization: `Basic ${authStr}`,
@@ -121,24 +202,31 @@ async function createPaypalOrder(userId, planMonths) {
     },
   });
 
+  return { base, accessToken: tokenRes.data.access_token };
+}
+
+async function startPaypalCheckout(payment, { description }) {
+  ensureProviderConfigured('paypal');
+
+  const { base, accessToken } = await getPaypalAccessToken();
   const orderRes = await axios.post(
     `${base}/v2/checkout/orders`,
     {
       intent: 'CAPTURE',
       purchase_units: [
         {
-          amount: { currency_code: 'USD', value: price.toFixed(2) },
-          description: `Whale Pro - ${PLANS[planMonths]?.label || 'Monthly'}`,
+          amount: { currency_code: payment.currency, value: Number(payment.amount).toFixed(2) },
+          description,
         },
       ],
       application_context: {
-        return_url: `${process.env.BASE_URL || 'http://localhost:3000'}/payment/success?paymentId=${payment.id}`,
-        cancel_url: `${process.env.BASE_URL || 'http://localhost:3000'}/upgrade`,
+        return_url: `${getBaseUrl()}/payment/success?paymentId=${payment.id}`,
+        cancel_url: `${getBaseUrl()}/payment/cancel?paymentId=${payment.id}`,
       },
     },
     {
       headers: {
-        Authorization: `Bearer ${tokenRes.data.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
     }
@@ -146,94 +234,345 @@ async function createPaypalOrder(userId, planMonths) {
 
   await prisma.payment.update({
     where: { id: payment.id },
-    data: { providerPaymentId: orderRes.data.id },
-  });
-
-  const approvalUrl = orderRes.data.links.find((l) => l.rel === 'approve')?.href;
-
-  return { approvalUrl, orderId: orderRes.data.id, paymentId: payment.id };
-}
-
-async function capturePaypalOrder(paypalOrderId) {
-  const payment = await prisma.payment.findFirst({
-    where: { providerPaymentId: paypalOrderId, provider: 'PAYPAL' },
-  });
-  if (!payment) throw new Error('PAYMENT_NOT_FOUND');
-
-  if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET) {
-    const axios = require('axios');
-    const mode = process.env.PAYPAL_MODE === 'live' ? 'api-m' : 'api-m.sandbox';
-    const base = `https://${mode}.paypal.com`;
-    const authStr = Buffer.from(
-      `${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`
-    ).toString('base64');
-    const tokenRes = await axios.post(`${base}/v1/oauth2/token`, 'grant_type=client_credentials', {
-      headers: {
-        Authorization: `Basic ${authStr}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-    await axios.post(
-      `${base}/v2/checkout/orders/${paypalOrderId}/capture`,
-      {},
-      {
-        headers: { Authorization: `Bearer ${tokenRes.data.access_token}` },
-      }
-    );
-  }
-
-  await activateSubscription(payment.userId, payment.planMonths);
-  return { success: true, paymentId: payment.id };
-}
-
-// ── STRIPE (Visa / Mastercard / Debit) ──
-async function createStripeSession(userId, planMonths) {
-  const price = getPlanPrice(planMonths);
-  const idempotencyKey = crypto.randomUUID();
-
-  const payment = await prisma.payment.create({
     data: {
-      userId,
-      provider: 'STRIPE',
-      amount: price,
-      currency: 'USD',
-      planMonths: parseInt(planMonths) || 1,
-      idempotencyKey,
-      status: 'PENDING',
+      providerPaymentId: orderRes.data.id,
+      metadata: mergePaymentMetadata(payment.metadata, {
+        providerRefs: { paypalOrderId: orderRes.data.id },
+      }),
     },
   });
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return { sessionUrl: null, paymentId: payment.id, error: 'Stripe not configured' };
-  }
+  const approvalUrl = orderRes.data.links.find((link) => link.rel === 'approve')?.href;
+  return { redirectUrl: approvalUrl, providerPaymentId: orderRes.data.id };
+}
+
+async function startStripeCheckout(payment, { description }) {
+  ensureProviderConfigured('stripe');
 
   const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-  const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-
   const session = await stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
     line_items: [
       {
         price_data: {
-          currency: 'usd',
-          product_data: { name: `Whale Pro - ${PLANS[planMonths]?.label || 'Monthly'}` },
-          unit_amount: price * 100,
+          currency: payment.currency.toLowerCase(),
+          product_data: { name: description },
+          unit_amount: Math.round(Number(payment.amount) * 100),
         },
         quantity: 1,
       },
     ],
-    metadata: { paymentId: payment.id, userId },
-    success_url: `${baseUrl}/payment/success?session_id={CHECKOUT_SESSION_ID}&paymentId=${payment.id}`,
-    cancel_url: `${baseUrl}/upgrade`,
+    metadata: {
+      paymentId: payment.id,
+      purpose: payment.purpose,
+    },
+    success_url: `${getBaseUrl()}/payment/success?paymentId=${payment.id}&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${getBaseUrl()}/payment/cancel?paymentId=${payment.id}`,
   });
 
   await prisma.payment.update({
     where: { id: payment.id },
-    data: { providerPaymentId: session.id },
+    data: {
+      providerPaymentId: session.id,
+      metadata: mergePaymentMetadata(payment.metadata, {
+        providerRefs: { stripeSessionId: session.id },
+      }),
+    },
   });
 
-  return { sessionUrl: session.url, paymentId: payment.id };
+  return { redirectUrl: session.url, providerPaymentId: session.id };
+}
+
+async function createSubscriptionSession(provider, userId, planMonths) {
+  ensureProviderConfigured(provider);
+
+  const months = [1, 6, 12].includes(Number(planMonths)) ? Number(planMonths) : 1;
+  const payment = await createPaymentRecord({
+    userId,
+    purpose: 'SUBSCRIPTION',
+    provider,
+    amount: getPlanPrice(months),
+    planMonths: months,
+    metadata: {
+      flow: 'subscription',
+      planLabel: getPlanLabel(months),
+    },
+  });
+
+  try {
+    const user = await getUserBillingIdentity(userId);
+    const description = `Whale Pro - ${getPlanLabel(months)}`;
+
+    if (normalizeProvider(provider) === 'paymob') {
+      const result = await startPaymobCheckout(payment, { description, email: user?.email });
+      return { iframeUrl: result.redirectUrl, paymentId: payment.id };
+    }
+    if (normalizeProvider(provider) === 'paypal') {
+      const result = await startPaypalCheckout(payment, { description });
+      return { approvalUrl: result.redirectUrl, paymentId: payment.id, orderId: result.providerPaymentId };
+    }
+
+    const result = await startStripeCheckout(payment, { description });
+    return { sessionUrl: result.redirectUrl, paymentId: payment.id };
+  } catch (err) {
+    await markPaymentFailedOnly(payment.id, 'PAYMENT_SETUP_FAILED');
+    throw err;
+  }
+}
+
+async function createPaymobSession(userId, planMonths) {
+  return createSubscriptionSession('paymob', userId, planMonths);
+}
+
+async function createPaypalOrder(userId, planMonths) {
+  return createSubscriptionSession('paypal', userId, planMonths);
+}
+
+async function createStripeSession(userId, planMonths) {
+  return createSubscriptionSession('stripe', userId, planMonths);
+}
+
+async function createOrderPaymentSession(
+  provider,
+  { userId, orderIds, amount, currency = 'USD', flow, cartSnapshot, shippingAddress, listingId }
+) {
+  ensureProviderConfigured(provider);
+
+  const payment = await createPaymentRecord({
+    userId,
+    purpose: 'ORDER',
+    provider,
+    amount,
+    currency,
+    metadata: {
+      orderIds,
+      flow,
+      cartSnapshot: cartSnapshot || null,
+      shippingAddress: shippingAddress || null,
+      listingId: listingId || null,
+    },
+  });
+
+  try {
+    const user = await getUserBillingIdentity(userId);
+    const description =
+      flow === 'cart'
+        ? `Whale Marketplace Cart (${orderIds.length} orders)`
+        : 'Whale Marketplace Order';
+
+    if (normalizeProvider(provider) === 'paymob') {
+      const result = await startPaymobCheckout(payment, { description, email: user?.email });
+      return { redirectUrl: result.redirectUrl, paymentId: payment.id };
+    }
+    if (normalizeProvider(provider) === 'paypal') {
+      const result = await startPaypalCheckout(payment, { description });
+      return { redirectUrl: result.redirectUrl, paymentId: payment.id };
+    }
+
+    const result = await startStripeCheckout(payment, { description });
+    return { redirectUrl: result.redirectUrl, paymentId: payment.id };
+  } catch (err) {
+    await settlePaymentFailure(payment.id, { reason: 'PAYMENT_SETUP_FAILED' });
+    throw err;
+  }
+}
+
+async function extendSubscriptionForPayment(payment) {
+  const subscription = await prisma.subscription.findUnique({ where: { userId: payment.userId } });
+  const now = new Date();
+  const currentEnd =
+    subscription?.paidUntil && subscription.paidUntil > now ? new Date(subscription.paidUntil) : now;
+
+  currentEnd.setMonth(currentEnd.getMonth() + (Number(payment.planMonths) || 1));
+
+  await prisma.$transaction([
+    prisma.subscription.update({
+      where: { userId: payment.userId },
+      data: { plan: 'pro', paidUntil: currentEnd, autoRenew: false },
+    }),
+    prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'COMPLETED' },
+    }),
+  ]);
+
+  return prisma.subscription.findUnique({ where: { userId: payment.userId } });
+}
+
+async function settleOrderPayment(payment) {
+  const metadata = payment.metadata || {};
+  const orderIds = Array.isArray(metadata.orderIds) ? metadata.orderIds : [];
+  if (orderIds.length === 0) throw new Error('PAYMENT_ORDERS_MISSING');
+
+  await prisma.$transaction(async (tx) => {
+    const orders = await tx.order.findMany({
+      where: { id: { in: orderIds } },
+    });
+    if (orders.length !== orderIds.length) throw new Error('ORDER_NOT_FOUND');
+
+    await tx.payment.update({
+      where: { id: payment.id },
+      data: { status: 'COMPLETED' },
+    });
+
+    for (const order of orders) {
+      if (order.paymentStatus === ORDER_PAYMENT_STATUS.paid) continue;
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          paymentStatus: ORDER_PAYMENT_STATUS.paid,
+          events: {
+            create: {
+              event: 'payment_captured',
+              note: `${payment.provider} payment confirmed`,
+            },
+          },
+        },
+      });
+    }
+  });
+
+  return prisma.payment.findUnique({ where: { id: payment.id } });
+}
+
+async function restoreCartSnapshot(userId, snapshot) {
+  const items = Array.isArray(snapshot?.items) ? snapshot.items : [];
+  if (items.length === 0) return;
+
+  let cart = await prisma.cart.findUnique({ where: { userId } });
+  if (!cart) {
+    cart = await prisma.cart.create({ data: { userId } });
+  }
+
+  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+
+  for (const item of items) {
+    const listing = await prisma.listing.findUnique({ where: { id: item.listingId } });
+    if (!listing || listing.status !== 'ACTIVE' || listing.stock < 1) continue;
+
+    await prisma.cartItem.create({
+      data: {
+        cartId: cart.id,
+        listingId: item.listingId,
+        quantity: Math.max(1, Math.min(Number(item.quantity) || 1, listing.stock)),
+      },
+    });
+  }
+}
+
+async function settlePaymentSuccess(paymentId) {
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+  if (payment.status === 'COMPLETED') return payment;
+  if (payment.status !== 'PENDING') return payment;
+
+  if (payment.purpose === 'SUBSCRIPTION') {
+    await extendSubscriptionForPayment(payment);
+  } else {
+    await settleOrderPayment(payment);
+  }
+
+  return prisma.payment.findUnique({ where: { id: paymentId } });
+}
+
+async function settlePaymentFailure(paymentId, { reason } = {}) {
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+  if (payment.status !== 'PENDING') return payment;
+
+  const metadata = mergePaymentMetadata(payment.metadata, { failureReason: reason || null });
+
+  if (payment.purpose === 'SUBSCRIPTION') {
+    return prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'FAILED', metadata },
+    });
+  }
+
+  const orderIds = Array.isArray(payment.metadata?.orderIds) ? payment.metadata.orderIds : [];
+
+  await prisma.$transaction(async (tx) => {
+    const orders = await tx.order.findMany({
+      where: { id: { in: orderIds } },
+    });
+
+    await tx.payment.update({
+      where: { id: payment.id },
+      data: { status: 'FAILED', metadata },
+    });
+
+    for (const order of orders) {
+      if (order.status === 'CANCELLED' && order.paymentStatus === ORDER_PAYMENT_STATUS.failed) {
+        continue;
+      }
+
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: 'CANCELLED',
+          paymentStatus: ORDER_PAYMENT_STATUS.failed,
+          cancelReason: order.cancelReason || 'Payment failed or was cancelled.',
+          events: {
+            create: {
+              event: 'payment_failed',
+              note: reason || 'Payment failed or was cancelled.',
+            },
+          },
+        },
+      });
+
+      await tx.listing.update({
+        where: { id: order.listingId },
+        data: { stock: { increment: order.quantity } },
+      });
+    }
+  });
+
+  if (payment.metadata?.flow === 'cart' && payment.metadata?.cartSnapshot) {
+    await restoreCartSnapshot(payment.userId, payment.metadata.cartSnapshot);
+  }
+
+  return prisma.payment.findUnique({ where: { id: payment.id } });
+}
+
+async function capturePaypalOrder(paypalOrderId) {
+  const payment = await findPaymentByProviderPaymentId('paypal', paypalOrderId);
+  if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+  if (payment.status === 'COMPLETED') return { success: true, paymentId: payment.id };
+
+  if (process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET) {
+    const { base, accessToken } = await getPaypalAccessToken();
+    await axios.post(
+      `${base}/v2/checkout/orders/${paypalOrderId}/capture`,
+      {},
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+  }
+
+  await settlePaymentSuccess(payment.id);
+  return { success: true, paymentId: payment.id };
+}
+
+async function confirmStripeSession(sessionId, paymentId) {
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+  if (payment.status === 'COMPLETED') return payment;
+  if (!process.env.STRIPE_SECRET_KEY) return payment;
+
+  const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+  if (session.metadata?.paymentId !== paymentId) {
+    throw new Error('PAYMENT_MISMATCH');
+  }
+
+  if (session.payment_status === 'paid') {
+    await settlePaymentSuccess(paymentId);
+  }
+
+  return prisma.payment.findUnique({ where: { id: paymentId } });
 }
 
 async function verifyStripeWebhook(rawBody, signature) {
@@ -251,12 +590,16 @@ async function verifyStripeWebhook(rawBody, signature) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     const paymentId = session.metadata?.paymentId;
-
     if (paymentId) {
-      const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
-      if (payment && payment.status === 'PENDING') {
-        await activateSubscription(payment.userId, payment.planMonths);
-      }
+      await settlePaymentSuccess(paymentId);
+    }
+  }
+
+  if (['checkout.session.expired', 'checkout.session.async_payment_failed'].includes(event.type)) {
+    const session = event.data.object;
+    const paymentId = session.metadata?.paymentId;
+    if (paymentId) {
+      await settlePaymentFailure(paymentId, { reason: event.type });
     }
   }
 
@@ -295,48 +638,86 @@ async function verifyPaymobWebhook(body, hmacHeader) {
     .update(concat)
     .digest('hex');
 
-  // Timing-safe comparison to prevent timing attacks
   if (!crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(hmacHeader || ''))) {
     throw new Error('INVALID_HMAC');
   }
 
+  const payment = await findPaymentByProviderPaymentId('paymob', data.order);
+  if (!payment) return { success: true };
+
   if (data.success === true || data.success === 'true') {
-    const payment = await prisma.payment.findFirst({
-      where: { providerPaymentId: String(data.order), provider: 'PAYMOB' },
-    });
-    if (payment) {
-      await activateSubscription(payment.userId, payment.planMonths);
-    }
+    await settlePaymentSuccess(payment.id);
+  } else {
+    await settlePaymentFailure(payment.id, { reason: 'PAYMOB_PAYMENT_FAILED' });
   }
 
   return { success: true };
 }
 
-async function activateSubscription(userId, planMonths) {
-  const paidUntil = new Date();
-  paidUntil.setMonth(paidUntil.getMonth() + (parseInt(planMonths) || 1));
+async function handleSuccessReturn({ paymentId, token, sessionId }) {
+  const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
+  if (!payment) throw new Error('PAYMENT_NOT_FOUND');
 
-  await prisma.$transaction([
-    prisma.subscription.update({
-      where: { userId },
-      data: { plan: 'pro', paidUntil, autoRenew: false },
-    }),
-    prisma.payment.updateMany({
-      where: { userId, status: 'PENDING' },
-      data: { status: 'COMPLETED' },
-    }),
-  ]);
+  if (payment.provider === 'PAYPAL' && token && payment.status === 'PENDING') {
+    await capturePaypalOrder(token);
+  } else if (payment.provider === 'STRIPE' && sessionId && payment.status === 'PENDING') {
+    await confirmStripeSession(sessionId, paymentId);
+  }
 
-  return prisma.subscription.findUnique({ where: { userId } });
+  return prisma.payment.findUnique({ where: { id: paymentId } });
+}
+
+async function handleCancellationReturn(paymentId) {
+  return settlePaymentFailure(paymentId, { reason: 'USER_CANCELLED' });
+}
+
+async function getPaymentById(paymentId) {
+  if (!paymentId) return null;
+  return prisma.payment.findUnique({ where: { id: paymentId } });
+}
+
+function getOrderRedirectPath(payment) {
+  const metadata = payment?.metadata || {};
+  const orderIds = Array.isArray(metadata.orderIds) ? metadata.orderIds : [];
+
+  if (metadata.flow === 'cart') {
+    return '/whale/orders?tab=buying';
+  }
+
+  if (orderIds.length === 1) {
+    return `/whale/orders/${orderIds[0]}`;
+  }
+
+  return '/whale/orders?tab=buying';
+}
+
+function getCancellationRedirectPath(payment) {
+  const metadata = payment?.metadata || {};
+  if (payment?.purpose !== 'ORDER') return '/upgrade';
+  if (metadata.flow === 'cart') return '/cart';
+  if (metadata.listingId) return `/whale/checkout/${metadata.listingId}`;
+  return '/whale/orders?tab=buying';
 }
 
 module.exports = {
+  ORDER_PAYMENT_STATUS,
+  PLANS,
+  getPlans,
+  getPlanPrice,
+  getProviderAvailability,
   createPaymobSession,
   createPaypalOrder,
   capturePaypalOrder,
   createStripeSession,
+  createOrderPaymentSession,
   verifyStripeWebhook,
   verifyPaymobWebhook,
-  activateSubscription,
-  PLANS,
+  settlePaymentSuccess,
+  settlePaymentFailure,
+  handleSuccessReturn,
+  handleCancellationReturn,
+  getPaymentById,
+  getPaymentByProviderPaymentId: findPaymentByProviderPaymentId,
+  getOrderRedirectPath,
+  getCancellationRedirectPath,
 };

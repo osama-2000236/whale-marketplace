@@ -1,11 +1,4 @@
 require('dotenv').config();
-
-// Fail fast on missing critical secrets in production
-if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
-  console.error('[fatal] SESSION_SECRET must be set in production');
-  process.exit(1);
-}
-
 const express = require('express');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
@@ -15,10 +8,11 @@ const rateLimit = require('express-rate-limit');
 const passport = require('./lib/passport');
 const { localeMiddleware } = require('./middleware/locale');
 const { subscriptionMiddleware } = require('./middleware/subscription');
-const { optionalAuth } = require('./middleware/auth');
+const { optionalAuth, guardActiveSessionUser } = require('./middleware/auth');
 const path = require('path');
 
 const app = express();
+app.set('trust proxy', 1);
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const baseUrl = process.env.BASE_URL || '';
 const shouldUpgradeInsecureRequests =
@@ -68,7 +62,7 @@ app.use(
       : new session.MemoryStore(),
     secret: process.env.SESSION_SECRET || 'change-me-in-production-32-chars',
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     rolling: true,
     cookie: {
       httpOnly: true,
@@ -102,6 +96,7 @@ app.use((req, res, next) => {
 });
 
 // 8. Auth (populate res.locals.user)
+app.use(guardActiveSessionUser);
 app.use(optionalAuth);
 
 // 9. Subscription status
@@ -150,18 +145,7 @@ app.use(
   })
 );
 
-// 14. Health check (before auth middleware so Railway can probe it freely)
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
-
-// Webhook-specific rate limit (tighter window to limit flood attacks)
-const webhookRateLimit = rateLimit({
-  windowMs: 60 * 1000,
-  max: isTestEnv ? 1_000_000 : 60,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// 15. Routes
+// 14. Routes
 app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
 app.use('/whale', require('./routes/whale'));
@@ -169,11 +153,11 @@ app.use('/profile', require('./routes/profile'));
 app.use('/notifications', require('./routes/notifications'));
 app.use('/cart', require('./routes/cart'));
 app.use('/', require('./routes/payment'));
-app.use('/', require('./routes/checkout'));
-app.use('/webhooks', webhookRateLimit, require('./routes/webhooks'));
+app.use('/checkout', require('./routes/checkout'));
+app.use('/webhooks', require('./routes/webhooks'));
 app.use('/admin', require('./routes/admin'));
 
-// 16. Redirects
+// 15. Redirects
 app.get('/marketplace', (req, res) => res.redirect(301, '/whale'));
 app.get('/market', (req, res) => res.redirect(301, '/whale'));
 app.get('/rooms', (req, res) => res.redirect(301, '/whale'));

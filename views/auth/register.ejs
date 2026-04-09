@@ -9,98 +9,91 @@
         🐋 <%= locale === 'ar' ? 'انضم إلى مجتمع الحوت' : 'Join the Whale community' %>
       </p>
 
-      <% if (hasGoogle || hasFacebook || hasApple) { %>
+      <% if (hasGoogle) { %>
       <div class="oauth-buttons">
-        <% if (hasGoogle) { %>
-        <a href="/auth/google" class="btn btn-secondary btn-block">
-          <img
-            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-            alt=""
-            width="18"
-            height="18"
-          />
+        <a
+          href="/auth/google?next=<%= encodeURIComponent(next || '/whale') %>"
+          class="btn-google"
+        >
+          <img src="/icons/google.svg" alt="" width="20" height="20" />
           <%= t('auth.google') %>
         </a>
-        <% } %>
-        <% if (hasFacebook) { %>
-        <a
-          href="/auth/facebook"
-          class="btn btn-secondary btn-block"
-          style="background: #1877f2; color: #fff; border-color: #1877f2"
-        >
-          &#xf09a; Facebook
-        </a>
-        <% } %>
-        <% if (hasApple) { %>
-        <a
-          href="/auth/apple"
-          class="btn btn-secondary btn-block"
-          style="background: #000; color: #fff; border-color: #000"
-        >
-          &#xf179; Apple
-        </a>
-        <% } %>
       </div>
-      <div class="divider"><%= locale === 'ar' ? 'أو' : 'or' %></div>
+
+      <div class="auth-or-divider" role="separator" aria-label="<%= locale === 'ar' ? 'أو' : 'or' %>">
+        <%= locale === 'ar' ? 'أو' : 'or' %>
+      </div>
+
+      <details class="auth-local-disclosure">
+        <summary
+          class="auth-local-toggle"
+          id="show-local-register"
+          aria-controls="local-register-form"
+        >
+          <%= locale === 'ar' ? 'إنشاء حساب بالبريد الإلكتروني' : 'Register with email instead' %>
+        </summary>
+
+      <div class="auth-local-form" id="local-register-form">
       <% } %>
 
-      <form method="POST" action="/auth/register">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-        <div class="form-group">
-          <label class="form-label">
-            <%= t('auth.username') %>
-            <span class="required">*</span>
-          </label>
-          <input
-            type="text"
-            name="username"
-            class="input"
-            required
-            minlength="3"
-            maxlength="30"
-            placeholder="<%= locale === 'ar' ? 'حروف وأرقام وشرطة سفلية' : 'Letters, numbers, underscore' %>"
-          />
-        </div>
-        <div class="form-group">
-          <label class="form-label">
-            <%= t('auth.email') %>
-            <span class="required">*</span>
-          </label>
-          <input type="email" name="email" class="input" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">
-            <%= t('auth.password') %>
-            <span class="required">*</span>
-          </label>
-          <input type="password" name="password" id="reg-password" class="input" required minlength="8" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">
-            <%= t('auth.confirm_password') %>
-            <span class="required">*</span>
-          </label>
-          <input type="password" name="confirmPassword" id="reg-confirm" class="input" required minlength="8" />
-        </div>
-        <div class="form-group">
-          <label class="form-label">
-            <%= locale === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password' %>
-            <span class="required">*</span>
-          </label>
-          <input type="password" name="confirmPassword" class="input" required minlength="8" />
-        </div>
-        <button type="submit" class="btn btn-primary btn-block btn-lg">
-          <%= t('auth.register') %>
-        </button>
-      </form>
+        <form method="POST" action="/auth/register">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <input type="hidden" name="next" value="<%= typeof next !== 'undefined' ? next : '/whale' %>" />
+          <div class="form-group">
+            <label class="form-label">
+              <%= t('auth.username') %>
+              <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              name="username"
+              class="input"
+              required
+              minlength="3"
+              maxlength="30"
+              pattern="[a-zA-Z0-9_]+"
+              placeholder="<%= locale === 'ar' ? 'أحرف وأرقام فقط' : 'Letters, numbers, underscore' %>"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              <%= t('auth.email') %>
+              <span class="required">*</span>
+            </label>
+            <input type="email" name="email" class="input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              <%= t('auth.password') %>
+              <span class="required">*</span>
+            </label>
+            <input type="password" name="password" class="input" required minlength="8" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">
+              <%= locale === 'ar' ? 'تأكيد كلمة المرور' : 'Confirm Password' %>
+              <span class="required">*</span>
+            </label>
+            <input type="password" name="confirmPassword" class="input" required minlength="8" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block btn-lg">
+            <%= t('auth.register') %>
+          </button>
+        </form>
+
+      <% if (hasGoogle) { %>
+      </div><!-- /#local-register-form -->
+      </details>
+      <% } %>
 
       <div class="auth-footer">
         <%= t('auth.has_account') %>
-        <a href="/auth/login"><%= t('auth.login') %></a>
+        <a href="/auth/login?next=<%= encodeURIComponent(next || '/whale') %>"><%= t('auth.login') %></a>
       </div>
     </div>
   </div>
 </main>
+
 <%- include('../partials/footer') %>
 </body>
 </html>

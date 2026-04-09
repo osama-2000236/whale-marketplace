@@ -1,9 +1,20 @@
 const prisma = require('../lib/prisma');
+const fallbackStore = require('../lib/fallbackStore');
+
+const hasDatabase = Boolean(process.env.DATABASE_URL);
 
 /**
  * Get or create a cart for a user
  */
 async function getOrCreateCart(userId) {
+  if (!hasDatabase) {
+    const cart = fallbackStore.getOrCreateCart(userId);
+    return {
+      ...cart,
+      items: fallbackStore.listCartItems(userId),
+    };
+  }
+
   let cart = await prisma.cart.findUnique({
     where: { userId },
     include: {
@@ -40,7 +51,9 @@ async function getOrCreateCart(userId) {
  * Add an item to the cart
  */
 async function addItem(userId, listingId, quantity = 1) {
-  const listing = await prisma.listing.findUnique({ where: { id: listingId } });
+  const listing = hasDatabase
+    ? await prisma.listing.findUnique({ where: { id: listingId } })
+    : fallbackStore.findListingBySlugOrId(listingId);
   if (!listing) throw new Error('LISTING_NOT_FOUND');
   if (listing.status !== 'ACTIVE') throw new Error('LISTING_NOT_AVAILABLE');
   if (listing.sellerId === userId) throw new Error('CANNOT_BUY_OWN');
@@ -53,14 +66,22 @@ async function addItem(userId, listingId, quantity = 1) {
   if (existing) {
     const newQty = existing.quantity + quantity;
     if (newQty > listing.stock) throw new Error('INSUFFICIENT_STOCK');
-    await prisma.cartItem.update({
-      where: { id: existing.id },
-      data: { quantity: newQty },
-    });
+    if (hasDatabase) {
+      await prisma.cartItem.update({
+        where: { id: existing.id },
+        data: { quantity: newQty },
+      });
+    } else {
+      fallbackStore.upsertCartItem(userId, listingId, newQty);
+    }
   } else {
-    await prisma.cartItem.create({
-      data: { cartId: cart.id, listingId, quantity },
-    });
+    if (hasDatabase) {
+      await prisma.cartItem.create({
+        data: { cartId: cart.id, listingId, quantity },
+      });
+    } else {
+      fallbackStore.upsertCartItem(userId, listingId, quantity);
+    }
   }
 
   return getOrCreateCart(userId);
@@ -70,23 +91,35 @@ async function addItem(userId, listingId, quantity = 1) {
  * Update cart item quantity
  */
 async function updateItemQuantity(userId, itemId, quantity) {
-  const cart = await prisma.cart.findUnique({ where: { userId } });
+  const cart = hasDatabase
+    ? await prisma.cart.findUnique({ where: { userId } })
+    : fallbackStore.getOrCreateCart(userId);
   if (!cart) throw new Error('CART_NOT_FOUND');
 
-  const item = await prisma.cartItem.findFirst({
-    where: { id: itemId, cartId: cart.id },
-    include: { listing: true },
-  });
+  const item = hasDatabase
+    ? await prisma.cartItem.findFirst({
+        where: { id: itemId, cartId: cart.id },
+        include: { listing: true },
+      })
+    : fallbackStore.listCartItems(userId).find((entry) => entry.id === itemId);
   if (!item) throw new Error('ITEM_NOT_FOUND');
 
   if (quantity < 1) {
-    await prisma.cartItem.delete({ where: { id: itemId } });
+    if (hasDatabase) {
+      await prisma.cartItem.delete({ where: { id: itemId } });
+    } else {
+      fallbackStore.removeCartItem(userId, itemId);
+    }
   } else {
     if (quantity > item.listing.stock) throw new Error('INSUFFICIENT_STOCK');
-    await prisma.cartItem.update({
-      where: { id: itemId },
-      data: { quantity },
-    });
+    if (hasDatabase) {
+      await prisma.cartItem.update({
+        where: { id: itemId },
+        data: { quantity },
+      });
+    } else {
+      fallbackStore.upsertCartItem(userId, item.listingId, quantity);
+    }
   }
 
   return getOrCreateCart(userId);
@@ -96,15 +129,23 @@ async function updateItemQuantity(userId, itemId, quantity) {
  * Remove an item from the cart
  */
 async function removeItem(userId, itemId) {
-  const cart = await prisma.cart.findUnique({ where: { userId } });
+  const cart = hasDatabase
+    ? await prisma.cart.findUnique({ where: { userId } })
+    : fallbackStore.getOrCreateCart(userId);
   if (!cart) throw new Error('CART_NOT_FOUND');
 
-  const item = await prisma.cartItem.findFirst({
-    where: { id: itemId, cartId: cart.id },
-  });
+  const item = hasDatabase
+    ? await prisma.cartItem.findFirst({
+        where: { id: itemId, cartId: cart.id },
+      })
+    : fallbackStore.listCartItems(userId).find((entry) => entry.id === itemId);
   if (!item) throw new Error('ITEM_NOT_FOUND');
 
-  await prisma.cartItem.delete({ where: { id: itemId } });
+  if (hasDatabase) {
+    await prisma.cartItem.delete({ where: { id: itemId } });
+  } else {
+    fallbackStore.removeCartItem(userId, itemId);
+  }
   return getOrCreateCart(userId);
 }
 
@@ -112,10 +153,16 @@ async function removeItem(userId, itemId) {
  * Clear all items from the cart
  */
 async function clearCart(userId) {
-  const cart = await prisma.cart.findUnique({ where: { userId } });
+  const cart = hasDatabase
+    ? await prisma.cart.findUnique({ where: { userId } })
+    : fallbackStore.getOrCreateCart(userId);
   if (!cart) return { items: [] };
 
-  await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+  if (hasDatabase) {
+    await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
+  } else {
+    fallbackStore.clearCartItems(userId);
+  }
   return getOrCreateCart(userId);
 }
 

@@ -1,5 +1,7 @@
 const router = require('express').Router();
 const whaleService = require('../services/whaleService');
+const checkoutService = require('../services/checkoutService');
+const paymentService = require('../services/paymentService');
 const {
   requireAuth,
   requireVerified,
@@ -14,6 +16,19 @@ const { upload, processImages } = require('../utils/images');
 const { FALLBACK_CATEGORY, createFallbackListing } = require('../lib/fallbackMarketplace');
 
 const CITIES = ['Gaza', 'Ramallah', 'Nablus', 'Hebron', 'Jenin', 'Jerusalem'];
+
+function getWhaleCheckoutMessage(code) {
+  return (
+    {
+      LISTING_NOT_FOUND: 'That listing could not be found.',
+      LISTING_NOT_AVAILABLE: 'That listing is no longer available.',
+      CANNOT_BUY_OWN: 'You cannot buy your own listing.',
+      INSUFFICIENT_STOCK: 'This listing no longer has enough stock.',
+      ORDER_ALREADY_PENDING: 'You already have a pending order for this listing.',
+      PAYMENT_PROVIDER_DISABLED: 'That payment method is not available right now.',
+    }[code] || code || 'Unable to continue with checkout right now.'
+  );
+}
 
 // Browse listings
 router.get('/', async (req, res) => {
@@ -76,10 +91,6 @@ router.get('/listing/:slug', async (req, res, next) => {
 
     res.render('whale/listing', { title: listing.title, listing, isSaved });
   } catch (err) {
-    // Treat Prisma "table/column does not exist" as not-found rather than 500
-    if (err.code === 'P2010' || err.message?.includes('does not exist')) {
-      return res.status(404).render('404', { title: '404' });
-    }
     next(err);
   }
 });
@@ -110,7 +121,24 @@ router.post('/listing/:id/save', requireAuth, async (req, res, next) => {
       type: 'success',
       message: res.locals.t(result.saved ? 'flash.saved' : 'flash.unsaved'),
     };
-    res.redirect(req.get('Referrer') || '/whale');
+    res.redirect('back');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// My listings
+router.get('/my-listings', requireAuth, async (req, res, next) => {
+  try {
+    const listings = await prisma.listing.findMany({
+      where: { sellerId: req.user.id },
+      orderBy: { createdAt: 'desc' },
+      include: { category: true },
+    });
+    res.render('whale/my-listings', {
+      title: res.locals.t('my_listings.title'),
+      listings,
+    });
   } catch (err) {
     next(err);
   }
@@ -162,7 +190,7 @@ router.post(
 );
 
 // Edit form
-router.get('/listing/:id/edit', requireAuth, requireOwner, async (req, res, next) => {
+router.get('/listing/:id/edit', requireAuth, requireVerified, requireOwner, async (req, res, next) => {
   try {
     const categories = await whaleService.getCategories();
     res.render('whale/edit', {
@@ -180,6 +208,7 @@ router.get('/listing/:id/edit', requireAuth, requireOwner, async (req, res, next
 router.post(
   '/listing/:id/edit',
   requireAuth,
+  requireVerified,
   requireOwner,
   upload.array('images', 6),
   async (req, res, next) => {
@@ -207,7 +236,7 @@ router.post(
       res.redirect('/whale/listing/' + listing.slug);
     } catch (err) {
       req.session.flash = { type: 'danger', message: err.message };
-      res.redirect('/whale/listing/' + req.params.id + '/edit');
+      res.redirect('back');
     }
   }
 );
@@ -233,6 +262,7 @@ router.get('/checkout/:id', requireAuth, requireVerified, async (req, res, next)
       title: res.locals.t('checkout.title'),
       listing,
       cities: CITIES,
+      providerAvailability: paymentService.getProviderAvailability(),
     });
   } catch (err) {
     next(err);
@@ -248,18 +278,27 @@ router.post('/checkout/:id', requireAuth, requireVerified, async (req, res, next
       phone: 20,
       buyerNote: 500,
     });
-    const order = await whaleService.createOrder({
-      listingId: req.params.id,
-      buyerId: req.user.id,
+    const payload = {
       paymentMethod: data.paymentMethod,
       shippingAddress: { street: data.street, city: data.city, phone: data.phone },
       buyerNote: data.buyerNote,
-    });
-    req.session.flash = { type: 'success', message: res.locals.t('flash.order_placed') };
-    res.redirect('/whale/orders/' + order.id);
+    };
+
+    if (String(data.paymentMethod).toLowerCase() === 'manual') {
+      const order = await checkoutService.checkoutSingle(req.user.id, req.params.id, payload);
+      req.session.flash = { type: 'success', message: res.locals.t('flash.order_placed') };
+      return res.redirect('/whale/orders/' + order.id);
+    }
+
+    const hostedPayment = await checkoutService.startSingleHostedCheckout(
+      req.user.id,
+      req.params.id,
+      payload
+    );
+    return res.redirect(hostedPayment.redirectUrl);
   } catch (err) {
-    req.session.flash = { type: 'danger', message: err.message };
-    res.redirect('/whale/listing/' + req.params.id);
+    req.session.flash = { type: 'danger', message: getWhaleCheckoutMessage(err.message) };
+    return res.redirect(`/whale/checkout/${req.params.id}`);
   }
 });
 
@@ -360,21 +399,6 @@ router.post('/orders/:id/review', requireAuth, requireBuyer, async (req, res, ne
 });
 
 // Dashboard
-// My listings (seller's own inventory)
-router.get('/my-listings', requireAuth, async (req, res, next) => {
-  try {
-    const prisma = require('../lib/prisma');
-    const listings = await prisma.listing.findMany({
-      where: { sellerId: req.user.id },
-      orderBy: { createdAt: 'desc' },
-      include: { category: true },
-    });
-    res.render('whale/my-listings', { title: res.locals.t('my_listings.title'), listings });
-  } catch (err) {
-    next(err);
-  }
-});
-
 router.get('/dashboard', requireAuth, async (req, res, next) => {
   try {
     const stats = await whaleService.getSellerDashboard(req.user.id);
