@@ -4,6 +4,8 @@ const { requireAuth, requireAdmin, requireAdminScope } = require('../middleware/
 const whaleService = require('../services/whaleService');
 const auditService = require('../services/adminAuditService');
 const authSecurityService = require('../services/authSecurityService');
+const vendorService = require('../services/vendorService');
+const shippingService = require('../services/shippingService');
 const { sanitizeBody } = require('../utils/sanitize');
 
 router.use(requireAuth, requireAdmin);
@@ -301,6 +303,222 @@ router.get('/confirm-2fa', requireAdminScope('SUPER_ADMIN'), (req, res) => {
     secret: pending.secret,
     otpauthUrl: pending.otpauthUrl,
   });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Vendor Management
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/vendors', requireAdminScope('SUPER_ADMIN', 'SUPPORT_AGENT'), async (req, res, next) => {
+  try {
+    const status = req.query.status || undefined;
+    const page = parseInt(req.query.page) || 1;
+    const result = await vendorService.listVendors({ status, page });
+    res.render('admin/vendors', {
+      title: req.locale === 'ar' ? 'إدارة المتاجر' : 'Vendor Management',
+      ...result,
+      status: req.query.status || '',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/vendors/:id/approve', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await vendorService.approveVendor(req.params.id);
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'VENDOR_APPROVE',
+      target: 'Vendor',
+      targetId: req.params.id,
+      ip: req.ip,
+    });
+    req.session.flash = { type: 'success', message: 'Vendor approved' };
+    res.redirect('/admin/vendors');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/vendors/:id/suspend', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await vendorService.suspendVendor(req.params.id, req.body.reason);
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'VENDOR_SUSPEND',
+      target: 'Vendor',
+      targetId: req.params.id,
+      details: { reason: req.body.reason },
+      ip: req.ip,
+    });
+    req.session.flash = { type: 'success', message: 'Vendor suspended' };
+    res.redirect('/admin/vendors');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/vendors/:id/reject', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await vendorService.rejectVendor(req.params.id);
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'VENDOR_REJECT',
+      target: 'Vendor',
+      targetId: req.params.id,
+      ip: req.ip,
+    });
+    req.session.flash = { type: 'success', message: 'Vendor rejected' };
+    res.redirect('/admin/vendors');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Shipping Zones
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/shipping', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const zones = await shippingService.listShippingZones();
+    res.render('admin/shipping', {
+      title: req.locale === 'ar' ? 'مناطق الشحن' : 'Shipping Zones',
+      zones,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/shipping/zones', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const cities = req.body.cities ? req.body.cities.split(',').map((c) => c.trim()).filter(Boolean) : [];
+    await shippingService.createShippingZone({
+      name: req.body.name,
+      nameAr: req.body.nameAr,
+      cities,
+    });
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'SHIPPING_ZONE_CREATE',
+      target: 'ShippingZone',
+      details: { name: req.body.name },
+      ip: req.ip,
+    });
+    req.session.flash = { type: 'success', message: 'Shipping zone created' };
+    res.redirect('/admin/shipping');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/shipping/zones/:id/delete', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await shippingService.deleteShippingZone(req.params.id);
+    req.session.flash = { type: 'success', message: 'Shipping zone deleted' };
+    res.redirect('/admin/shipping');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/shipping/rates', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await shippingService.createShippingRate(req.body.zoneId, {
+      carrier: req.body.carrier,
+      weightMin: req.body.weightMin ? parseFloat(req.body.weightMin) : null,
+      weightMax: req.body.weightMax ? parseFloat(req.body.weightMax) : null,
+      cost: parseFloat(req.body.cost),
+      currency: req.body.currency || 'ILS',
+      freeAbove: req.body.freeAbove ? parseFloat(req.body.freeAbove) : null,
+      estDays: req.body.estDays || null,
+    });
+    req.session.flash = { type: 'success', message: 'Shipping rate added' };
+    res.redirect('/admin/shipping');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/shipping/rates/:id/delete', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await shippingService.deleteShippingRate(req.params.id);
+    req.session.flash = { type: 'success', message: 'Shipping rate deleted' };
+    res.redirect('/admin/shipping');
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Banners
+// ═══════════════════════════════════════════════════════════════════════════════
+
+router.get('/banners', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const banners = await prisma.banner.findMany({ orderBy: { priority: 'desc' } });
+    res.render('admin/banners', {
+      title: req.locale === 'ar' ? 'إدارة البانرات' : 'Banner Management',
+      banners,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/banners', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await prisma.banner.create({
+      data: {
+        title: req.body.title,
+        titleAr: req.body.titleAr || null,
+        image: req.body.image,
+        targetUrl: req.body.targetUrl,
+        position: req.body.position || 'home_hero',
+        priority: parseInt(req.body.priority) || 0,
+        startsAt: req.body.startsAt ? new Date(req.body.startsAt) : new Date(),
+        endsAt: req.body.endsAt ? new Date(req.body.endsAt) : null,
+      },
+    });
+    await auditService.log({
+      adminId: req.user.id,
+      action: 'BANNER_CREATE',
+      target: 'Banner',
+      details: { title: req.body.title },
+      ip: req.ip,
+    });
+    req.session.flash = { type: 'success', message: 'Banner created' };
+    res.redirect('/admin/banners');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/banners/:id/toggle', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    const banner = await prisma.banner.findUnique({ where: { id: req.params.id } });
+    if (!banner) return res.status(404).render('404', { title: '404' });
+    await prisma.banner.update({
+      where: { id: req.params.id },
+      data: { isActive: !banner.isActive },
+    });
+    req.session.flash = { type: 'success', message: banner.isActive ? 'Banner deactivated' : 'Banner activated' };
+    res.redirect('/admin/banners');
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/banners/:id/delete', requireAdminScope('SUPER_ADMIN'), async (req, res, next) => {
+  try {
+    await prisma.banner.delete({ where: { id: req.params.id } });
+    req.session.flash = { type: 'success', message: 'Banner deleted' };
+    res.redirect('/admin/banners');
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;

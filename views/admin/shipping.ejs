@@ -1,0 +1,136 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= locale === 'ar' ? 'مناطق الشحن' : 'Shipping Zones' %></h1>
+    </div>
+
+    <!-- Create Zone Form -->
+    <div class="card mb-2">
+      <div class="card-body">
+        <h3><%= locale === 'ar' ? 'إضافة منطقة شحن' : 'Add Shipping Zone' %></h3>
+        <form method="POST" action="/admin/shipping/zones?_csrf=<%= encodeURIComponent(csrfToken) %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)' %></label>
+              <input type="text" name="name" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)' %></label>
+              <input type="text" name="nameAr" class="input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><%= locale === 'ar' ? 'المدن (مفصولة بفاصلة)' : 'Cities (comma separated)' %></label>
+            <input type="text" name="cities" class="input" placeholder="Gaza, Khan Yunis, Rafah" />
+          </div>
+          <button type="submit" class="btn btn-primary"><%= locale === 'ar' ? 'إنشاء' : 'Create Zone' %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Existing Zones -->
+    <% zones.forEach(zone => { %>
+    <div class="card mb-2">
+      <div class="card-body">
+        <div class="flex justify-between align-center mb-1">
+          <div>
+            <h3><%= locale === 'ar' && zone.nameAr ? zone.nameAr : zone.name %></h3>
+            <small class="text-muted"><%= zone.cities.join(', ') %></small>
+          </div>
+          <form method="POST" action="/admin/shipping/zones/<%= zone.id %>/delete?_csrf=<%= encodeURIComponent(csrfToken) %>">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <button class="btn btn-sm btn-danger"><%= locale === 'ar' ? 'حذف' : 'Delete' %></button>
+          </form>
+        </div>
+
+        <% if (zone.rates && zone.rates.length) { %>
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th><%= locale === 'ar' ? 'الناقل' : 'Carrier' %></th>
+              <th><%= locale === 'ar' ? 'الوزن (كغ)' : 'Weight (kg)' %></th>
+              <th><%= locale === 'ar' ? 'التكلفة' : 'Cost' %></th>
+              <th><%= locale === 'ar' ? 'شحن مجاني فوق' : 'Free Above' %></th>
+              <th><%= locale === 'ar' ? 'المدة' : 'Est. Days' %></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% zone.rates.forEach(rate => { %>
+            <tr>
+              <td><%= rate.carrier %></td>
+              <td><%= rate.weightMin || 0 %> – <%= rate.weightMax || '∞' %></td>
+              <td><%= rate.cost %> <%= rate.currency %></td>
+              <td><%= rate.freeAbove ? rate.freeAbove + ' ' + rate.currency : '—' %></td>
+              <td><%= rate.estDays || '—' %></td>
+              <td>
+                <form method="POST" action="/admin/shipping/rates/<%= rate.id %>/delete?_csrf=<%= encodeURIComponent(csrfToken) %>">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button class="btn btn-xs btn-danger">✕</button>
+                </form>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <% } %>
+
+        <!-- Add Rate to this Zone -->
+        <details class="mt-1">
+          <summary class="btn btn-sm btn-ghost"><%= locale === 'ar' ? 'إضافة سعر شحن' : 'Add Rate' %></summary>
+          <form method="POST" action="/admin/shipping/rates?_csrf=<%= encodeURIComponent(csrfToken) %>" class="mt-1">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+            <input type="hidden" name="zoneId" value="<%= zone.id %>" />
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'الناقل' : 'Carrier' %></label>
+                <input type="text" name="carrier" class="input" required placeholder="aramex" />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'التكلفة' : 'Cost' %></label>
+                <input type="number" name="cost" class="input" required step="0.01" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'العملة' : 'Currency' %></label>
+                <select name="currency" class="select">
+                  <option value="ILS">ILS (₪)</option>
+                  <option value="USD">USD ($)</option>
+                  <option value="JOD">JOD</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'الوزن الأدنى (كغ)' : 'Min Weight (kg)' %></label>
+                <input type="number" name="weightMin" class="input" step="0.1" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'الوزن الأقصى (كغ)' : 'Max Weight (kg)' %></label>
+                <input type="number" name="weightMax" class="input" step="0.1" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'شحن مجاني فوق' : 'Free Above' %></label>
+                <input type="number" name="freeAbove" class="input" step="0.01" min="0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label"><%= locale === 'ar' ? 'المدة المقدرة' : 'Est. Days' %></label>
+                <input type="text" name="estDays" class="input" placeholder="2-3" />
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm"><%= locale === 'ar' ? 'إضافة' : 'Add Rate' %></button>
+          </form>
+        </details>
+      </div>
+    </div>
+    <% }) %>
+
+    <% if (!zones.length) { %>
+    <p class="text-muted text-center"><%= locale === 'ar' ? 'لا توجد مناطق شحن' : 'No shipping zones yet' %></p>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

@@ -1,0 +1,117 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= locale === 'ar' ? 'إدارة البانرات' : 'Banner Management' %></h1>
+    </div>
+
+    <!-- Create Banner Form -->
+    <div class="card mb-2">
+      <div class="card-body">
+        <h3><%= locale === 'ar' ? 'إضافة بانر' : 'Add Banner' %></h3>
+        <form method="POST" action="/admin/banners?_csrf=<%= encodeURIComponent(csrfToken) %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'العنوان (إنجليزي)' : 'Title (English)' %></label>
+              <input type="text" name="title" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'العنوان (عربي)' : 'Title (Arabic)' %></label>
+              <input type="text" name="titleAr" class="input" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'رابط الصورة' : 'Image URL' %></label>
+              <input type="url" name="image" class="input" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'رابط الهدف' : 'Target URL' %></label>
+              <input type="text" name="targetUrl" class="input" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'الموضع' : 'Position' %></label>
+              <select name="position" class="select">
+                <option value="home_hero">Home Hero</option>
+                <option value="home_mid">Home Mid</option>
+                <option value="category_top">Category Top</option>
+                <option value="sidebar">Sidebar</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'الأولوية' : 'Priority' %></label>
+              <input type="number" name="priority" class="input" value="0" min="0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'يبدأ في' : 'Starts At' %></label>
+              <input type="datetime-local" name="startsAt" class="input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label"><%= locale === 'ar' ? 'ينتهي في' : 'Ends At' %></label>
+              <input type="datetime-local" name="endsAt" class="input" />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary"><%= locale === 'ar' ? 'إنشاء بانر' : 'Create Banner' %></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Existing Banners -->
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= locale === 'ar' ? 'العنوان' : 'Title' %></th>
+            <th><%= locale === 'ar' ? 'الموضع' : 'Position' %></th>
+            <th><%= locale === 'ar' ? 'الأولوية' : 'Priority' %></th>
+            <th><%= locale === 'ar' ? 'الحالة' : 'Status' %></th>
+            <th><%= locale === 'ar' ? 'المدة' : 'Period' %></th>
+            <th><%= locale === 'ar' ? 'إجراءات' : 'Actions' %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% banners.forEach(b => { %>
+          <tr>
+            <td>
+              <strong><%= locale === 'ar' && b.titleAr ? b.titleAr : b.title %></strong>
+              <br><a href="<%= b.targetUrl %>" class="text-muted text-sm" target="_blank"><%= b.targetUrl %></a>
+            </td>
+            <td><%= b.position %></td>
+            <td><%= b.priority %></td>
+            <td>
+              <span class="badge badge-<%= b.isActive ? 'success' : 'muted' %>">
+                <%= b.isActive ? (locale === 'ar' ? 'نشط' : 'Active') : (locale === 'ar' ? 'معطل' : 'Inactive') %>
+              </span>
+            </td>
+            <td>
+              <%= new Date(b.startsAt).toLocaleDateString() %>
+              <% if (b.endsAt) { %> — <%= new Date(b.endsAt).toLocaleDateString() %><% } %>
+            </td>
+            <td class="flex gap-05">
+              <form method="POST" action="/admin/banners/<%= b.id %>/toggle?_csrf=<%= encodeURIComponent(csrfToken) %>">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button class="btn btn-sm btn-ghost"><%= b.isActive ? (locale === 'ar' ? 'تعطيل' : 'Deactivate') : (locale === 'ar' ? 'تفعيل' : 'Activate') %></button>
+              </form>
+              <form method="POST" action="/admin/banners/<%= b.id %>/delete?_csrf=<%= encodeURIComponent(csrfToken) %>">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button class="btn btn-sm btn-danger"><%= locale === 'ar' ? 'حذف' : 'Delete' %></button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (!banners.length) { %>
+          <tr><td colspan="6" class="text-center text-muted"><%= locale === 'ar' ? 'لا توجد بانرات' : 'No banners yet' %></td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<%- include('../partials/footer') %>
