@@ -1,0 +1,95 @@
+<%- include('../partials/head') %>
+<%- include('../partials/navbar') %>
+<main class="main-content">
+  <div class="container">
+    <%- include('../partials/flash') %>
+    <div class="page-header">
+      <h1><%= locale === 'ar' ? 'إدارة المتاجر' : 'Vendor Management' %></h1>
+    </div>
+
+    <div class="flex gap-1 mb-2">
+      <a href="/admin/vendors" class="btn btn-ghost <%= !status ? 'btn-active' : '' %>">
+        <%= locale === 'ar' ? 'الكل' : 'All' %>
+      </a>
+      <a href="/admin/vendors?status=PENDING" class="btn btn-ghost <%= status === 'PENDING' ? 'btn-active' : '' %>">
+        <%= locale === 'ar' ? 'قيد المراجعة' : 'Pending' %>
+      </a>
+      <a href="/admin/vendors?status=APPROVED" class="btn btn-ghost <%= status === 'APPROVED' ? 'btn-active' : '' %>">
+        <%= locale === 'ar' ? 'مقبول' : 'Approved' %>
+      </a>
+      <a href="/admin/vendors?status=SUSPENDED" class="btn btn-ghost <%= status === 'SUSPENDED' ? 'btn-active' : '' %>">
+        <%= locale === 'ar' ? 'موقوف' : 'Suspended' %>
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th><%= locale === 'ar' ? 'المتجر' : 'Store' %></th>
+            <th><%= locale === 'ar' ? 'المالك' : 'Owner' %></th>
+            <th><%= locale === 'ar' ? 'الحالة' : 'Status' %></th>
+            <th><%= locale === 'ar' ? 'العمولة' : 'Commission' %></th>
+            <th><%= locale === 'ar' ? 'التاريخ' : 'Date' %></th>
+            <th><%= locale === 'ar' ? 'إجراءات' : 'Actions' %></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% vendors.forEach(v => { %>
+          <tr>
+            <td>
+              <strong><%= locale === 'ar' && v.nameAr ? v.nameAr : v.name %></strong>
+              <br><small class="text-muted">/<%= v.slug %></small>
+            </td>
+            <td><%= v.user ? v.user.username : '—' %></td>
+            <td>
+              <span class="badge badge-<%= v.status === 'APPROVED' ? 'success' : v.status === 'PENDING' ? 'warning' : 'danger' %>">
+                <%= v.status %>
+              </span>
+            </td>
+            <td><%= v.commissionRate %>%</td>
+            <td><%= new Date(v.createdAt).toLocaleDateString() %></td>
+            <td class="flex gap-05">
+              <% if (v.status === 'PENDING') { %>
+                <form method="POST" action="/admin/vendors/<%= v.id %>/approve?_csrf=<%= encodeURIComponent(csrfToken) %>">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button class="btn btn-sm btn-success"><%= locale === 'ar' ? 'قبول' : 'Approve' %></button>
+                </form>
+                <form method="POST" action="/admin/vendors/<%= v.id %>/reject?_csrf=<%= encodeURIComponent(csrfToken) %>">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button class="btn btn-sm btn-danger"><%= locale === 'ar' ? 'رفض' : 'Reject' %></button>
+                </form>
+              <% } %>
+              <% if (v.status === 'APPROVED') { %>
+                <form method="POST" action="/admin/vendors/<%= v.id %>/suspend?_csrf=<%= encodeURIComponent(csrfToken) %>">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button class="btn btn-sm btn-warning"><%= locale === 'ar' ? 'إيقاف' : 'Suspend' %></button>
+                </form>
+              <% } %>
+              <% if (v.status === 'SUSPENDED') { %>
+                <form method="POST" action="/admin/vendors/<%= v.id %>/approve?_csrf=<%= encodeURIComponent(csrfToken) %>">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button class="btn btn-sm btn-success"><%= locale === 'ar' ? 'إعادة تفعيل' : 'Reactivate' %></button>
+                </form>
+              <% } %>
+            </td>
+          </tr>
+          <% }) %>
+          <% if (!vendors.length) { %>
+          <tr><td colspan="6" class="text-center text-muted"><%= locale === 'ar' ? 'لا توجد متاجر' : 'No vendors found' %></td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <% if (totalPages > 1) { %>
+    <div class="pagination mt-2">
+      <% for (let i = 1; i <= totalPages; i++) { %>
+        <a href="/admin/vendors?page=<%= i %><%= status ? '&status=' + status : '' %>"
+           class="btn btn-sm <%= i === page ? 'btn-primary' : 'btn-ghost' %>"><%= i %></a>
+      <% } %>
+    </div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/footer') %>

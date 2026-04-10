@@ -27,10 +27,13 @@
       </div>
     </div>
 
-    <div class="flex gap-1">
+    <div class="flex gap-1 flex-wrap">
       <a href="/admin/users" class="btn btn-ghost"><%= t('admin.users') %></a>
       <a href="/admin/listings" class="btn btn-ghost"><%= t('admin.listings') %></a>
       <a href="/admin/orders" class="btn btn-ghost"><%= t('admin.orders') %></a>
+      <a href="/admin/vendors" class="btn btn-ghost"><%= locale === 'ar' ? 'المتاجر' : 'Vendors' %></a>
+      <a href="/admin/shipping" class="btn btn-ghost"><%= locale === 'ar' ? 'الشحن' : 'Shipping' %></a>
+      <a href="/admin/banners" class="btn btn-ghost"><%= locale === 'ar' ? 'البانرات' : 'Banners' %></a>
     </div>
   </div>
 </main>
