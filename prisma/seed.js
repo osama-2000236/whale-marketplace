@@ -7,18 +7,36 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('[seed] Starting...');
 
-  // Clean existing data
+  // Clean existing data (order matters for FK constraints)
+  await prisma.searchLog.deleteMany();
+  await prisma.browsingHistory.deleteMany();
+  await prisma.banner.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.returnRequest.deleteMany();
+  await prisma.shippingRate.deleteMany();
+  await prisma.shippingZone.deleteMany();
+  await prisma.exchangeRate.deleteMany();
+  await prisma.vendorPayout.deleteMany();
+  await prisma.productVariant.deleteMany();
+  await prisma.listingTranslation.deleteMany();
   await prisma.orderEvent.deleteMany();
   await prisma.review.deleteMany();
   await prisma.savedListing.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.payment.deleteMany();
+  await prisma.refundRequest.deleteMany();
+  await prisma.cartItem.deleteMany();
+  await prisma.cart.deleteMany();
   await prisma.order.deleteMany();
   await prisma.listing.deleteMany();
+  await prisma.vendor.deleteMany();
   await prisma.subcategory.deleteMany();
   await prisma.category.deleteMany();
   await prisma.sellerProfile.deleteMany();
   await prisma.subscription.deleteMany();
+  await prisma.authToken.deleteMany();
+  await prisma.address.deleteMany();
+  await prisma.savedPaymentMethod.deleteMany();
   await prisma.user.deleteMany();
 
   const hash = await bcrypt.hash('Admin1234!', 12);
@@ -429,6 +447,60 @@ async function main() {
   });
 
   console.log('[seed] Orders and reviews created');
+
+  // --- Phase 2C/2D: Shipping Zones ---
+  const gazaZone = await prisma.shippingZone.create({
+    data: {
+      name: 'Gaza Strip',
+      nameAr: 'قطاع غزة',
+      cities: ['Gaza', 'Khan Yunis', 'Rafah', 'Deir al-Balah'],
+      rates: {
+        create: [
+          { carrier: 'standard', cost: 15, currency: 'ILS', estDays: '2-4 days', freeAbove: 200 },
+          { carrier: 'express', cost: 30, currency: 'ILS', estDays: '1-2 days' },
+        ],
+      },
+    },
+  });
+  const wbZone = await prisma.shippingZone.create({
+    data: {
+      name: 'West Bank',
+      nameAr: 'الضفة الغربية',
+      cities: ['Ramallah', 'Nablus', 'Hebron', 'Jenin', 'Bethlehem', 'Tulkarm', 'Qalqilya', 'Jericho', 'Salfit', 'Tubas'],
+      rates: {
+        create: [
+          { carrier: 'standard', cost: 20, currency: 'ILS', estDays: '3-5 days', freeAbove: 300 },
+          { carrier: 'express', cost: 40, currency: 'ILS', estDays: '1-2 days' },
+        ],
+      },
+    },
+  });
+
+  console.log('[seed] Shipping zones created');
+
+  // --- Phase 2C/2D: Exchange Rates ---
+  await Promise.all([
+    prisma.exchangeRate.create({ data: { fromCur: 'USD', toCur: 'ILS', rate: 3.65 } }),
+    prisma.exchangeRate.create({ data: { fromCur: 'ILS', toCur: 'USD', rate: 0.274 } }),
+    prisma.exchangeRate.create({ data: { fromCur: 'USD', toCur: 'JOD', rate: 0.709 } }),
+    prisma.exchangeRate.create({ data: { fromCur: 'JOD', toCur: 'USD', rate: 1.41 } }),
+  ]);
+
+  console.log('[seed] Exchange rates created');
+
+  // --- Phase 2D: Sample Banner ---
+  await prisma.banner.create({
+    data: {
+      title: 'Welcome to Whale Marketplace',
+      titleAr: 'مرحباً بك في سوق الحوت',
+      image: '/uploads/banner-hero.jpg',
+      targetUrl: '/whale',
+      position: 'home_hero',
+      priority: 1,
+    },
+  });
+
+  console.log('[seed] Banners created');
   console.log('[seed] Done!');
 }
 

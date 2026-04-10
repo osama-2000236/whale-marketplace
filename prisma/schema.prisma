@@ -45,6 +45,11 @@ model User {
   cart          Cart?
   refundRequests RefundRequest[]
   auditLogs     AdminAuditLog[]
+  sentMessages     Message[]   @relation("SentMessages")
+  receivedMessages Message[]   @relation("ReceivedMessages")
+  browsingHistory  BrowsingHistory[]
+  searchLogs       SearchLog[]
+  vendor           Vendor?
 }
 
 model Subscription {
@@ -77,6 +82,8 @@ model SellerProfile {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// ── Catalog ─────────────────────────────────────────────────────────────────
+
 model Category {
   id            String        @id @default(cuid())
   name          String
@@ -84,8 +91,13 @@ model Category {
   slug          String        @unique
   icon          String?
   order         Int           @default(0)
+  parentId      String?
+  parent        Category?     @relation("CategoryTree", fields: [parentId], references: [id])
+  children      Category[]    @relation("CategoryTree")
   listings      Listing[]
   subcategories Subcategory[]
+
+  @@index([parentId])
 }
 
 model Subcategory {
@@ -116,6 +128,7 @@ model Listing {
   subcategoryId  String?
   city           String
   sellerId       String
+  vendorId       String?
   status         ListingStatus    @default(DRAFT)
   views          Int              @default(0)
   waClicks       Int              @default(0)
@@ -123,20 +136,64 @@ model Listing {
   boostExpiresAt DateTime?
   tags           String[]
   specs          Json?
+  // Phase 2C: shipping/product fields
+  weight         Decimal?         @db.Decimal(8, 2)
+  dimensions     Json?            // { length, width, height, unit }
+  brand          String?
+  sku            String?
+  barcode        String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   category       Category         @relation(fields: [categoryId], references: [id])
   seller         User             @relation(fields: [sellerId], references: [id])
   subcategory    Subcategory?     @relation(fields: [subcategoryId], references: [id])
+  vendor         Vendor?          @relation(fields: [vendorId], references: [id])
   orders         Order[]
   reviews        Review[]
   savedBy        SavedListing[]
   cartItems      CartItem[]
+  translations   ListingTranslation[]
+  variants       ProductVariant[]
+  browsingHistory BrowsingHistory[]
 
   @@index([status, createdAt(sort: Desc)])
   @@index([sellerId])
   @@index([categoryId])
+  @@index([vendorId])
+  @@index([sku])
 }
+
+// Phase 2C: Localized listing descriptions
+model ListingTranslation {
+  id          String   @id @default(cuid())
+  listingId   String
+  locale      String   // 'ar', 'en', 'he', etc.
+  title       String
+  description String
+  specs       Json?
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, locale])
+}
+
+// Phase 2D: Product variants (size/color/etc.)
+model ProductVariant {
+  id         String   @id @default(cuid())
+  listingId  String
+  sku        String?
+  attributes Json     // { color: "أحمر", size: "XL" }
+  price      Decimal  @db.Decimal(12, 2)
+  stock      Int      @default(0)
+  images     String[]
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([sku])
+}
+
+// ── Orders ──────────────────────────────────────────────────────────────────
 
 model Order {
   id              String       @id @default(cuid())
@@ -144,8 +201,14 @@ model Order {
   listingId       String
   buyerId         String
   sellerId        String
+  vendorId        String?
   quantity        Int          @default(1)
   amount          Decimal      @db.Decimal(12, 2)
+  // Phase 2C: price breakdown
+  subtotal        Decimal?     @db.Decimal(12, 2)
+  shippingCost    Decimal?     @db.Decimal(12, 2)
+  tax             Decimal?     @db.Decimal(12, 2)
+  discount        Decimal?     @db.Decimal(12, 2)
   currency        String       @default("USD")
   paymentMethod   String
   paymentStatus   String       @default("pending")
@@ -162,12 +225,16 @@ model Order {
   buyer           User         @relation("BuyerOrders", fields: [buyerId], references: [id])
   listing         Listing      @relation(fields: [listingId], references: [id])
   seller          User         @relation("SellerOrders", fields: [sellerId], references: [id])
+  vendor          Vendor?      @relation(fields: [vendorId], references: [id])
   events          OrderEvent[]
   review          Review?
   refundRequests  RefundRequest[]
+  messages        Message[]
+  returnRequest   ReturnRequest?
 
   @@index([buyerId])
   @@index([sellerId])
+  @@index([vendorId])
   @@index([status])
 }
 
@@ -190,6 +257,7 @@ model Review {
   sellerId   String
   rating     Int
   body       String?
+  bodyAr     String?
   createdAt  DateTime @default(now())
   listing    Listing  @relation(fields: [listingId], references: [id])
   order      Order    @relation(fields: [orderId], references: [id])
@@ -220,6 +288,8 @@ model Notification {
   @@index([userId, isRead])
 }
 
+// ── Payments ────────────────────────────────────────────────────────────────
+
 model Payment {
   id                String          @id @default(cuid())
   userId            String
@@ -229,6 +299,10 @@ model Payment {
   idempotencyKey    String          @unique
   amount            Decimal         @db.Decimal(12, 2)
   currency          String          @default("USD")
+  // Phase 2C: multi-currency audit trail
+  originalAmount    Decimal?        @db.Decimal(12, 2)
+  originalCurrency  String?
+  exchangeRate      Decimal?        @db.Decimal(12, 6)
   status            PaymentStatus   @default(PENDING)
   planMonths        Int             @default(1)
   metadata          Json?
@@ -244,81 +318,7 @@ model session {
   @@index([expire], map: "IDX_session_expire")
 }
 
-enum UserRole {
-  ADMIN
-  MEMBER
-}
-
-enum ListingCondition {
-  NEW
-  LIKE_NEW
-  GOOD
-  USED
-  FAIR
-  FOR_PARTS
-}
-
-enum ListingStatus {
-  DRAFT
-  ACTIVE
-  SOLD
-  REMOVED
-}
-
-enum OrderStatus {
-  PENDING
-  CONFIRMED
-  SHIPPED
-  DELIVERED
-  COMPLETED
-  CANCELLED
-  DISPUTED
-}
-
-enum NotificationType {
-  ORDER
-  REVIEW
-  SYSTEM
-  FOLLOW
-}
-
-enum PaymentProvider {
-  PAYMOB
-  PAYPAL
-  STRIPE
-  MANUAL
-}
-
-enum PaymentPurpose {
-  SUBSCRIPTION
-  ORDER
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  REFUNDED
-}
-
-enum AdminScope {
-  SUPER_ADMIN
-  SUPPORT_AGENT
-  WAREHOUSE
-}
-
-enum AuthTokenType {
-  EMAIL_VERIFICATION
-  EMAIL_CHANGE
-  PASSWORD_RESET
-}
-
-enum RefundStatus {
-  REQUESTED
-  APPROVED
-  REJECTED
-  PROCESSED
-}
+// ── Auth & Profile ──────────────────────────────────────────────────────────
 
 model AuthToken {
   id        String        @id @default(cuid())
@@ -335,16 +335,20 @@ model AuthToken {
 }
 
 model Address {
-  id        String   @id @default(cuid())
-  userId    String
-  label     String   @default("home")
-  street    String
-  city      String
-  phone     String
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  label      String   @default("home")
+  street     String
+  city       String
+  // Phase 2C: MENA address fields
+  country    String   @default("PS")
+  region     String?  // governorate/district
+  postalCode String?
+  phone      String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -427,4 +431,263 @@ model AdminAuditLog {
   @@index([adminId])
   @@index([action])
   @@index([createdAt])
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Phase 2C/2D: New Models
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Multi-vendor stores
+model Vendor {
+  id             String       @id @default(cuid())
+  userId         String       @unique
+  name           String
+  nameAr         String?
+  slug           String       @unique
+  logo           String?
+  banner         String?
+  description    String?
+  descriptionAr  String?
+  status         VendorStatus @default(PENDING)
+  commissionRate Decimal      @default(10) @db.Decimal(5, 2)  // percentage
+  payoutMethod   String?      // 'bank_transfer', 'paypal', etc.
+  payoutDetails  Json?        // bank account info, PayPal email, etc.
+  rating         Float        @default(0)
+  totalSales     Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id])
+  listings       Listing[]
+  orders         Order[]
+  payouts        VendorPayout[]
+
+  @@index([status])
+}
+
+model VendorPayout {
+  id        String       @id @default(cuid())
+  vendorId  String
+  amount    Decimal      @db.Decimal(12, 2)
+  currency  String       @default("USD")
+  period    String       // '2026-W15', '2026-04', etc.
+  status    PayoutStatus @default(PENDING)
+  paidAt    DateTime?
+  reference String?      // bank transfer ref, PayPal txn, etc.
+  createdAt DateTime     @default(now())
+  vendor    Vendor       @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
+  @@index([status])
+}
+
+// Shipping
+model ShippingZone {
+  id        String         @id @default(cuid())
+  name      String
+  nameAr    String?
+  cities    String[]       // English city names matching lib/cities.js
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  rates     ShippingRate[]
+}
+
+model ShippingRate {
+  id        String       @id @default(cuid())
+  zoneId    String
+  carrier   String       // 'standard', 'express', 'aramex', etc.
+  weightMin Decimal?     @db.Decimal(8, 2)
+  weightMax Decimal?     @db.Decimal(8, 2)
+  cost      Decimal      @db.Decimal(12, 2)
+  currency  String       @default("ILS")
+  freeAbove Decimal?     @db.Decimal(12, 2)  // free shipping threshold
+  estDays   String?      // '2-5 days'
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  zone      ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@index([zoneId])
+}
+
+// Currency
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  fromCur   String   // 'USD'
+  toCur     String   // 'ILS'
+  rate      Decimal  @db.Decimal(12, 6)
+  updatedAt DateTime @default(now())
+
+  @@unique([fromCur, toCur])
+}
+
+// Messaging
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  orderId    String?
+  body       String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  order      Order?   @relation(fields: [orderId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+// Returns
+model ReturnRequest {
+  id                   String       @id @default(cuid())
+  orderId              String       @unique
+  reason               String
+  status               RefundStatus @default(REQUESTED)
+  returnTrackingNumber String?
+  adminNote            String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  order                Order        @relation(fields: [orderId], references: [id])
+
+  @@index([status])
+}
+
+// Browsing history
+model BrowsingHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String
+  viewedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId, viewedAt(sort: Desc)])
+}
+
+// Search analytics
+model SearchLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  query        String
+  resultsCount Int      @default(0)
+  locale       String   @default("ar")
+  createdAt    DateTime @default(now())
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([query])
+}
+
+// Marketing
+model Banner {
+  id          String    @id @default(cuid())
+  title       String
+  titleAr     String?
+  image       String
+  targetUrl   String
+  position    String    @default("home_hero")  // 'home_hero', 'browse_sidebar', 'category_top'
+  priority    Int       @default(0)
+  startsAt    DateTime  @default(now())
+  endsAt      DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  @@index([position, isActive])
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Enums
+// ══════════════════════════════════════════════════════════════════════════════
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum ListingCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  USED
+  FAIR
+  FOR_PARTS
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  SOLD
+  REMOVED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum NotificationType {
+  ORDER
+  REVIEW
+  SYSTEM
+  FOLLOW
+  MESSAGE
+}
+
+enum PaymentProvider {
+  PAYMOB
+  PAYPAL
+  STRIPE
+  MANUAL
+}
+
+enum PaymentPurpose {
+  SUBSCRIPTION
+  ORDER
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum AdminScope {
+  SUPER_ADMIN
+  SUPPORT_AGENT
+  WAREHOUSE
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  EMAIL_CHANGE
+  PASSWORD_RESET
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+enum VendorStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+  REJECTED
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
